@@ -7,6 +7,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.geometry.Rectangle2D;
+import platformgame.Objects.SuperObject;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,11 +18,23 @@ public class Game extends Pane {
     private final GraphicsContext gc;
     private final Set<KeyCode> keysPressed = new HashSet<>();
 
-    private final Player player;
-    private final TileMap tileMap;
+    //for object placement(borshon)
+    public AssetSetter aSetter = new AssetSetter(this);
+    public SuperObject object[]= new SuperObject[10];
 
-    private final double screenWidth = 1020;
-    private final double screenHeight = 800;
+
+    public final double scale = 1.15; // tweak this between 1.1 to 1.5 for desired effect
+    //for player and tilemap
+    public final Player player;
+    public final TileMap tileMap;
+    public int tileSize = 64;
+    public final double screenWidth = 1020;
+    public final double screenHeight = 700;
+
+
+    //Objects
+    public int hasKey;
+
 
     public Game() {
         this.setPrefSize(screenWidth, screenHeight);
@@ -29,7 +43,7 @@ public class Game extends Pane {
 
         this.getChildren().add(canvas);
 
-        int tileSize = 64;  // increased from 16 to 32
+         // increased from 64
         tileMap = new TileMap(100, 100, tileSize); // total map size now 3200x3200 pixels
 
         // Start player in the center of the map
@@ -38,10 +52,18 @@ public class Game extends Pane {
 
         player = new Player(startX, startY, 32, 32, 3);
 
+
         setFocusTraversable(true);
         setOnKeyPressed(this::onKeyPressed);
         setOnKeyReleased(this::onKeyReleased);
     }
+
+        //adding this for set up object before game start (Borshon)
+    public void setUpObject() {
+    aSetter.setObject();
+    }
+
+
 
 
 
@@ -66,11 +88,12 @@ public class Game extends Pane {
     }
 
     private void update() {
-        player.update(keysPressed, tileMap, System.nanoTime());
+        player.update(keysPressed, tileMap, this, System.nanoTime());
+
     }
 
 
-    private final double scale = 1.05; // tweak this between 1.1 to 1.5 for desired effect
+
 
     private void draw() {
         double camX = player.getX() + player.getWidth() / 2 - screenWidth / 2;
@@ -82,9 +105,17 @@ public class Game extends Pane {
         gc.setFill(Color.DARKGRAY);
         gc.fillRect(0, 0, screenWidth, screenHeight);
 
+
+        //for tile draw
         tileMap.draw(gc, camX, camY, scale);
+        // draw all objects that exist(Borshon)
+        for (SuperObject obj : object) {
+            if (obj != null) {
+                obj.draw(gc, this);
+            }
+        }
+        //for main player
         player.draw(gc, camX, camY, scale);
-        
 
     }
 

@@ -99,8 +99,12 @@ public class FirstPage {
                     Stage stage = new Stage();
                     stage.setTitle("JavaFX Game - Joddha");
                     stage.setScene(scene);
+                    stage.setResizable(false);
                     stage.setFullScreen(false);
                     stage.show();
+
+                    //set up objects before the game start (borshon)
+                    game.setUpObject();
                     game.startGameLoop();
                     game.requestFocus();
                     currentStage.close(); // Close the previous window

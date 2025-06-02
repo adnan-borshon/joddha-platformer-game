@@ -1,9 +1,11 @@
 package platformgame;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
+import platformgame.Objects.SuperObject;
 
 import java.util.Set;
 
@@ -38,7 +40,7 @@ public class Player {
         imageSet(totalFrames_walk);
     }
 
-    public void update(Set<KeyCode> keys, TileMap tileMap, long now) {
+    public void update(Set<KeyCode> keys, TileMap tileMap, Game game, long now) {
         boolean moved = false;
 
         double newX = x;
@@ -57,8 +59,20 @@ public class Player {
             facingRight = true;
         }
 
-        if (!tileMap.isColliding(newX, y, width, height)) x = newX;
-        if (!tileMap.isColliding(x, newY, width, height)) y = newY;
+        // Tile collision check
+        boolean canMoveX = !tileMap.isColliding(newX, y, width, height);
+        boolean canMoveY = !tileMap.isColliding(x, newY, width, height);
+
+        // Object collision & interaction check using Game reference
+        boolean collidesX = checkObjectCollisionsAndInteract(newX, y, width, height, game);
+        boolean collidesY = checkObjectCollisionsAndInteract(x, newY, width, height, game);
+
+        if (canMoveX && !collidesX) {
+            x = newX;
+        }
+        if (canMoveY && !collidesY) {
+            y = newY;
+        }
 
         if (moved) {
             currentRow = 3;
@@ -110,6 +124,52 @@ public class Player {
     public void setFrame(int frameIndex, int row) {
         currentFrame = frameIndex % totalFrames_walk;
     }
+
+
+
+
+    // adding collusion for object and logic for collecting and others (Borshon)
+    public boolean checkObjectCollisionsAndInteract(double nextX, double nextY, double width, double height, Game game) {
+      Rectangle2D playerRect = new Rectangle2D(nextX, nextY, width, height);
+
+        for (int i = 0; i < game.object.length; i++) {
+            SuperObject obj = game.object[i];
+            if (obj != null) {
+                javafx.geometry.Rectangle2D objRect = obj.getBoundingBox();
+                if (playerRect.intersects(objRect)) {
+                    switch (obj.name.toLowerCase()) {
+                        case "key":
+                            game.hasKey++;
+                            game.object[i] = null;  // remove the key (disappear)
+
+                            // Don't block movement for keys, so continue loop
+                            break;
+
+                        case "door":
+                            if (game.hasKey > 0) {
+                                game.hasKey--;
+                                game.object[i] = null;  // open door (disappear)
+
+                                // Allow player to move through door this time
+                            } else {
+                                // No key to open door, block movement
+                                return true;
+                            }
+                            break;
+
+                        default:
+                            if (obj.collision) {
+                                // Any other collidable object blocks movement
+                                return true;
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+        return false;  // no blocking collision found
+    }
+
 
     public double getX() { return x; }
     public double getY() { return y; }
