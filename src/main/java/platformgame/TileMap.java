@@ -49,14 +49,13 @@ public class TileMap {
                     collision = Boolean.parseBoolean(collisionLine.trim());
                 }
 
-                InputStream imgStream = getClass().getResourceAsStream("/image/tiles/" + fileName);
-                if (imgStream == null) {
+                String path = "/image/tiles/" + fileName;
+                Image img = ImageLoader.load(path); // ✅ Use cached loader
+                if (img == null) {
                     System.err.println("Tile image not found: " + fileName);
-                    tiles.add(new Tile(null, collision));
-                    continue;
                 }
-                Image img = new Image(imgStream);
                 tiles.add(new Tile(img, collision));
+
 
             }
 
@@ -96,23 +95,21 @@ public class TileMap {
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
+
+        final double scaledTileSize = tileSize * scale; // OPTIMIZED: cache tile size
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 int tileIndex = map[row][col];
 
                 if (tileIndex >= 0 && tileIndex < tiles.size()) {
                     Tile tile = tiles.get(tileIndex);
+                    double x = (col * tileSize - camX) * scale;
+                    double y = (row * tileSize - camY) * scale;
                     if (tile.image != null) {
-                        double x = (col * tileSize - camX) * scale;
-                        double y = (row * tileSize - camY) * scale;
-                        double size = tileSize * scale;
-                        gc.drawImage(tile.image, x, y, size, size);
+                        gc.drawImage(tile.image, x, y, scaledTileSize, scaledTileSize); // OPTIMIZED
                     } else {
                         gc.setFill(Color.PINK);
-                        double x = (col * tileSize - camX) * scale;
-                        double y = (row * tileSize - camY) * scale;
-                        double size = tileSize * scale;
-                        gc.fillRect(x, y, size, size);
+                        gc.fillRect(x, y, scaledTileSize, scaledTileSize); // OPTIMIZED
                     }
                 }
             }

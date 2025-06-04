@@ -30,7 +30,8 @@ public class Player {
 
     private WritableImage[] frames;
 
-    private long lastFrameTime = 0;
+    private long animationTimer = 0; //  to accumulate time
+
 
     public Player(double x, double y, double width, double height, double speed) {
         this.x = x;
@@ -42,7 +43,14 @@ public class Player {
         imageSet(totalFrames_walk);
     }
 
-    public void update(Set<KeyCode> keys, TileMap tileMap, Game game, long now) {
+    //for saving the position of the player
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+
+    public void update(Set<KeyCode> keys, TileMap tileMap, Game game, long now, long deltaTime) {
         boolean moved = false;
 
         double newX = x;
@@ -60,7 +68,14 @@ public class Player {
             moved = true;
             facingRight = true;
         }
-
+        if(keys.contains(KeyCode.ESCAPE)){
+            if(game.GameState == game.playState){
+                game.GameState = game.pauseState;
+            }
+            else if(game.GameState == game.pauseState){
+                game.GameState = game.playState;
+            }
+        }
         // Tile collision check
         boolean canMoveX = !tileMap.isColliding(newX, y, width, height);
         boolean canMoveY = !tileMap.isColliding(x, newY, width, height);
@@ -78,9 +93,10 @@ public class Player {
 
         if (moved) {
             currentRow = 3;
-            if (now - lastFrameTime > 100_000_000) {
+            animationTimer += deltaTime; // ✅ accumulate time
+            if (animationTimer > 100_000_000) {
                 nextFrame();
-                lastFrameTime = now;
+                animationTimer = 0;
             }
         } else {
             currentFrame = 0;
@@ -137,44 +153,48 @@ public class Player {
         for (int i = 0; i < game.object.length; i++) {
             SuperObject obj = game.object[i];
             if (obj != null) {
-                javafx.geometry.Rectangle2D objRect = obj.getBoundingBox();
+                double dx = Math.abs(obj.worldX - nextX);
+                double dy = Math.abs(obj.worldY - nextY);
 
-                if (playerRect.intersects(objRect)) {
-                    switch (obj.name.toLowerCase()) {
-                        case "key":
-                            game.hasKey++;
-                            game.object[i] = null;  // remove the key (disappear)
-                            game.playSoundEffects(1);
-                            game.ui.showMessage("You got a key");
-                            // Don't block movement for keys, so continue loop
-                            break;
+                if (dx < 128 && dy < 128) { // ✅ OPTIMIZED: only check nearby objects
+                    Rectangle2D objRect = obj.getBoundingBox();
+                    if (playerRect.intersects(objRect)) {
+                        switch (obj.name.toLowerCase()) {
+                            case "key":
+                                game.hasKey++;
+                                game.object[i] = null;  // remove the key (disappear)
+                                game.playSoundEffects(1);
+                                game.ui.showMessage("You got a key");
+                                // Don't block movement for keys, so continue loop
+                                break;
 
-                        case "door":
-                            if (game.hasKey > 0) {
-                                game.hasKey--;
-                                game.object[i] = null;  // open door (disappear)
-                                game.playSoundEffects(3);
-                                game.ui.showMessage("Door has opened");
-                                // Allow player to move through door this time
-                            } else {
-                                // No key to open door, block movement
-                                game.ui.showMessage("You need a key to open");
-                                return true;
-                            }
-                            break;
-                        case "boots":
+                            case "door":
+                                if (game.hasKey > 0) {
+                                    game.hasKey--;
+                                    game.object[i] = null;  // open door (disappear)
+                                    game.playSoundEffects(3);
+                                    game.ui.showMessage("Door has opened");
+                                    // Allow player to move through door this time
+                                } else {
+                                    // No key to open door, block movement
+                                    game.ui.showMessage("You need a key to open");
+                                    return true;
+                                }
+                                break;
+                            case "boots":
 
-                            speed+=2;
-                            game.object[i]=null;
-                            game.playSoundEffects(2);
-                            game.ui.showMessage("You got speed up +2");
-                            break;
-                        default:
-                            if (obj.collision) {
-                                // Any other collidable object blocks movement
-                                return true;
-                            }
-                            break;
+                                speed += 2;
+                                game.object[i] = null;
+                                game.playSoundEffects(2);
+                                game.ui.showMessage("You got speed up +2");
+                                break;
+                            default:
+                                if (obj.collision) {
+                                    // Any other collidable object blocks movement
+                                    return true;
+                                }
+                                break;
+                        }
                     }
                 }
             }

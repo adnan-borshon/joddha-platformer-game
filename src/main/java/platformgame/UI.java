@@ -7,7 +7,8 @@ import javafx.scene.text.Font;
 import platformgame.Objects.Obj_Key;
 
 public class UI {
-    Game gp;
+    Game game;
+    GraphicsContext gc;
     private Image keyIcon;
 
     public boolean messageOn= false;
@@ -15,8 +16,8 @@ public class UI {
     public int msgCounter= 0;
 
 
-    public UI(Game gp) {
-        this.gp = gp;
+    public UI(Game game) {
+        this.game = game;
         try {
             Obj_Key key = new Obj_Key();  // generate key image from existing class
             keyIcon = key.image;
@@ -31,27 +32,41 @@ messageOn= true;
     }
 
     public void draw(GraphicsContext gc) {
-        // Draw key icon
-        if (keyIcon != null) {
-            gc.drawImage(keyIcon, 20, 20, 32, 32); // top-left corner
-        }
-
-        // Draw text showing key count
+        this.gc = gc;
         gc.setFill(Color.WHITE);
         gc.setFont(Font.font("Arial", 24));
-        gc.fillText("x " + gp.hasKey, 60, 45); // next to icon
 
-        //Message
-        if(messageOn== true){
-            gc.setFont(Font.font("Arial", 30));
-            gc.fillText(message, gp.tileSize/2, gp.tileSize*5);
-            msgCounter++;
+        //For Resume section
+        if (game.GameState == game.playState) {
+            // Draw key icon
+            if (keyIcon != null) {
+                gc.drawImage(keyIcon, 20, 20, 32, 32); // top-left corner
+            }
+
+            // Draw text showing key count
+            gc.fillText("x " + game.hasKey, 60, 45); // next to icon
+
+            //Message
+            if (messageOn == true) {
+                gc.setFont(Font.font("Arial", 30));
+                gc.fillText(message, game.tileSize / 2, game.tileSize * 5);
+                msgCounter++;
+            }
+            if (msgCounter > 120) {
+                message = "";
+                messageOn = false;
+                msgCounter = 0;
+            }
         }
 
-        if(msgCounter >120){
-            message="";
-            messageOn=false;
-            msgCounter=0;
+        //For pause section
+        if(game.GameState == game.pauseState){
+            drawPauseScreen();
         }
+    }
+    public void drawPauseScreen(){
+        String text = "PAUSED";
+
+
     }
 }

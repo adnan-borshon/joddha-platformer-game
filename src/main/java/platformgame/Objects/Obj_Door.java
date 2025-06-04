@@ -1,13 +1,15 @@
 package platformgame.Objects;
 
-import javafx.scene.image.Image;
+
+import platformgame.ImageLoader;
 
 public class Obj_Door extends SuperObject{
     public Obj_Door(){
         name = "Door";
 
         try{
-            image = new Image(getClass().getResourceAsStream("/image/Object/door.png"));
+            image = ImageLoader.load("/image/Object/door.png");
+
 
 
         } catch (Exception e) {

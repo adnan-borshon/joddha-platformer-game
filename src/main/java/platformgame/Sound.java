@@ -1,4 +1,5 @@
 package platformgame;
+
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
@@ -6,10 +7,10 @@ import java.net.URL;
 
 public class Sound {
 
-    public MediaPlayer[] mediaPlayers = new MediaPlayer[30];
+    private static Sound instance;
+    private final MediaPlayer[] mediaPlayers = new MediaPlayer[30];
 
-
-    public Sound(){
+    private Sound() {
         try {
             loadSound(0, "/sound/BlueBoyAdventure.wav");
             loadSound(1, "/sound/coin.wav");
@@ -22,6 +23,12 @@ public class Sound {
         }
     }
 
+    public static Sound getInstance() {
+        if (instance == null) {
+            instance = new Sound();
+        }
+        return instance;
+    }
 
     private void loadSound(int index, String resourcePath) {
         URL resource = getClass().getResource(resourcePath);
@@ -45,9 +52,11 @@ public class Sound {
     // 🔁 Loop continuously
     public void loop(int index) {
         if (mediaPlayers[index] != null) {
-            mediaPlayers[index].stop();
-            mediaPlayers[index].setCycleCount(MediaPlayer.INDEFINITE);
-            mediaPlayers[index].play();
+            if (!isPlaying(index)) {
+                mediaPlayers[index].stop();
+                mediaPlayers[index].setCycleCount(MediaPlayer.INDEFINITE);
+                mediaPlayers[index].play();
+            }
         }
     }
 
@@ -55,6 +64,23 @@ public class Sound {
     public void stop(int index) {
         if (mediaPlayers[index] != null) {
             mediaPlayers[index].stop();
+        }
+    }
+
+    // 🔍 Check if a sound is currently playing
+    public boolean isPlaying(int index) {
+        if (mediaPlayers[index] != null) {
+            return mediaPlayers[index].getStatus() == MediaPlayer.Status.PLAYING;
+        }
+        return false;
+    }
+
+    // ⏹ Stop all sounds
+    public void stopAll() {
+        for (MediaPlayer player : mediaPlayers) {
+            if (player != null) {
+                player.stop();
+            }
         }
     }
 }

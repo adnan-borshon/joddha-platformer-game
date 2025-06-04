@@ -7,7 +7,10 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.geometry.Rectangle2D;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+
+
 import platformgame.Objects.SuperObject;
 
 import java.util.HashSet;
@@ -18,12 +21,21 @@ public class Game extends Pane {
     private final GraphicsContext gc;
     private final Set<KeyCode> keysPressed = new HashSet<>();
 
+    private long lastTime = System.nanoTime(); //  OPTIMIZED: for deltaTime
+    //Game state for resume and pause
+    public int GameState;
+    public final int playState=1;
+    public final int pauseState=2;
+
+
     //for object placement(borshon)
     public AssetSetter aSetter = new AssetSetter(this);
     public SuperObject object[]= new SuperObject[10];
 
 
     public final double scale = 1.15; // tweak this between 1.1 to 1.5 for desired effect
+
+
     //for player and tilemap
     public final Player player;
     public final TileMap tileMap;
@@ -32,8 +44,9 @@ public class Game extends Pane {
     public final double screenHeight = 700;
 
     //For music and sound
-    Sound music = new Sound();
-    Sound sound = new Sound();
+    Sound music = Sound.getInstance();
+    Sound sound = Sound.getInstance();
+
 
 
     //Objects
@@ -59,7 +72,7 @@ public class Game extends Pane {
 
         player = new Player(startX, startY, 32, 32, 3);
 
-
+        setUpObject();
         setFocusTraversable(true);
         setOnKeyPressed(this::onKeyPressed);
         setOnKeyReleased(this::onKeyReleased);
@@ -69,6 +82,7 @@ public class Game extends Pane {
     public void setUpObject() {
     aSetter.setObject();
     playMusic(0);
+    GameState= playState;
     }
 
 
@@ -88,18 +102,43 @@ public class Game extends Pane {
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                update();
+                long delta = now - lastTime;
+                update(now, delta);
                 draw();
+                lastTime = now;
             }
         };
         timer.start();
     }
 
-    private void update() {
-        player.update(keysPressed, tileMap, this, System.nanoTime());
+
+    private void update(long now, long deltaTime) {
+        if (GameState == playState) {
+            player.update(keysPressed, tileMap, this, now, deltaTime);
+
+            if (keysPressed.contains(KeyCode.ESCAPE)) {
+                //  Save state and return to menu
+                GameManager.getInstance().saveState(this);
+                openMainMenu();
+                GameState = pauseState;
+            }
+        }
 
     }
 
+
+
+    //For opening menu
+    private void openMainMenu() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FirstPage.fxml"));
+            Pane menuRoot = loader.load();
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(menuRoot); //  Use same scene
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
 
@@ -114,6 +153,9 @@ public class Game extends Pane {
         gc.fillRect(0, 0, screenWidth, screenHeight);
 
 
+        //Debug
+        long drawStart=0;
+        drawStart= System.nanoTime();
         //for tile draw
         tileMap.draw(gc, camX, camY, scale);
         // draw all objects that exist(Borshon)
@@ -127,9 +169,14 @@ public class Game extends Pane {
         // For Ui and messages
         ui.draw(gc);
 
+
+        long drawEnd = System.nanoTime();
+        long passed = (drawEnd - drawStart);
+        System.out.println("Daw time: "+passed);
     }
 
     public void playMusic(int i){
+
     music.loop(i);
     }
 

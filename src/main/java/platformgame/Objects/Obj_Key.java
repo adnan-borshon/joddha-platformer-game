@@ -1,13 +1,15 @@
 package platformgame.Objects;
 
-import javafx.scene.image.Image;
+
+import platformgame.ImageLoader;
 
 public class Obj_Key extends SuperObject {
     public Obj_Key(){
         name = "key";
 
         try{
-            image = new Image(getClass().getResourceAsStream("/image/Object/key.png"));
+            image = ImageLoader.load("/image/Object/key.png");
+
 
 
         } catch (Exception e) {

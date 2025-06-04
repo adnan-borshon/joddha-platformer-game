@@ -12,7 +12,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.InputStream;
-import java.util.Objects;
+
 
 public class FirstPage {
 
@@ -39,12 +39,18 @@ public class FirstPage {
 
     @FXML
     public void initialize() {
+        Sound.getInstance().stopAll();
+
         buttons[0] = newGameButton;
         buttons[1] = continueButton;
         buttons[2] = settingsButton;
         buttons[3] = exitButton;
 
         updateButtonImages();
+
+        if (!GameManager.getInstance().hasSavedState()) {
+            continueButton.setDisable(true);  // disables the button visually
+        }
 
         Platform.runLater(() -> {
             rootPane.requestFocus(); // Ensure pane receives key events
@@ -91,33 +97,55 @@ public class FirstPage {
     private void handleEnter() {
         switch (focusedIndex) {
             case 0 -> {
-                System.out.println("Launching New Game...");
-                try {
-                    Stage currentStage = (Stage) rootPane.getScene().getWindow(); // Close current menu
-                    Game game = new Game();
-                    Scene scene = new Scene(game);
-                    Stage stage = new Stage();
-                    stage.setTitle("JavaFX Game - Joddha");
-                    stage.setScene(scene);
-                    stage.setResizable(false);
-                    stage.setFullScreen(false);
-                    stage.show();
-
-                    //set up objects before the game start (borshon)
-                    game.setUpObject();
-                    game.startGameLoop();
-                    game.requestFocus();
-                    currentStage.close(); // Close the previous window
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                // New Game
+                startNewGame();
             }
-            case 1 -> System.out.println("Continue logic here");
+            case 1 -> { // Continue
+                continueGame();
+            }
             case 2 -> System.out.println("Settings logic here");
             case 3 -> {
-                System.out.println("Exit logic here");
-                Platform.exit(); // Optional: close the app
+
+                Platform.exit();
             }
         }
     }
+
+
+    //
+    private void startNewGame() {
+        try {
+            Game game = new Game();
+
+            game.startGameLoop();
+
+            Scene currentScene = rootPane.getScene();
+            currentScene.setRoot(game); //  Reuse current scene
+            game.requestFocus();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void continueGame() {
+        if (!GameManager.getInstance().hasSavedState()) return;
+
+        try {
+            Game game = new Game();
+            GameState state = GameManager.getInstance().getLastState();
+            game.player.setPosition(state.playerX, state.playerY);
+            game.hasKey = state.hasKey;
+
+            game.startGameLoop();
+
+            Scene currentScene = rootPane.getScene();
+            currentScene.setRoot(game); // Resume in same window
+            game.requestFocus();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
 }
