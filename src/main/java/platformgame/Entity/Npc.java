@@ -3,6 +3,7 @@ package platformgame.Entity;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import platformgame.Game;
+import platformgame.Objects.SuperObject;
 
 import java.util.Random;
 
@@ -12,6 +13,7 @@ public class Npc extends Entity {
     private String direction = "down";
     private final int totalFrames_idle = 11;  // frames in row 1 (2nd row)
 
+    protected boolean playerIsTouching = false;
 
     public Npc(double x, double y, double width, double height, double speed, Game gp){
         super(x,y,width, height, speed, gp);
@@ -20,19 +22,26 @@ public class Npc extends Entity {
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
+
+
+        //Debug
+        // Draw collision rectangle (bounding box)
+        gc.save();
+        gc.setLineWidth(1);
+        gc.setStroke(javafx.scene.paint.Color.RED); // Choose any visible color
+
+        double drawX = (x - camX) * scale;
+        double drawY = (y - camY) * scale;
+        double drawW = width * scale;
+        double drawH = height * scale;
+
+        gc.strokeRect(drawX, drawY, drawW, drawH); // Draw red rectangle
+        gc.restore();
     }
 
     public void setAction() {
-        if (direction.equals("stop")) {
-            actionCounter++;
 
-        if (actionCounter > 240) { // stop for 6 second (~60 frames)
-            direction = "down";   // or set random direction again
-            actionCounter = 0;
-        }
-    }
         actionCounter++;
-
 //        move for 2 sec in any direction
         if(actionCounter == 120){
         Random random = new Random();
@@ -51,10 +60,27 @@ public class Npc extends Entity {
     }
 
     public void update(long deltaTime, long now) {
-        // Move NPC based on direction
         double newX = x;
         double newY = y;
-        setAction(); // choose new direction occasionally
+
+        // Check collision with player
+        if (playerIsTouching) {
+            System.out.println("Collision happening");
+            direction = "stop";
+            actionCounter++;
+            if(actionCounter>120){
+                playerIsTouching=false;
+                actionCounter=0;
+            }
+        }
+    else {
+        setAction();
+        }
+
+
+
+
+        // Apply movement
         switch (direction) {
             case "up": newY -= speed; break;
             case "down": newY += speed; break;
@@ -63,42 +89,44 @@ public class Npc extends Entity {
             case "stop": break;
         }
 
-        // Basic tile collision
+        // Tile collision check
         boolean canMoveX = !gp.tileMap.isColliding(newX, y, width, height);
         boolean canMoveY = !gp.tileMap.isColliding(x, newY, width, height);
 
+        // Check object collision (all objects block NPCs)
+        Rectangle2D futureXRect = new Rectangle2D(newX, y, width, height);
+        Rectangle2D futureYRect = new Rectangle2D(x, newY, width, height);
+        for (SuperObject obj : gp.object) {
+            if (obj != null) {
+                Rectangle2D objRect = obj.getBoundingBox();
+                if (futureXRect.intersects(objRect)) canMoveX = false;
+                if (futureYRect.intersects(objRect)) canMoveY = false;
+            }
+        }
         if (canMoveX) x = newX;
         if (canMoveY) y = newY;
 
-        if (checkPlayerCollision()) {
-            direction = "stop"; // Or: reverseDirection();
-        }
         // Animate
         animationTimer += deltaTime;
 
         if (direction.equals("stop")) {
-            currentRow = 1; // second row for idle
+            currentRow = 1;
             if (animationTimer > 130_000_000) {
-                nextFrame(totalFrames_idle); // cycle through idle frames
+                nextFrame(totalFrames_idle);
                 animationTimer = 0;
             }
         } else {
-            currentRow = 3; // third row for walking
+            currentRow = 3;
             if (animationTimer > 100_000_000) {
-                nextFrame(totalFrames_walk); // cycle through walk frames
+                nextFrame(totalFrames_walk);
                 animationTimer = 0;
             }
         }
-
-
     }
-        //checking Npc to player collision
-    public boolean checkPlayerCollision() {
-        Rectangle2D npcRect = new Rectangle2D(x, y, width, height);
-        Rectangle2D playerRect = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
-
-        return npcRect.intersects(playerRect);
+    public void notifyPlayerCollision() {
+        playerIsTouching = true;
     }
+
 
     public boolean isCollision() {
         return collision;

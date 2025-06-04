@@ -78,6 +78,19 @@ public class Player extends Entity {
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
+
+        //Debug
+        gc.save();
+        gc.setLineWidth(1);
+        gc.setStroke(javafx.scene.paint.Color.GREEN);
+
+        double drawX = (x - camX) * scale;
+        double drawY = (y - camY) * scale;
+        double drawW = width * scale;
+        double drawH = height * scale;
+
+        gc.strokeRect(drawX, drawY, drawW, drawH);
+        gc.restore();
     }
 
     // Adding collision for object and logic for collecting and others (Borshon)
@@ -141,6 +154,7 @@ public class Player extends Entity {
             if (npc != null && npc.isCollision()) {
                 Rectangle2D npcRect = new Rectangle2D(npc.getX(), npc.getY(), npc.getWidth(), npc.getHeight());
                 if (playerRect.intersects(npcRect)) {
+                    npc.notifyPlayerCollision();  // 🔁 Notify NPC
                     return true; // Block movement if collides with solid NPC
                 }
             }

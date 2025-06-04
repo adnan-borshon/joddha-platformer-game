@@ -76,7 +76,7 @@ public class Game extends Pane {
         double startX = (tileMap.getWidthInPixels() - tileSize) / 2;
         double startY = (tileMap.getHeightInPixels() - tileSize) / 2;
 
-        player = new Player(startX, startY, 32, 32, 3, this);
+        player = new Player(startX, startY, 50, 40, 3, this);
 
         setUpObject();
         setFocusTraversable(true);
@@ -194,7 +194,7 @@ public class Game extends Pane {
 
         long drawEnd = System.nanoTime();
         long passed = (drawEnd - drawStart);
-        System.out.println("Daw time: "+passed);
+//        System.out.println("Daw time: "+passed);
     }
 
     public void playMusic(int i){
