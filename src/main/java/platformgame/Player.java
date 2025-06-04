@@ -13,7 +13,7 @@ public class Player {
     private double x, y;
     private final double width;
     private final double height;
-    private double speed;
+    public double speed;
 
     private Image sprite;
     private final int frameWidth = 128;

@@ -10,6 +10,10 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
+import platformgame.Objects.Obj_Boots;
+import platformgame.Objects.Obj_Door;
+import platformgame.Objects.Obj_Key;
+import platformgame.Objects.SuperObject;
 
 import java.io.InputStream;
 
@@ -133,17 +137,46 @@ public class FirstPage {
         try {
             Game game = new Game();
             GameState state = GameManager.getInstance().getLastState();
+
             game.player.setPosition(state.playerX, state.playerY);
             game.hasKey = state.hasKey;
+            game.player.speed=state.playerSpeed; //  Restore speed
+
+            // Restore saved objects
+            for (int i = 0; i < state.savedObjects.length; i++) {
+                GameState.SavedObject saved = state.savedObjects[i];
+                if (!saved.exists) {
+                    game.object[i] = null;
+                    continue;
+                }
+
+                SuperObject obj = createObjectByName(saved.type);
+                if (obj != null) {
+                    obj.worldX = saved.worldX;
+                    obj.worldY = saved.worldY;
+                    game.object[i] = obj;
+                }
+            }
 
             game.startGameLoop();
-
             Scene currentScene = rootPane.getScene();
-            currentScene.setRoot(game); // Resume in same window
+            currentScene.setRoot(game);
             game.requestFocus();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+
+
+    private SuperObject createObjectByName(String name) {
+        return switch (name) {
+            case "Key" -> new Obj_Key();
+            case "Door" -> new Obj_Door();
+            case "Boots" -> new Obj_Boots();
+            default -> null;
+        };
     }
 
 
