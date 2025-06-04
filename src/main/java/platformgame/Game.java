@@ -11,6 +11,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 
 
+import platformgame.Entity.Player;
 import platformgame.Objects.SuperObject;
 
 import java.util.HashSet;
@@ -54,7 +55,7 @@ public class Game extends Pane {
 
 
     //For UI elements and check messages
-    UI ui = new UI(this);
+    public UI ui = new UI(this);
 
     public Game() {
         this.setPrefSize(screenWidth, screenHeight);
@@ -70,7 +71,7 @@ public class Game extends Pane {
         double startX = (tileMap.getWidthInPixels() - tileSize) / 2;
         double startY = (tileMap.getHeightInPixels() - tileSize) / 2;
 
-        player = new Player(startX, startY, 32, 32, 3);
+        player = new Player(startX, startY, 32, 32, 3, this);
 
         setUpObject();
         setFocusTraversable(true);
