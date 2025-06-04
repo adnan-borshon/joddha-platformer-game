@@ -134,6 +134,17 @@ public class Player extends Entity {
                 }
             }
         }
+
+        //  Check collision with NPCs
+        for (int i = 0; i < game.npc.length; i++) {
+            Npc npc = game.npc[i];
+            if (npc != null && npc.isCollision()) {
+                Rectangle2D npcRect = new Rectangle2D(npc.getX(), npc.getY(), npc.getWidth(), npc.getHeight());
+                if (playerRect.intersects(npcRect)) {
+                    return true; // Block movement if collides with solid NPC
+                }
+            }
+        }
         return false;  // no blocking collision found
     }
 }

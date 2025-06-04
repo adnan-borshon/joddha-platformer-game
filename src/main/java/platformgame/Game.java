@@ -11,6 +11,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 
 
+import platformgame.Entity.Npc;
 import platformgame.Entity.Player;
 import platformgame.Objects.SuperObject;
 
@@ -29,8 +30,12 @@ public class Game extends Pane {
     public final int pauseState=2;
 
 
-    //for object placement(borshon)
+    //for Asset placement(borshon)
     public AssetSetter aSetter = new AssetSetter(this);
+    //for npc store
+    public Npc[] npc= new Npc[10];
+
+    //for object store
     public SuperObject object[]= new SuperObject[10];
 
 
@@ -82,6 +87,7 @@ public class Game extends Pane {
         //adding this for set up object before game start (Borshon)
     public void setUpObject() {
     aSetter.setObject();
+    aSetter.setNpc();
     playMusic(0);
     GameState= playState;
     }
@@ -116,6 +122,14 @@ public class Game extends Pane {
     private void update(long now, long deltaTime) {
         if (GameState == playState) {
             player.update(keysPressed, tileMap, this, now, deltaTime);
+            //for Npc update
+            for (Npc n : npc) {
+                if (n != null) {
+                    n.update(deltaTime, now);
+                }
+            }
+
+
 
             if (keysPressed.contains(KeyCode.ESCAPE)) {
                 //  Save state and return to menu
@@ -167,6 +181,13 @@ public class Game extends Pane {
         }
         //for main player
         player.draw(gc, camX, camY, scale);
+
+        for (Npc npc : npc) {
+            if (npc != null) {
+                npc.draw(gc,camX,camY,scale);
+            }
+        }
+
         // For Ui and messages
         ui.draw(gc);
 

@@ -1,5 +1,6 @@
 package platformgame;
 
+import platformgame.Entity.Npc;
 import platformgame.Objects.Obj_Boots;
 import platformgame.Objects.Obj_Door;
 import platformgame.Objects.Obj_Key;
@@ -36,6 +37,11 @@ public class AssetSetter {
         gp.object[5]=  new Obj_Boots();
         gp.object[5].worldX = 66* gp.tileSize;
         gp.object[5].worldY = 60* gp.tileSize ;
+
+    }
+
+    public void setNpc(){
+    gp.npc[0]= new Npc(58*gp.tileSize, 52*gp.tileSize, 50,40, 1,gp);
 
     }
 }

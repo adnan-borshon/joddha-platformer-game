@@ -14,18 +14,20 @@ public abstract class Entity {
     Game gp;
     protected Image sprite;
     protected WritableImage[] frames;
-    public final int frameWidth = 128;
-    public final int frameHeight = 128;
-    public final int spriteWidth = 50;   // Actual visible width of sprite
-    public final int spriteHeight = 40;  // Actual visible height of sprite
-    public final int offsetX = (frameWidth - spriteWidth) / 2;
-    public final int offsetY = (frameHeight - spriteHeight); // Bottom align
+    protected final int frameWidth = 128;
+    protected final int frameHeight = 128;
+    protected final int spriteWidth = 50;   // Actual visible width of sprite
+    protected final int spriteHeight = 40;  // Actual visible height of sprite
+    protected final int offsetX = (frameWidth - spriteWidth) / 2;
+    protected final int offsetY = (frameHeight - spriteHeight); // Bottom align
 
-    public int currentFrame = 0;
-    public int currentRow = 0;
-    public boolean facingRight = true;
+    protected int currentFrame = 0;
+    protected int currentRow = 0;
+    protected boolean facingRight = true;
 
     protected long animationTimer = 0; // to accumulate time
+
+    protected  int actionCounter=0; //movement of Entity subclasses
 
     // Constructor for initializing common entity attributes
     public Entity(double x, double y, double width, double height, double speed, Game gp) {
