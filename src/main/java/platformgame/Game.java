@@ -31,10 +31,17 @@ public class Game extends Pane {
     public final double screenWidth = 1020;
     public final double screenHeight = 700;
 
+    //For music and sound
+    Sound music = new Sound();
+    Sound sound = new Sound();
+
 
     //Objects
-    public int hasKey;
+    public int hasKey=0;
 
+
+    //For UI elements and check messages
+    UI ui = new UI(this);
 
     public Game() {
         this.setPrefSize(screenWidth, screenHeight);
@@ -61,6 +68,7 @@ public class Game extends Pane {
         //adding this for set up object before game start (Borshon)
     public void setUpObject() {
     aSetter.setObject();
+    playMusic(0);
     }
 
 
@@ -116,7 +124,21 @@ public class Game extends Pane {
         }
         //for main player
         player.draw(gc, camX, camY, scale);
+        // For Ui and messages
+        ui.draw(gc);
 
+    }
+
+    public void playMusic(int i){
+    music.loop(i);
+    }
+
+    public void stopMusic(int i){
+        music.stop(i);
+    }
+
+    public void playSoundEffects(int i){
+        sound.play(i);
     }
 
 }

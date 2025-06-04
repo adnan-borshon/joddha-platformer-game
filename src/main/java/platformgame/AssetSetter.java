@@ -1,5 +1,6 @@
 package platformgame;
 
+import platformgame.Objects.Obj_Boots;
 import platformgame.Objects.Obj_Door;
 import platformgame.Objects.Obj_Key;
 
@@ -16,7 +17,7 @@ public class AssetSetter {
         gp.object[0].worldY = 50* gp.tileSize;
 
         gp.object[1]=  new Obj_Key();
-        gp.object[1].worldX = 60* gp.tileSize;
+        gp.object[1].worldX = 50* gp.tileSize;
         gp.object[1].worldY = 54* gp.tileSize ;
 
         gp.object[2]=  new Obj_Door();
@@ -26,6 +27,15 @@ public class AssetSetter {
         gp.object[3]=  new Obj_Door();
         gp.object[3].worldX = 62* gp.tileSize;
         gp.object[3].worldY = 58* gp.tileSize ;
+
+
+        gp.object[4]=  new Obj_Door();
+        gp.object[4].worldX = 60* gp.tileSize;
+        gp.object[4].worldY = 54* gp.tileSize ;
+
+        gp.object[5]=  new Obj_Boots();
+        gp.object[5].worldX = 66* gp.tileSize;
+        gp.object[5].worldY = 60* gp.tileSize ;
 
     }
 }

@@ -11,7 +11,9 @@ import java.util.Set;
 
 public class Player {
     private double x, y;
-    private final double width, height, speed;
+    private final double width;
+    private final double height;
+    private double speed;
 
     private Image sprite;
     private final int frameWidth = 128;
@@ -136,12 +138,14 @@ public class Player {
             SuperObject obj = game.object[i];
             if (obj != null) {
                 javafx.geometry.Rectangle2D objRect = obj.getBoundingBox();
+
                 if (playerRect.intersects(objRect)) {
                     switch (obj.name.toLowerCase()) {
                         case "key":
                             game.hasKey++;
                             game.object[i] = null;  // remove the key (disappear)
-
+                            game.playSoundEffects(1);
+                            game.ui.showMessage("You got a key");
                             // Don't block movement for keys, so continue loop
                             break;
 
@@ -149,14 +153,22 @@ public class Player {
                             if (game.hasKey > 0) {
                                 game.hasKey--;
                                 game.object[i] = null;  // open door (disappear)
-
+                                game.playSoundEffects(3);
+                                game.ui.showMessage("Door has opened");
                                 // Allow player to move through door this time
                             } else {
                                 // No key to open door, block movement
+                                game.ui.showMessage("You need a key to open");
                                 return true;
                             }
                             break;
+                        case "boots":
 
+                            speed+=2;
+                            game.object[i]=null;
+                            game.playSoundEffects(2);
+                            game.ui.showMessage("You got speed up +2");
+                            break;
                         default:
                             if (obj.collision) {
                                 // Any other collidable object blocks movement
