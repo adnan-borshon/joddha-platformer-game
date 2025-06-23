@@ -9,10 +9,9 @@ public class SuperObject {
     public Image image;
     public String name;
     public boolean collision = false;
-    public  int worldX, worldY;
+    public int worldX, worldY;
     public double scale = 2.5;  // scaling for objects
-
-   public  double screenX, screenY;
+    public double screenX, screenY;
 
     public void draw(GraphicsContext gc, Game gp) {
         if (image == null) return;
@@ -22,12 +21,12 @@ public class SuperObject {
         double camY = gp.player.getY() + gp.player.getHeight() / 2 - gp.screenHeight / 2;
 
         // Clamp camera within the bounds of the map
-        camX = Math.max(0, Math.min(camX, gp.tileMap.getWidthInPixels() - gp.screenWidth));
-        camY = Math.max(0, Math.min(camY, gp.tileMap.getHeightInPixels() - gp.screenHeight));
+        camX = Math.max(0, Math.min(camX, gp.level1.mapWidth * gp.tileSize - gp.screenWidth));  // Use level1 instead of tileMap
+        camY = Math.max(0, Math.min(camY, gp.level1.mapHeight * gp.tileSize - gp.screenHeight));  // Use level1 instead of tileMap
 
         // Calculate object's position on screen
-         screenX = (worldX - camX) * gp.scale;
-         screenY = (worldY - camY) * gp.scale;
+        screenX = (worldX - camX) * gp.scale;
+        screenY = (worldY - camY) * gp.scale;
 
         gc.drawImage(image, screenX, screenY, image.getWidth() * scale, image.getHeight() * scale);
     }
@@ -37,6 +36,4 @@ public class SuperObject {
         double objHeight = image.getHeight() * scale;
         return new Rectangle2D(worldX, worldY, objWidth, objHeight);
     }
-
-
 }

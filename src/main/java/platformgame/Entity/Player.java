@@ -1,10 +1,11 @@
 package platformgame.Entity;
+
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import platformgame.Game;
+import platformgame.Map.Level_1;  // Import Level_1 class
 import platformgame.Objects.SuperObject;
-import platformgame.TileMap;
 
 import java.util.Set;
 
@@ -18,58 +19,32 @@ public class Player extends Entity {
         imageSet(totalFrames_walk, "/image/main_character.png");
     }
 
-    public void update(Set<KeyCode> keys, TileMap tileMap, Game game, long now, long deltaTime) {
+    public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
         boolean moved = false;
         double newX = x;
         double newY = y;
-
-
 
         // Check if the game is in dialogue state or pause state and do not allow movement
         if (game.GameState == game.playState) {
             // WASD input handling
             if (keys.contains(KeyCode.W)) { newY -= speed; moved = true; }
             if (keys.contains(KeyCode.S)) { newY += speed; moved = true; }
-            if (keys.contains(KeyCode.A)) {
-                newX -= speed;
-                moved = true;
-                facingRight = false;
-            }
-            if (keys.contains(KeyCode.D)) {
-                newX += speed;
-                moved = true;
-                facingRight = true;
-            }
+            if (keys.contains(KeyCode.A)) { newX -= speed; moved = true; facingRight = false; }
+            if (keys.contains(KeyCode.D)) { newX += speed; moved = true; facingRight = true; }
         }
 
-
-
         // Toggle between play and pause states
-        if(keys.contains(KeyCode.ESCAPE)){
-            if(game.GameState == game.playState){
+        if (keys.contains(KeyCode.ESCAPE)) {
+            if (game.GameState == game.playState) {
                 game.GameState = game.pauseState;
-            }
-            else if(game.GameState == game.pauseState){
+            } else if (game.GameState == game.pauseState) {
                 game.GameState = game.playState;
             }
         }
 
-
-
-        // Tile collision check
-        boolean canMoveX = !tileMap.isColliding(newX, y, width, height);
-        boolean canMoveY = !tileMap.isColliding(x, newY, width, height);
-
-        // Object collision & interaction check using Game reference
-        boolean collidesX = checkObjectCollisionsAndInteract(newX, y, width, height, game);
-        boolean collidesY = checkObjectCollisionsAndInteract(x, newY, width, height, game);
-
-        if (canMoveX && !collidesX) {
-            x = newX;
-        }
-        if (canMoveY && !collidesY) {
-            y = newY;
-        }
+        // Apply movement
+        x = newX;
+        y = newY;
 
         // Animate walking
         if (moved) {
@@ -88,7 +63,7 @@ public class Player extends Entity {
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
 
-        //Debug
+        // Debugging
         gc.save();
         gc.setLineWidth(1);
         gc.setStroke(javafx.scene.paint.Color.GREEN);
@@ -157,31 +132,6 @@ public class Player extends Entity {
             }
         }
 
-        //  Check collision with NPCs
-        for (int i = 0; i < game.npc.length; i++) {
-            Npc npc = game.npc[i];
-            if (npc != null && npc.isCollision()) {
-                Rectangle2D npcRect = new Rectangle2D(npc.getX(), npc.getY(), npc.getWidth(), npc.getHeight());
-                if (playerRect.intersects(npcRect)) {
-                    // Trigger dialogue if not already touching
-                    if (!npc.playerIsTouching && game.GameState != game.dialogueState) {
-                        double dx = nextX - x;
-                        double dy = nextY - y;
-
-                        if (Math.abs(dx) > 0 || Math.abs(dy) > 0) {
-                            // Trigger dialogue once
-                            npc.speak();
-                        }
-                    }
-                    npc.notifyPlayerCollision();
-                    // Always block movement through NPC
-                    return true;
-                }
-
-
-
-            }
-        }
         return false;  // no blocking collision found
     }
 }

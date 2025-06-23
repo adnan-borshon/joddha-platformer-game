@@ -2,6 +2,7 @@ package platformgame;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
@@ -10,11 +11,13 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
+import platformgame.Map.Level_1;
 import platformgame.Objects.Obj_Boots;
 import platformgame.Objects.Obj_Door;
 import platformgame.Objects.Obj_Key;
 import platformgame.Objects.SuperObject;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 
@@ -43,6 +46,7 @@ public class FirstPage {
 
     @FXML
     public void initialize() {
+
         Sound.getInstance().stopAll();
 
         buttons[0] = newGameButton;
@@ -117,8 +121,11 @@ public class FirstPage {
 
 
     //
+    //
     private void startNewGame() {
         try {
+            // Add debug log
+            System.out.println("Game instance created, now starting game loop.");
             Game game = new Game();
 
             game.startGameLoop();
@@ -126,10 +133,15 @@ public class FirstPage {
             Scene currentScene = rootPane.getScene();
             currentScene.setRoot(game); //  Reuse current scene
             game.requestFocus();
+            // Debug log
+            System.out.println("Game scene set and focus requested.");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+
+
 
     private void continueGame() {
         if (!GameManager.getInstance().hasSavedState()) return;
