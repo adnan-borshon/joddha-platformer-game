@@ -36,4 +36,11 @@ public class SuperObject {
         double objHeight = image.getHeight() * scale;
         return new Rectangle2D(worldX, worldY, objWidth, objHeight);
     }
+
+    // Add the missing isBehindPlayer method
+    public boolean isBehindPlayer(Game gp) {
+        // Check if object should be drawn behind player based on Y position
+        // Objects with lower Y values (higher on screen) are behind the player
+        return this.worldY < gp.player.getY();
+    }
 }

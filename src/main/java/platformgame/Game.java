@@ -128,6 +128,8 @@ public class Game extends Pane {
     // 3. Fix the draw method camera calculations
     // Replace your draw() method in Game.java with this:
 
+    // Replace your draw() method in Game.java with this:
+
     private void draw() {
         // Clear canvas first
         gc.setFill(Color.BLUE);
@@ -157,34 +159,27 @@ public class Game extends Pane {
         // 2. Draw middle layers (walls, etc.)
         level1.drawMiddleground(gc, camX, camY, scale);
 
-        // 3. Draw objects that should be behind player
+        // 3. Draw ALL objects (remove the problematic isBehindPlayer check)
         for (SuperObject obj : object) {
-            if (obj != null) { // You'll need to add this method
+            if (obj != null) {
                 obj.draw(gc, this);
             }
         }
 
-        // 4. Draw NPCs (if they should be at same level as player)
-        for (Npc npc : npc) {
-            if (npc != null) {
-                npc.draw(gc, camX, camY, scale);
+        // 4. Draw ALL NPCs
+        for (Npc npcEntity : npc) {
+            if (npcEntity != null) {
+                npcEntity.draw(gc, camX, camY, scale);
             }
         }
 
         // 5. Draw the player
         player.draw(gc, camX, camY, scale);
 
-        // 6. Draw objects that should be in front of player
-        for (SuperObject obj : object) {
-            if (obj != null ) {
-                obj.draw(gc, this);
-            }
-        }
-
-        // 7. Draw foreground layers (tree tops, rooftops, etc.)
+        // 6. Draw foreground layers (tree tops, rooftops, etc.)
         level1.drawForeground(gc, camX, camY, scale);
 
-        // 8. Draw UI (always on top)
+        // 7. Draw UI (always on top)
         ui.draw(gc);
     }
 

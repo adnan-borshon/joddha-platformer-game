@@ -32,6 +32,7 @@ public class Level_1 {
         int[][] data;
         boolean isBackground;
         boolean isForeground;
+        boolean isCollision; // Add collision flag
     }
 
     private final List<Tileset> tilesets = new ArrayList<>();
@@ -106,7 +107,6 @@ public class Level_1 {
                 layer.data = grid;
 
                 // Classify layers based on name
-                // You can adjust these keywords based on your TMX layer names
                 layer.isBackground = layerName.contains("background") ||
                         layerName.contains("ground") ||
                         layerName.contains("floor") ||
@@ -119,15 +119,55 @@ public class Level_1 {
                         layerName.contains("top") ||
                         layerName.contains("over");
 
+                // NEW: Set collision layers based on your specified layer names
+                layer.isCollision = layerName.contains("boat") ||
+                        layerName.contains("army camp objects") ||
+                        layerName.contains("army camp 1") ||
+                        layerName.contains("fench") ||
+                        layerName.contains("khet") ||
+                        layerName.contains("river") ||
+                        layerName.contains("river paar");
+
                 layers.add(layer);
                 System.out.println("Layer loaded: " + layerName +
                         " (Background: " + layer.isBackground +
-                        ", Foreground: " + layer.isForeground + ")");
+                        ", Foreground: " + layer.isForeground +
+                        ", Collision: " + layer.isCollision + ")");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    // NEW: Collision detection method
+    public boolean isCollisionTile(double x, double y) {
+        // Convert world coordinates to tile coordinates
+        int tileX = (int) (x / tileWidth);
+        int tileY = (int) (y / tileHeight);
+
+        // Check bounds
+        if (tileX < 0 || tileX >= mapWidth || tileY < 0 || tileY >= mapHeight) {
+            return true; // Out of bounds = collision
+        }
+
+        // Check all collision layers
+        for (Layer layer : layers) {
+            if (layer.isCollision && layer.data[tileY][tileX] != 0) {
+                return true; // Found a collision tile
+            }
+        }
+
+        return false; // No collision
+    }
+
+    // NEW: Check collision for a rectangle (player/NPC bounding box)
+    public boolean isCollisionRect(double x, double y, double width, double height) {
+        // Check all four corners of the rectangle
+        return isCollisionTile(x, y) ||
+                isCollisionTile(x + width, y) ||
+                isCollisionTile(x, y + height) ||
+                isCollisionTile(x + width, y + height);
     }
 
     // Draw only background layers
@@ -148,7 +188,7 @@ public class Level_1 {
         }
     }
 
-    // Draw middle layers (neither background nor foreground)
+    // Draw middle layers (neither background nor foreground, and not collision-only)
     public void drawMiddleground(GraphicsContext gc, double camX, double camY, double scale) {
         for (Layer layer : layers) {
             if (!layer.isBackground && !layer.isForeground) {

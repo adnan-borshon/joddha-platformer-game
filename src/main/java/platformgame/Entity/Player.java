@@ -19,6 +19,8 @@ public class Player extends Entity {
         imageSet(totalFrames_walk, "/image/main_character.png");
     }
 
+// Replace the update method in your Player.java with this:
+
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
         boolean moved = false;
         double newX = x;
@@ -26,11 +28,44 @@ public class Player extends Entity {
 
         // Check if the game is in dialogue state or pause state and do not allow movement
         if (game.GameState == game.playState) {
-            // WASD input handling
-            if (keys.contains(KeyCode.W)) { newY -= speed; moved = true; }
-            if (keys.contains(KeyCode.S)) { newY += speed; moved = true; }
-            if (keys.contains(KeyCode.A)) { newX -= speed; moved = true; facingRight = false; }
-            if (keys.contains(KeyCode.D)) { newX += speed; moved = true; facingRight = true; }
+            // WASD input handling with collision checking
+            if (keys.contains(KeyCode.W)) {
+                double testY = y - speed;
+                if (!level1.isCollisionRect(x, testY, width, height) &&
+                        !checkObjectCollisionsAndInteract(x, testY, width, height, game)) {
+                    newY = testY;
+                    moved = true;
+                }
+            }
+            if (keys.contains(KeyCode.S)) {
+                double testY = y + speed;
+                if (!level1.isCollisionRect(x, testY, width, height) &&
+                        !checkObjectCollisionsAndInteract(x, testY, width, height, game)) {
+                    newY = testY;
+                    moved = true;
+                }
+            }
+            if (keys.contains(KeyCode.A)) {
+                double testX = x - speed;
+                if (!level1.isCollisionRect(testX, y, width, height) &&
+                        !checkObjectCollisionsAndInteract(testX, y, width, height, game)) {
+                    newX = testX;
+                    moved = true;
+                    facingRight = false;
+                }
+            }
+            if (keys.contains(KeyCode.D)) {
+                double testX = x + speed;
+                if (!level1.isCollisionRect(testX, y, width, height) &&
+                        !checkObjectCollisionsAndInteract(testX, y, width, height, game)) {
+                    newX = testX;
+                    moved = true;
+                    facingRight = true;
+                }
+            }
+
+            // Check NPC collision and interaction
+            checkNpcCollision(newX, newY, game);
         }
 
         // Toggle between play and pause states
@@ -42,14 +77,14 @@ public class Player extends Entity {
             }
         }
 
-        // Apply movement
+        // Apply movement only if no collision
         x = newX;
         y = newY;
 
         // Animate walking
         if (moved) {
             currentRow = 3;
-            animationTimer += deltaTime; // ✅ accumulate time
+            animationTimer += deltaTime;
             if (animationTimer > 100_000_000) {
                 nextFrame(totalFrames_walk);
                 animationTimer = 0;
@@ -57,6 +92,27 @@ public class Player extends Entity {
         } else {
             currentFrame = 0;
             currentRow = 0;
+        }
+    }
+
+    // Add this new method to check NPC collision
+    private void checkNpcCollision(double playerX, double playerY, Game game) {
+        Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
+
+        for (Npc npcEntity : game.npc) {
+            if (npcEntity != null) {
+                Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(),
+                        npcEntity.getWidth(), npcEntity.getHeight());
+
+                if (playerRect.intersects(npcRect)) {
+                    npcEntity.notifyPlayerCollision();
+                    // You can add dialogue trigger here if needed
+                    // if (keys.contains(KeyCode.ENTER)) {
+                    //     game.GameState = game.dialogueState;
+                    //     npcEntity.speak();
+                    // }
+                }
+            }
         }
     }
 
