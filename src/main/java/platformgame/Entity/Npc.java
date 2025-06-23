@@ -4,27 +4,26 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import platformgame.Game;
 import platformgame.Objects.SuperObject;
-
 import java.util.Random;
+
 
 public class Npc extends Entity {
     private int totalFrames_walk= 8;
     private boolean collision = true;
     private String direction = "down";
     private final int totalFrames_idle = 11;  // frames in row 1 (2nd row)
-
-    protected boolean playerIsTouching = false;
+    private int dialogueIndex=0;
+    public boolean playerIsTouching = false;
 
     public Npc(double x, double y, double width, double height, double speed, Game gp){
         super(x,y,width, height, speed, gp);
         imageSet(totalFrames_walk, "/image/npc.png");
+        setDialogue();
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
 
-
-        //Debug
         // Draw collision rectangle (bounding box)
         gc.save();
         gc.setLineWidth(1);
@@ -62,7 +61,7 @@ public class Npc extends Entity {
     public void update(long deltaTime, long now) {
         double newX = x;
         double newY = y;
-
+        if (gp.GameState == gp.dialogueState) return;
         // Check collision with player
         if (playerIsTouching) {
             System.out.println("Collision happening");
@@ -86,7 +85,7 @@ public class Npc extends Entity {
             case "down": newY += speed; break;
             case "left": newX -= speed; facingRight = false; break;
             case "right": newX += speed; facingRight = true; break;
-            case "stop": break;
+            case "stop":break;
         }
 
         // Tile collision check
@@ -106,6 +105,10 @@ public class Npc extends Entity {
         if (canMoveX) x = newX;
         if (canMoveY) y = newY;
 
+        //Npc change move when it collides with objects
+//        if (!canMoveX && !canMoveY) {
+//            setAction();
+//        }
         // Animate
         animationTimer += deltaTime;
 
@@ -123,8 +126,30 @@ public class Npc extends Entity {
             }
         }
     }
+
+    public void setDialogue(){
+        dialogues[0]= "Hello Borshon";
+        dialogues[1]= "I hope you are fine";
+        dialogues[2]= "I am here to guide for the whole game";
+    }
+    public void speak() {
+        if (dialogues[dialogueIndex] == null) {
+            dialogueIndex = 0;
+            gp.GameState = gp.playState;
+
+            playerIsTouching = false; // prevent instant re-trigger
+            return;
+        }
+
+        gp.ui.dialogue = dialogues[dialogueIndex];
+        gp.GameState = gp.dialogueState;
+        dialogueIndex++;
+    }
+
+
     public void notifyPlayerCollision() {
         playerIsTouching = true;
+        direction="stop";
     }
 
 

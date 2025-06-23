@@ -23,19 +23,26 @@ public class Player extends Entity {
         double newX = x;
         double newY = y;
 
-        // WASD input handling
-        if (keys.contains(KeyCode.W)) { newY -= speed; moved = true; }
-        if (keys.contains(KeyCode.S)) { newY += speed; moved = true; }
-        if (keys.contains(KeyCode.A)) {
-            newX -= speed;
-            moved = true;
-            facingRight = false;
+
+
+        // Check if the game is in dialogue state or pause state and do not allow movement
+        if (game.GameState == game.playState) {
+            // WASD input handling
+            if (keys.contains(KeyCode.W)) { newY -= speed; moved = true; }
+            if (keys.contains(KeyCode.S)) { newY += speed; moved = true; }
+            if (keys.contains(KeyCode.A)) {
+                newX -= speed;
+                moved = true;
+                facingRight = false;
+            }
+            if (keys.contains(KeyCode.D)) {
+                newX += speed;
+                moved = true;
+                facingRight = true;
+            }
         }
-        if (keys.contains(KeyCode.D)) {
-            newX += speed;
-            moved = true;
-            facingRight = true;
-        }
+
+
 
         // Toggle between play and pause states
         if(keys.contains(KeyCode.ESCAPE)){
@@ -46,6 +53,8 @@ public class Player extends Entity {
                 game.GameState = game.playState;
             }
         }
+
+
 
         // Tile collision check
         boolean canMoveX = !tileMap.isColliding(newX, y, width, height);
@@ -154,9 +163,23 @@ public class Player extends Entity {
             if (npc != null && npc.isCollision()) {
                 Rectangle2D npcRect = new Rectangle2D(npc.getX(), npc.getY(), npc.getWidth(), npc.getHeight());
                 if (playerRect.intersects(npcRect)) {
-                    npc.notifyPlayerCollision();  // 🔁 Notify NPC
-                    return true; // Block movement if collides with solid NPC
+                    // Trigger dialogue if not already touching
+                    if (!npc.playerIsTouching && game.GameState != game.dialogueState) {
+                        double dx = nextX - x;
+                        double dy = nextY - y;
+
+                        if (Math.abs(dx) > 0 || Math.abs(dy) > 0) {
+                            // Trigger dialogue once
+                            npc.speak();
+                        }
+                    }
+                    npc.notifyPlayerCollision();
+                    // Always block movement through NPC
+                    return true;
                 }
+
+
+
             }
         }
         return false;  // no blocking collision found

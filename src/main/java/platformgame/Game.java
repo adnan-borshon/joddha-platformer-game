@@ -9,8 +9,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-
-
 import platformgame.Entity.Npc;
 import platformgame.Entity.Player;
 import platformgame.Objects.SuperObject;
@@ -28,7 +26,7 @@ public class Game extends Pane {
     public int GameState;
     public final int playState=1;
     public final int pauseState=2;
-
+    public final int dialogueState= 3;
 
     //for Asset placement(borshon)
     public AssetSetter aSetter = new AssetSetter(this);
@@ -98,8 +96,21 @@ public class Game extends Pane {
 
 
     private void onKeyPressed(KeyEvent e) {
-        keysPressed.add(e.getCode());
+        KeyCode key = e.getCode();
+        keysPressed.add(key);
+
+        // Dialogue logic
+        if (GameState == dialogueState && key == KeyCode.ENTER) {
+            for (Npc n : npc) {
+                if (n != null && n.playerIsTouching) {
+                    n.speak();
+                    break;
+                }
+            }
+        }
     }
+
+
 
     private void onKeyReleased(KeyEvent e) {
         keysPressed.remove(e.getCode());
@@ -129,8 +140,6 @@ public class Game extends Pane {
                 }
             }
 
-
-
             if (keysPressed.contains(KeyCode.ESCAPE)) {
                 //  Save state and return to menu
                 GameManager.getInstance().saveState(this);
@@ -138,6 +147,7 @@ public class Game extends Pane {
                 GameState = pauseState;
             }
         }
+
 
     }
 
@@ -179,8 +189,7 @@ public class Game extends Pane {
                 obj.draw(gc, this);
             }
         }
-        //for main player
-        player.draw(gc, camX, camY, scale);
+
 
         for (Npc npc : npc) {
             if (npc != null) {
@@ -191,7 +200,8 @@ public class Game extends Pane {
         // For Ui and messages
         ui.draw(gc);
 
-
+        //for main player
+        player.draw(gc, camX, camY, scale);
         long drawEnd = System.nanoTime();
         long passed = (drawEnd - drawStart);
 //        System.out.println("Daw time: "+passed);

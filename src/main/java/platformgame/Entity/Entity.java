@@ -21,6 +21,8 @@ public abstract class Entity {
     protected final int offsetX = (frameWidth - spriteWidth) / 2;
     protected final int offsetY = (frameHeight - spriteHeight); // Bottom align
 
+
+    //Sprite frame
     protected int currentFrame = 0;
     protected int currentRow = 0;
     protected boolean facingRight = true;
@@ -28,6 +30,8 @@ public abstract class Entity {
     protected long animationTimer = 0; // to accumulate time
 
     protected  int actionCounter=0; //movement of Entity subclasses
+
+    String dialogues[] = new String[10];
 
     // Constructor for initializing common entity attributes
     public Entity(double x, double y, double width, double height, double speed, Game gp) {
@@ -82,6 +86,10 @@ public abstract class Entity {
     // Advance to next animation frame (looped)
     public void nextFrame(int totalFrames) {
         currentFrame = (currentFrame + 1) % totalFrames;
+    }
+
+    public void speak(){
+
     }
 
     // Set frame manually
