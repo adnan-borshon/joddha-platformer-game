@@ -21,7 +21,6 @@ public abstract class Entity {
     protected final int offsetX = (frameWidth - spriteWidth) / 2;
     protected final int offsetY = (frameHeight - spriteHeight); // Bottom align
 
-
     //Sprite frame
     protected int currentFrame = 0;
     protected int currentRow = 0;
@@ -29,19 +28,18 @@ public abstract class Entity {
 
     protected long animationTimer = 0; // to accumulate time
 
-    protected  int actionCounter=0; //movement of Entity subclasses
+    protected int actionCounter = 0; //movement of Entity subclasses
 
     String dialogues[] = new String[10];
 
     // Constructor for initializing common entity attributes
     public Entity(double x, double y, double width, double height, double speed, Game gp) {
-
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.speed = speed;
-        this.gp=gp;
+        this.gp = gp;
     }
 
     // Method for saving the position of the entity
@@ -88,8 +86,8 @@ public abstract class Entity {
         currentFrame = (currentFrame + 1) % totalFrames;
     }
 
-    public void speak(){
-
+    public void speak() {
+        // Implementation in subclasses
     }
 
     // Set frame manually
@@ -97,6 +95,20 @@ public abstract class Entity {
         currentFrame = frameIndex % totalFrames;
     }
 
+    public boolean isBehindPlayer(Game game) {
+        if (game == null || game.player == null) {
+            return false; // Default to front if no player reference
+        }
+
+        // Compare bottom positions for more accurate depth sorting
+        double thisBottom = this.y + this.height;
+        double playerBottom = game.player.getY() + game.player.getHeight();
+
+        // Entity is behind player if its bottom is higher up (smaller Y value)
+        return thisBottom < playerBottom;
+    }
+
+    // Getters
     public double getX() { return x; }
     public double getY() { return y; }
     public double getWidth() { return width; }

@@ -8,91 +8,49 @@ import platformgame.Map.Level_1;  // Import Level_1 class
 import java.util.Random;
 
 public class Npc extends Entity {
-    private int totalFrames_walk = 8;
-    private boolean collision = true;
-    private String direction = "down";
-    private final int totalFrames_idle = 11;  // frames in row 1 (2nd row)
+    private final int totalFrames_idle = 11;  // frames in idle animation (used here)
     private int dialogueIndex = 0;
     public boolean playerIsTouching = false;
 
     public Npc(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
-        imageSet(totalFrames_walk, "/image/npc.png");
+        imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
         setDialogue();
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
 
-        // Draw collision rectangle (bounding box)
+        // Draw collision rectangle (bounding box) for debugging
         gc.save();
         gc.setLineWidth(1);
         gc.setStroke(javafx.scene.paint.Color.RED); // Choose any visible color
-
         double drawX = (x - camX) * scale;
         double drawY = (y - camY) * scale;
         double drawW = width * scale;
         double drawH = height * scale;
-
         gc.strokeRect(drawX, drawY, drawW, drawH); // Draw red rectangle
         gc.restore();
     }
 
+    // Simplified setAction method, now it doesn't change direction (since NPC doesn't move)
     public void setAction() {
         actionCounter++;
-        if(actionCounter == 120) {
-            Random random = new Random();
-            int i = random.nextInt(100) + 1;
-            if (i <= 25) direction = "up";
-            else if (i <= 50) direction = "down";
-            else if (i <= 75) direction = "left";
-            else direction = "right";
-            actionCounter = 0;
+        if (actionCounter == 120) {
+            actionCounter = 0;  // Just reset the counter; no need to change direction now
         }
     }
 
     public void update(long deltaTime, long now) {
-        double newX = x;
-        double newY = y;
+        if (gp.GameState == gp.dialogueState) return;  // Skip update if in dialogue state
 
-        if (gp.GameState == gp.dialogueState) return;
 
-        // Check collision with player
-        if (playerIsTouching) {
-            System.out.println("Collision happening");
-            direction = "stop";
-            actionCounter++;
-            if(actionCounter > 120){
-                playerIsTouching = false;
-                actionCounter = 0;
-            }
-        } else {
-            setAction();
-        }
-
-        // Apply movement
-        switch (direction) {
-            case "up": newY -= speed; break;
-            case "down": newY += speed; break;
-            case "left": newX -= speed; facingRight = false; break;
-            case "right": newX += speed; facingRight = true; break;
-            case "stop": break;
-        }
-
-        // Animate
+        // Animate the idle sprite
         animationTimer += deltaTime;
-        if (direction.equals("stop")) {
-            currentRow = 1;
-            if (animationTimer > 130_000_000) {
-                nextFrame(totalFrames_idle);
-                animationTimer = 0;
-            }
-        } else {
-            currentRow = 3;
-            if (animationTimer > 100_000_000) {
-                nextFrame(totalFrames_walk);
-                animationTimer = 0;
-            }
+        currentRow = 1;  // Use row 1 for idle animation
+        if (animationTimer > 180_000_000) {
+            nextFrame(totalFrames_idle);  // Go to the next idle frame
+            animationTimer = 0;
         }
     }
 
@@ -116,15 +74,8 @@ public class Npc extends Entity {
     }
 
     public void notifyPlayerCollision() {
-        playerIsTouching = true;
-        direction = "stop";
+        playerIsTouching = true;  // Player has touched the NPC
+
     }
 
-    public boolean isCollision() {
-        return collision;
-    }
-
-    public void setCollision(boolean collision) {
-        this.collision = collision;
-    }
 }

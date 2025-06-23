@@ -21,6 +21,7 @@ public class Player extends Entity {
 
 // Replace the update method in your Player.java with this:
 
+    // Inside the Player class
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
         boolean moved = false;
         double newX = x;
@@ -31,24 +32,30 @@ public class Player extends Entity {
             // WASD input handling with collision checking
             if (keys.contains(KeyCode.W)) {
                 double testY = y - speed;
+                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(x, testY, width, height) &&
-                        !checkObjectCollisionsAndInteract(x, testY, width, height, game)) {
+                        !checkObjectCollisionsAndInteract(x, testY, width, height, game) &&
+                        !checkNpcCollision(x, testY, game)) { // Check NPC collision
                     newY = testY;
                     moved = true;
                 }
             }
             if (keys.contains(KeyCode.S)) {
                 double testY = y + speed;
+                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(x, testY, width, height) &&
-                        !checkObjectCollisionsAndInteract(x, testY, width, height, game)) {
+                        !checkObjectCollisionsAndInteract(x, testY, width, height, game) &&
+                        !checkNpcCollision(x, testY, game)) { // Check NPC collision
                     newY = testY;
                     moved = true;
                 }
             }
             if (keys.contains(KeyCode.A)) {
                 double testX = x - speed;
+                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(testX, y, width, height) &&
-                        !checkObjectCollisionsAndInteract(testX, y, width, height, game)) {
+                        !checkObjectCollisionsAndInteract(testX, y, width, height, game) &&
+                        !checkNpcCollision(testX, y, game)) { // Check NPC collision
                     newX = testX;
                     moved = true;
                     facingRight = false;
@@ -56,24 +63,24 @@ public class Player extends Entity {
             }
             if (keys.contains(KeyCode.D)) {
                 double testX = x + speed;
+                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(testX, y, width, height) &&
-                        !checkObjectCollisionsAndInteract(testX, y, width, height, game)) {
+                        !checkObjectCollisionsAndInteract(testX, y, width, height, game) &&
+                        !checkNpcCollision(testX, y, game)) { // Check NPC collision
                     newX = testX;
                     moved = true;
                     facingRight = true;
                 }
             }
-
-            // Check NPC collision and interaction
-            checkNpcCollision(newX, newY, game);
         }
 
-        // Toggle between play and pause states
-        if (keys.contains(KeyCode.ESCAPE)) {
-            if (game.GameState == game.playState) {
-                game.GameState = game.pauseState;
-            } else if (game.GameState == game.pauseState) {
-                game.GameState = game.playState;
+        // Check if the player is touching an NPC
+        for (Npc npcEntity : game.npc) {
+            if (npcEntity != null && npcEntity.playerIsTouching) {
+                // Trigger dialogue state
+                game.GameState = game.dialogueState;  // Switch to dialogue state
+                npcEntity.speak();  // Show NPC dialogue
+                break;  // Exit after triggering dialogue for the first NPC touched
             }
         }
 
@@ -95,8 +102,13 @@ public class Player extends Entity {
         }
     }
 
+
+
+
     // Add this new method to check NPC collision
-    private void checkNpcCollision(double playerX, double playerY, Game game) {
+    // Inside checkNpcCollision method in Player class
+// Inside the Player class
+    private boolean checkNpcCollision(double playerX, double playerY, Game game) {
         Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
 
         for (Npc npcEntity : game.npc) {
@@ -104,17 +116,19 @@ public class Player extends Entity {
                 Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(),
                         npcEntity.getWidth(), npcEntity.getHeight());
 
+                // Check for intersection (collision)
                 if (playerRect.intersects(npcRect)) {
-                    npcEntity.notifyPlayerCollision();
-                    // You can add dialogue trigger here if needed
-                    // if (keys.contains(KeyCode.ENTER)) {
-                    //     game.GameState = game.dialogueState;
-                    //     npcEntity.speak();
-                    // }
+                    npcEntity.notifyPlayerCollision(); // Notify NPC about collision
+                    return true;  // Collision detected, return true to block movement
                 }
             }
         }
+
+        return false;  // No collision, return false to allow movement
     }
+
+
+
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);

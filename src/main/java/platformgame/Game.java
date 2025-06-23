@@ -45,7 +45,7 @@ public class Game extends Pane {
     // For player and Level_1 class
     public final Player player;
     public Level_1 level1; // Replaced TileMap with Level_1 class
-    public int tileSize = 64;
+    public int tileSize = 32; // FIXED: Changed from 64 to 32 to match Level_1
     public final double screenWidth = 1020;
     public final double screenHeight = 700;
 
@@ -59,9 +59,10 @@ public class Game extends Pane {
     // For UI elements and check messages
     public UI ui = new UI(this);
 
-    // Key fixes for the Game class - replace these sections in your Game.java
+    // Camera position - make these accessible to other classes
+    public double camX = 0;
+    public double camY = 0;
 
-    // 1. Fix the constructor initialization order
     public Game() {
         this.setPrefSize(screenWidth, screenHeight);
         canvas = new Canvas(screenWidth, screenHeight);
@@ -74,8 +75,8 @@ public class Game extends Pane {
 
         // Now initialize player using actual map dimensions
         if (level1 != null) {
-            double startX = (level1.mapWidth * 32) / 2;  // Use 32 (tile size) not 64
-            double startY = (level1.mapHeight * 32) / 2;
+            double startX = 27*tileSize;  // Use correct tileSize
+            double startY = 5*tileSize;
             player = new Player(startX, startY, 50, 40, 3, this);
             System.out.println("Player initialized at: " + startX + ", " + startY);
         } else {
@@ -90,7 +91,6 @@ public class Game extends Pane {
         setOnKeyReleased(this::onKeyReleased);
     }
 
-    // 2. Fix the loadLevel method
     private void loadLevel() {
         try {
             System.out.println("Loading level...");
@@ -117,18 +117,11 @@ public class Game extends Pane {
                 System.err.println("Failed to load Level1 logic");
             }
 
-            // Don't add the root to children - we'll draw directly to our canvas
-
         } catch (Exception e) {
             System.err.println("Error loading level:");
             e.printStackTrace();
         }
     }
-
-    // 3. Fix the draw method camera calculations
-    // Replace your draw() method in Game.java with this:
-
-    // Replace your draw() method in Game.java with this:
 
     private void draw() {
         // Clear canvas first
@@ -140,47 +133,80 @@ public class Game extends Pane {
             return;
         }
 
-        // Calculate camera position
-        double camX = player.getX() + player.getWidth() / 2 - screenWidth / 2;
-        double camY = player.getY() + player.getHeight() / 2 - screenHeight / 2;
+        // Calculate camera position and store it for other classes to use
+        camX = player.getX() + player.getWidth() / 2 - screenWidth / 2;
+        camY = player.getY() + player.getHeight() / 2 - screenHeight / 2;
 
-        // Use correct tile size (32, not 64) for camera bounds
-        double mapPixelWidth = level1.mapWidth * 32;
-        double mapPixelHeight = level1.mapHeight * 32;
+        // Use correct tile size for camera bounds
+        double mapPixelWidth = level1.mapWidth * tileSize;
+        double mapPixelHeight = level1.mapHeight * tileSize;
 
         camX = Math.max(0, Math.min(camX, mapPixelWidth - screenWidth));
         camY = Math.max(0, Math.min(camY, mapPixelHeight - screenHeight));
 
-        // LAYERED RENDERING ORDER:
+        // FIXED: LAYERED RENDERING ORDER:
 
         // 1. Draw background layers (ground, floor, etc.)
         level1.drawBackground(gc, camX, camY, scale);
 
-        // 2. Draw middle layers (walls, etc.)
+        // 2. Draw middle layers (walls, etc.) including "Trees collision"
         level1.drawMiddleground(gc, camX, camY, scale);
 
-        // 3. Draw ALL objects (remove the problematic isBehindPlayer check)
+        // 3. Draw objects behind player
         for (SuperObject obj : object) {
-            if (obj != null) {
+            if (obj != null && obj.isBehindPlayer(this)) {
                 obj.draw(gc, this);
             }
         }
 
-        // 4. Draw ALL NPCs
+        // 4. Draw NPCs behind player
         for (Npc npcEntity : npc) {
-            if (npcEntity != null) {
+            if (npcEntity != null && npcEntity.isBehindPlayer(this)) {
                 npcEntity.draw(gc, camX, camY, scale);
             }
         }
 
-        // 5. Draw the player
+        // 5. Draw player
         player.draw(gc, camX, camY, scale);
 
-        // 6. Draw foreground layers (tree tops, rooftops, etc.)
+        // 6. Draw NPCs in front of player
+        for (Npc npcEntity : npc) {
+            if (npcEntity != null && !npcEntity.isBehindPlayer(this)) {
+                npcEntity.draw(gc, camX, camY, scale);
+            }
+        }
+
+        // 7. Draw objects in front of player
+        for (SuperObject obj : object) {
+            if (obj != null && !obj.isBehindPlayer(this)) {
+                obj.draw(gc, this);
+            }
+        }
+
+        // 8. Draw foreground layers (tree tops, rooftops, etc.)
         level1.drawForeground(gc, camX, camY, scale);
 
-        // 7. Draw UI (always on top)
+        // 9. Draw UI (always on top)
         ui.draw(gc);
+
+
+    }
+
+    // Helper methods for debugging
+    private int countNonNullObjects() {
+        int count = 0;
+        for (SuperObject obj : object) {
+            if (obj != null) count++;
+        }
+        return count;
+    }
+
+    private int countNonNullNPCs() {
+        int count = 0;
+        for (Npc n : npc) {
+            if (n != null) count++;
+        }
+        return count;
     }
 
     // Set up objects before game start (Borshon)
@@ -189,6 +215,10 @@ public class Game extends Pane {
         aSetter.setNpc();
         playMusic(0);
         GameState = playState;
+
+        // Debug: Print what was set up
+        System.out.println("Objects set up: " + countNonNullObjects());
+        System.out.println("NPCs set up: " + countNonNullNPCs());
     }
 
     private void onKeyPressed(KeyEvent e) {
@@ -225,7 +255,8 @@ public class Game extends Pane {
 
     private void update(long now, long deltaTime) {
         if (GameState == playState) {
-            player.update(keysPressed, level1, this, now, deltaTime); // Update using Level_1
+            player.update(keysPressed, level1, this, now, deltaTime);
+
             // For Npc update
             for (Npc n : npc) {
                 if (n != null) {
@@ -248,13 +279,11 @@ public class Game extends Pane {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FirstPage.fxml"));
             Pane menuRoot = loader.load();
             Scene currentScene = this.getScene();
-            currentScene.setRoot(menuRoot); // Use same scene
+            currentScene.setRoot(menuRoot);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-
 
     public void playMusic(int i) {
         music.loop(i);

@@ -82,7 +82,7 @@ messageOn= true;
     public void drawDialogueScreen(){
         int x=game.tileSize;
         int y=game.tileSize/2;
-        int height =  game.tileSize*4;
+        int height =  game.tileSize*8;
         int width = (int) (game.screenWidth - (game.tileSize*2));
     subWindows(x,y,height, width);
     x+= game.tileSize;
@@ -90,7 +90,7 @@ messageOn= true;
 
         gc.setFont(Font.font("Arial", FontWeight.SEMI_BOLD, 30));
         gc.setFill(Color.WHITE);
-    gc.fillText(dialogue, x,y);
+    gc.fillText(dialogue, x,y+20);
     }
 
     // Every dialogue screen subwindows

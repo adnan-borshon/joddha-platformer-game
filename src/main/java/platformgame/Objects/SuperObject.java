@@ -14,21 +14,34 @@ public class SuperObject {
     public double screenX, screenY;
 
     public void draw(GraphicsContext gc, Game gp) {
-        if (image == null) return;
+        if (image == null) {
+            System.err.println("Image is null for object: " + name);
+            return;
+        }
 
-        // Calculate camera offset (same as Game.draw method)
-        double camX = gp.player.getX() + gp.player.getWidth() / 2 - gp.screenWidth / 2;
-        double camY = gp.player.getY() + gp.player.getHeight() / 2 - gp.screenHeight / 2;
-
-        // Clamp camera within the bounds of the map
-        camX = Math.max(0, Math.min(camX, gp.level1.mapWidth * gp.tileSize - gp.screenWidth));  // Use level1 instead of tileMap
-        camY = Math.max(0, Math.min(camY, gp.level1.mapHeight * gp.tileSize - gp.screenHeight));  // Use level1 instead of tileMap
+        // Use the camera position calculated in Game.draw()
+        double camX = gp.camX;
+        double camY = gp.camY;
 
         // Calculate object's position on screen
         screenX = (worldX - camX) * gp.scale;
         screenY = (worldY - camY) * gp.scale;
 
-        gc.drawImage(image, screenX, screenY, image.getWidth() * scale, image.getHeight() * scale);
+        // Only draw if object is on screen (optimization)
+        double objWidth = image.getWidth() * scale * gp.scale;
+        double objHeight = image.getHeight() * scale * gp.scale;
+
+        if (screenX + objWidth > 0 && screenX < gp.screenWidth &&
+                screenY + objHeight > 0 && screenY < gp.screenHeight) {
+
+            gc.drawImage(image, screenX, screenY, objWidth, objHeight);
+
+            // Debug: Draw bounding box
+            gc.save();
+            gc.restore();
+
+
+        }
     }
 
     public Rectangle2D getBoundingBox() {
@@ -37,10 +50,10 @@ public class SuperObject {
         return new Rectangle2D(worldX, worldY, objWidth, objHeight);
     }
 
-    // Add the missing isBehindPlayer method
+    // Check if object should be drawn behind player based on Y position
     public boolean isBehindPlayer(Game gp) {
-        // Check if object should be drawn behind player based on Y position
         // Objects with lower Y values (higher on screen) are behind the player
-        return this.worldY < gp.player.getY();
+        // Add some buffer to prevent flickering
+        return this.worldY + (image != null ? image.getHeight() * scale : 0) < gp.player.getY() + gp.player.getHeight();
     }
 }

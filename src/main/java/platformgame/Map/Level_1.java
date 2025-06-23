@@ -32,7 +32,7 @@ public class Level_1 {
         int[][] data;
         boolean isBackground;
         boolean isForeground;
-        boolean isCollision; // Add collision flag
+        boolean isCollision;
     }
 
     private final List<Tileset> tilesets = new ArrayList<>();
@@ -62,19 +62,43 @@ public class Level_1 {
             NodeList tilesetList = doc.getElementsByTagName("tileset");
             for (int i = 0; i < tilesetList.getLength(); i++) {
                 Element tilesetElem = (Element) tilesetList.item(i);
+
+                // Handle external tilesets (source attribute)
+                if (tilesetElem.hasAttribute("source")) {
+                    System.out.println("Skipping external tileset: " + tilesetElem.getAttribute("source"));
+                    continue;
+                }
+
                 int firstGid = Integer.parseInt(tilesetElem.getAttribute("firstgid"));
-                int columns = Integer.parseInt(tilesetElem.getAttribute("columns"));
+
+                // Check if columns attribute exists
+                String columnsAttr = tilesetElem.getAttribute("columns");
+                int columns = columnsAttr.isEmpty() ? 16 : Integer.parseInt(columnsAttr);
+
                 int tw = Integer.parseInt(tilesetElem.getAttribute("tilewidth"));
                 int th = Integer.parseInt(tilesetElem.getAttribute("tileheight"));
 
-                Element imageElem = (Element) tilesetElem.getElementsByTagName("image").item(0);
+                NodeList imageNodes = tilesetElem.getElementsByTagName("image");
+                if (imageNodes.getLength() == 0) {
+                    System.out.println("No image found for tileset with firstgid: " + firstGid);
+                    continue;
+                }
+
+                Element imageElem = (Element) imageNodes.item(0);
                 String imagePath = imageElem.getAttribute("source");
                 System.out.println("Loading tileset image: " + imagePath);
 
-                InputStream imageStream = getClass().getResourceAsStream("/Level_1/" + imagePath);
+                // Extract just the filename from the path
+                String fileName = imagePath.substring(imagePath.lastIndexOf("/") + 1);
+
+                InputStream imageStream = getClass().getResourceAsStream("/Level_1/Assets/" + fileName);
                 if (imageStream == null) {
-                    System.err.println("Tileset image not found: " + imagePath);
-                    continue;
+                    // Try without Assets folder
+                    imageStream = getClass().getResourceAsStream("/Level_1/" + fileName);
+                    if (imageStream == null) {
+                        System.err.println("Tileset image not found: " + imagePath);
+                        continue;
+                    }
                 }
 
                 Image image = new Image(imageStream);
@@ -90,7 +114,6 @@ public class Level_1 {
             }
 
             tilesets.sort(Comparator.comparingInt(t -> t.firstGid));
-            System.out.println("Tilesets loaded: " + tilesets.size());
 
             // Load all layers with classification
             NodeList layerNodes = doc.getElementsByTagName("layer");
@@ -99,34 +122,38 @@ public class Level_1 {
                 String layerName = layerElem.getAttribute("name").toLowerCase();
 
                 Element data = (Element) layerElem.getElementsByTagName("data").item(0);
-                String csv = data.getTextContent().trim().replace("\n", "").replace("\r", "");
+                String csv = data.getTextContent().trim();
+
+                // Clean up the CSV data
+                csv = csv.replaceAll("\\s+", "");
+
                 int[][] grid = parseCSV(csv, mapWidth, mapHeight);
 
                 Layer layer = new Layer();
                 layer.name = layerName;
                 layer.data = grid;
 
-                // Classify layers based on name
+                // FIXED: Classify layers based on name with corrected logic for trees
                 layer.isBackground = layerName.contains("background") ||
                         layerName.contains("ground") ||
                         layerName.contains("floor") ||
                         layerName.contains("base") ||
-                        i == 0; // First layer is usually background
+                        layerName.contains("water") ||
+                        i == 0;
 
+                // FIXED: "Trees collision" should NOT be in foreground
                 layer.isForeground = layerName.contains("foreground") ||
-                        layerName.contains("tree") ||
-                        layerName.contains("roof") ||
-                        layerName.contains("top") ||
-                        layerName.contains("over");
+                        (layerName.contains("tree") && !layerName.contains("collision"));
 
-                // NEW: Set collision layers based on your specified layer names
+                // Collision detection remains the same
                 layer.isCollision = layerName.contains("boat") ||
                         layerName.contains("army camp objects") ||
                         layerName.contains("army camp 1") ||
                         layerName.contains("fench") ||
                         layerName.contains("khet") ||
                         layerName.contains("river") ||
-                        layerName.contains("river paar");
+                        layerName.contains("river paar") ||
+                        layerName.contains("trees collisions");
 
                 layers.add(layer);
                 System.out.println("Layer loaded: " + layerName +
@@ -140,7 +167,7 @@ public class Level_1 {
         }
     }
 
-    // NEW: Collision detection method
+    // IMPROVED: More precise collision detection
     public boolean isCollisionTile(double x, double y) {
         // Convert world coordinates to tile coordinates
         int tileX = (int) (x / tileWidth);
@@ -154,20 +181,71 @@ public class Level_1 {
         // Check all collision layers
         for (Layer layer : layers) {
             if (layer.isCollision && layer.data[tileY][tileX] != 0) {
-                return true; // Found a collision tile
+                System.out.println("Collision detected at (" + tileX + "," + tileY + ") in layer: " + layer.name);
+                return true;
             }
         }
 
-        return false; // No collision
+        return false;
     }
 
-    // NEW: Check collision for a rectangle (player/NPC bounding box)
+    // IMPROVED: Better rectangle collision with multiple sample points
     public boolean isCollisionRect(double x, double y, double width, double height) {
-        // Check all four corners of the rectangle
-        return isCollisionTile(x, y) ||
-                isCollisionTile(x + width, y) ||
-                isCollisionTile(x, y + height) ||
-                isCollisionTile(x + width, y + height);
+        // Sample more points for better collision detection
+        int samples = 3; // Check 3x3 grid of points
+        double stepX = width / (samples - 1);
+        double stepY = height / (samples - 1);
+
+        for (int i = 0; i < samples; i++) {
+            for (int j = 0; j < samples; j++) {
+                double checkX = x + (i * stepX);
+                double checkY = y + (j * stepY);
+
+                // Ensure we don't go beyond the rectangle bounds
+                checkX = Math.min(checkX, x + width - 1);
+                checkY = Math.min(checkY, y + height - 1);
+
+                if (isCollisionTile(checkX, checkY)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // NEW: Check collision for next position (useful for movement prediction)
+    public boolean wouldCollide(double currentX, double currentY, double newX, double newY, double width, double height) {
+        return isCollisionRect(newX, newY, width, height);
+    }
+
+    // NEW: Get safe position (moves entity out of collision)
+    public double[] getSafePosition(double x, double y, double width, double height) {
+        double[] result = {x, y};
+
+        // If not currently colliding, return current position
+        if (!isCollisionRect(x, y, width, height)) {
+            return result;
+        }
+
+        // Try to move to nearby safe positions
+        int searchRadius = 3; // tiles to search around
+        for (int radius = 1; radius <= searchRadius; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dy = -radius; dy <= radius; dy++) {
+                    double testX = x + (dx * tileWidth);
+                    double testY = y + (dy * tileHeight);
+
+                    if (!isCollisionRect(testX, testY, width, height)) {
+                        result[0] = testX;
+                        result[1] = testY;
+                        return result;
+                    }
+                }
+            }
+        }
+
+        return result; // Return original position if no safe position found
     }
 
     // Draw only background layers
@@ -195,6 +273,31 @@ public class Level_1 {
                 drawLayer(gc, layer.data, camX, camY, scale);
             }
         }
+    }
+
+    // NEW: Debug method to visualize collision tiles
+    public void drawCollisionDebug(GraphicsContext gc, double camX, double camY, double scale) {
+        gc.setFill(javafx.scene.paint.Color.RED);
+        gc.setGlobalAlpha(0.3);
+
+        for (Layer layer : layers) {
+            if (layer.isCollision) {
+                for (int y = 0; y < mapHeight; y++) {
+                    for (int x = 0; x < mapWidth; x++) {
+                        if (layer.data[y][x] != 0) {
+                            double drawX = Math.floor((x * tileWidth - camX) * scale);
+                            double drawY = Math.floor((y * tileHeight - camY) * scale);
+                            double drawWidth = Math.ceil(tileWidth * scale);
+                            double drawHeight = Math.ceil(tileHeight * scale);
+
+                            gc.fillRect(drawX, drawY, drawWidth, drawHeight);
+                        }
+                    }
+                }
+            }
+        }
+
+        gc.setGlobalAlpha(1.0);
     }
 
     // Original draw method - draws all layers (for backward compatibility)
@@ -238,13 +341,27 @@ public class Level_1 {
 
     private int[][] parseCSV(String csv, int width, int height) {
         int[][] result = new int[height][width];
-        String[] tokens = csv.split(",");
+
+        // Remove any trailing commas
+        csv = csv.replaceAll(",+$", "");
+
+        String[] tokens = csv.split(",", -1);
         int index = 0;
+
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 if (index < tokens.length) {
                     String token = tokens[index++].trim();
-                    result[y][x] = token.isEmpty() ? 0 : Integer.parseInt(token);
+                    if (token.isEmpty()) {
+                        result[y][x] = 0;
+                    } else {
+                        try {
+                            result[y][x] = Integer.parseInt(token);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Invalid token: '" + token + "' at position (" + x + "," + y + ")");
+                            result[y][x] = 0;
+                        }
+                    }
                 } else {
                     result[y][x] = 0;
                 }

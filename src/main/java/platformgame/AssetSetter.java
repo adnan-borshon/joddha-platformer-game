@@ -25,6 +25,11 @@ public class AssetSetter {
         gp.object[2].worldX = 50* gp.tileSize;
         gp.object[2].worldY = 52* gp.tileSize ;
 
+
+        gp.object[6]=  new Obj_Key();
+        gp.object[6].worldX = 27* gp.tileSize;
+        gp.object[6].worldY = 10* gp.tileSize ;
+
         gp.object[3]=  new Obj_Door();
         gp.object[3].worldX = 62* gp.tileSize;
         gp.object[3].worldY = 58* gp.tileSize ;
@@ -41,7 +46,7 @@ public class AssetSetter {
     }
 
     public void setNpc(){
-    gp.npc[0]= new Npc(58*gp.tileSize, 52*gp.tileSize, 50,40, 1,gp);
+    gp.npc[0]= new Npc(30*gp.tileSize, 10*gp.tileSize, 50,40, 1,gp);
 
     }
 }
