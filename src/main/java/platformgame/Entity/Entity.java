@@ -159,9 +159,4 @@ public abstract class Entity {
     public double getWidth() { return width; }
     public double getHeight() { return height; }
 
-    // Getter for facing direction
-    public boolean isFacingRight() { return facingRight; }
-
-    // Setter for facing direction
-    public void setFacingRight(boolean facingRight) { this.facingRight = facingRight; }
 }

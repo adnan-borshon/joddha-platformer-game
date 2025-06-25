@@ -1,5 +1,6 @@
 package platformgame;
 
+import platformgame.Entity.Enemy;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Scout;
 import platformgame.Objects.Obj_Boots;
@@ -72,4 +73,14 @@ public class AssetSetter {
         gp.eventHandler.addMine(42 * gp.tileSize, 5 * gp.tileSize, 32, 32, 3);
         gp.eventHandler.addMine(24 * gp.tileSize, 16 * gp.tileSize, 32, 32, 2);
     }
+
+    public void setEnemy() {
+        // Set the position of the first enemy
+        gp.enemy[0] = new Enemy(38 * gp.tileSize, 4 * gp.tileSize, 50, 40, 0.8, gp);
+        // Optionally, set more enemies with different positions
+        gp.enemy[1] = new Enemy(45 * gp.tileSize, 8 * gp.tileSize, 50, 40, 1, gp);
+        gp.enemy[2] = new Enemy(50 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
+        // Add more enemies if needed
+    }
+
 }
