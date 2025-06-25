@@ -5,6 +5,7 @@ import platformgame.Entity.Scout;
 import platformgame.Objects.Obj_Boots;
 import platformgame.Objects.Obj_Door;
 import platformgame.Objects.Obj_Key;
+import platformgame.Objects.Obj_ammo;
 
 public class AssetSetter {
     Game gp;
@@ -44,6 +45,14 @@ public class AssetSetter {
         gp.object[5].worldX = 50* gp.tileSize;
         gp.object[5].worldY = 48* gp.tileSize ;
 
+        // ✅ Ammo pickups
+        gp.object[7] = new Obj_ammo();
+        gp.object[7].worldX = 38 * gp.tileSize;
+        gp.object[7].worldY = 10 * gp.tileSize;
+
+        gp.object[8] = new Obj_ammo();
+        gp.object[8].worldX = 60 * gp.tileSize;
+        gp.object[8].worldY = 48 * gp.tileSize;
     }
 
     public void setNpc(){

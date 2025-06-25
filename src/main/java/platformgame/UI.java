@@ -14,6 +14,7 @@ public class UI {
     GraphicsContext gc;
 
     private Image keyIcon;
+    private Image ammoIcon;
     private Image dialogueBoxImage;
     private Image parchmentBoxImage;
     private Image exclamationIcon;
@@ -34,11 +35,19 @@ public class UI {
     private double dialogueOpacity = 0.0;
     private int previousGameState = -1;
 
+    // ✅ Health UI images
+    private Image heartIcon;
+    private Image healthBarFull;
+    private Image healthBarEmpty;
+
     public UI(Game game) {
         this.game = game;
         try {
             Obj_Key key = new Obj_Key();
             keyIcon = key.image;
+
+            ammoIcon = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
+                    "/image/Object/Ammo.png")));
 
             dialogueBoxImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
                     "/image/00_UI/dialogue/UI_board_Large_stone.png")));
@@ -48,6 +57,13 @@ public class UI {
                     "/image/00_UI/dialogue/Exclamation_Yellow.png")));
             cancelButtonImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
                     "/image/00_UI/dialogue/TextBTN_Cancel.png")));
+
+            heartIcon = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
+                    "/image/Object/Health-Icon.png")));
+            healthBarFull = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
+                    "/image/Object/Health-Bar.png")));
+            healthBarEmpty = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
+                    "/image/Object/Health-line.png")));
 
             Font baseFont = Font.loadFont(
                     Objects.requireNonNull(getClass().getResourceAsStream(
@@ -69,6 +85,53 @@ public class UI {
         animationProgress = 0.0;
         dialogueScale = 0.0;
         dialogueOpacity = 0.0;
+    }
+
+
+
+    public void drawHealthBar(GraphicsContext gc, int currentHP, int maxHP) {
+        double heartX = 20;
+        double heartY = 70;
+        double heartSize = 35;
+
+        double barX = heartX + heartSize;
+        double frameHeight = 22;
+        double barY = heartY + (heartSize - frameHeight) / 2.0;
+
+        double frameWidth = 180;
+
+        double paddingLeft = 1;
+        double paddingTop = 2.5;
+
+        double fillX = barX + paddingLeft;
+        double fillY = barY + paddingTop;
+        double fillWidth = frameWidth - paddingLeft * 2;
+        double fillHeight = frameHeight - paddingTop * 2;
+
+        double ratio = Math.max(0, Math.min(1.0, (double) currentHP / maxHP));
+        double redBarDrawWidth = fillWidth * ratio;
+
+        if (healthBarFull != null && ratio > 0) {
+            gc.drawImage(
+                    healthBarFull,
+                    0, 0,
+                    healthBarFull.getWidth() * ratio, healthBarFull.getHeight(),
+                    fillX, fillY,
+                    redBarDrawWidth, fillHeight
+            );
+        }
+
+        if (healthBarEmpty != null) {
+            gc.drawImage(
+                    healthBarEmpty,
+                    barX, barY,
+                    frameWidth, frameHeight
+            );
+        }
+
+        if (heartIcon != null) {
+            gc.drawImage(heartIcon, heartX, heartY, heartSize, heartSize);
+        }
     }
 
     private void updateDialogueAnimation() {
@@ -117,8 +180,16 @@ public class UI {
                 gc.drawImage(keyIcon, 20, 20, 32, 32);
             }
 
+
             gc.fillText("x " + game.hasKey, 60, 45);
 
+            // ✅ Draw Ammo
+            if (ammoIcon != null) {
+                gc.drawImage(ammoIcon, 110, 20, 32, 32);
+                gc.fillText("x " + game.player.ammo, 150, 45);
+            }
+
+            drawHealthBar(gc, game.player.hp, game.player.maxHp);
             if (messageOn) {
                 gc.setFont(Font.font("Arial", 30));
                 gc.fillText(message, game.tileSize / 2, game.tileSize * 5);

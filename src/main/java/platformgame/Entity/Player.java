@@ -11,12 +11,19 @@ import java.util.Set;
 
 public class Player extends Entity {
     private final int totalFrames_walk = 10;
+
+    //For explosion
     private boolean reactingToExplosion = false;
     private long explosionReactionStartTime = 0;
     private final int explosionReactionFrames = 4;
     private final int explosionReactionRow = 8; // 9th row (0-indexed)
     private final long explosionFrameDuration = 120_000_000; // 120ms per frame
 
+
+    // ✅ Health & Ammo System
+    public int hp = 10;
+    public int maxHp = 10;
+    public int ammo = 0;
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -212,7 +219,23 @@ public class Player extends Entity {
                                 game.playSoundEffects(2);
                                 game.ui.showMessage("You got speed up +2");
                                 break;
+                            case "ammo":
+                                ammo += 10;
+                                game.object[i] = null;
+                                game.playSoundEffects(3); // Using door sound for ammo
+                                game.ui.showMessage("Picked up 10 ammo");
+                                break;
 
+                            case "life":
+                                if (hp < maxHp) {
+                                    hp += maxHp * 0.1;
+                                    if (hp > maxHp) hp = maxHp;
+                                    game.object[i] = null;
+                                    game.playSoundEffects(3);
+                                    game.ui.showMessage("Life restored +10%");
+                                } else {
+                                    game.ui.showMessage("Health already full");
+                                }
                             default:
                                 if (obj.collision) {
                                     // Any other collidable object blocks movement
