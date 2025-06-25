@@ -5,6 +5,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import platformgame.Game;
+import platformgame.Objects.SuperObject;
 
 // Parent class for all entities like Player, NPC, Enemy
 public abstract class Entity {
@@ -48,8 +49,13 @@ public abstract class Entity {
         this.y = y;
     }
 
-    // Draw the entity with optional horizontal flipping
+    // Original drawEntity method using the entity's facingRight property
     protected void drawEntity(GraphicsContext gc, double camX, double camY, double scale) {
+        drawEntity(gc, camX, camY, scale, !facingRight);
+    }
+
+    // Enhanced drawEntity method with explicit flip control
+    protected void drawEntity(GraphicsContext gc, double camX, double camY, double scale, boolean flip) {
         int xIndex = currentFrame * frameWidth;
         int yIndex = currentRow * frameHeight;
 
@@ -58,10 +64,12 @@ public abstract class Entity {
         double drawW = frameWidth * scale;
         double drawH = frameHeight * scale;
 
-        if (facingRight) {
+        if (!flip) {
+            // Normal drawing (right-facing or no flip needed)
             gc.drawImage(sprite, xIndex, yIndex, frameWidth, frameHeight,
                     drawX, drawY, drawW, drawH);
         } else {
+            // Flipped drawing (left-facing)
             gc.save();
             gc.translate(drawX + drawW, drawY);
             gc.scale(-1, 1);
@@ -95,6 +103,7 @@ public abstract class Entity {
         currentFrame = frameIndex % totalFrames;
     }
 
+    // Checks if the entity is behind the player
     public boolean isBehindPlayer(Game game) {
         if (game == null || game.player == null) {
             return false; // Default to front if no player reference
@@ -108,9 +117,51 @@ public abstract class Entity {
         return thisBottom < playerBottom;
     }
 
-    // Getters
+    // Collision checking for entities against other entities, tiles, and objects
+    public boolean checkTileCollision(double x, double y) {
+        return gp.level1.isCollisionRect(x, y, width, height);
+    }
+
+    public boolean checkNpcCollision(double x, double y) {
+        for (Npc npcEntity : gp.npc) {
+            if (npcEntity != null && npcEntity != this) {
+                Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(), npcEntity.getWidth(), npcEntity.getHeight());
+                Rectangle2D entityRect = new Rectangle2D(x, y, width, height);
+                if (entityRect.intersects(npcRect)) {
+                    return true; // Collision detected
+                }
+            }
+        }
+        return false;  // No collision
+    }
+
+    public boolean checkObjectCollision(double x, double y) {
+        for (SuperObject obj : gp.object) {
+            if (obj != null) {
+                Rectangle2D objRect = obj.getBoundingBox();
+                Rectangle2D entityRect = new Rectangle2D(x, y, width, height);
+                if (entityRect.intersects(objRect)) {
+                    return true; // Collision detected
+                }
+            }
+        }
+        return false;  // No collision
+    }
+
+    // General method to check for collisions with the environment
+    public boolean isColliding(double x, double y) {
+        return checkTileCollision(x, y) || checkObjectCollision(x, y) || checkNpcCollision(x, y);
+    }
+
+    // Getter methods
     public double getX() { return x; }
     public double getY() { return y; }
     public double getWidth() { return width; }
     public double getHeight() { return height; }
+
+    // Getter for facing direction
+    public boolean isFacingRight() { return facingRight; }
+
+    // Setter for facing direction
+    public void setFacingRight(boolean facingRight) { this.facingRight = facingRight; }
 }

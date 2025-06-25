@@ -16,7 +16,7 @@ public class Sound {
             loadSound(1, "/sound/coin.wav");
             loadSound(2, "/sound/powerup.wav");
             loadSound(3, "/sound/unlock.wav");
-            loadSound(4, "/sound/fanfare.wav");
+            loadSound(4, "/sound/bomb.mp3");
             // Add more as needed
         } catch (Exception e) {
             e.printStackTrace();

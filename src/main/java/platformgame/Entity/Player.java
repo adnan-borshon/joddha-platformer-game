@@ -11,6 +11,12 @@ import java.util.Set;
 
 public class Player extends Entity {
     private final int totalFrames_walk = 10;
+    private boolean reactingToExplosion = false;
+    private long explosionReactionStartTime = 0;
+    private final int explosionReactionFrames = 4;
+    private final int explosionReactionRow = 8; // 9th row (0-indexed)
+    private final long explosionFrameDuration = 120_000_000; // 120ms per frame
+
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -21,41 +27,51 @@ public class Player extends Entity {
 
 // Replace the update method in your Player.java with this:
 
-    // Inside the Player class
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
+
+        // Explosion reaction takes priority
+        if (reactingToExplosion) {
+            currentRow = explosionReactionRow;
+            int frameIndex = (int) ((now - explosionReactionStartTime) / explosionFrameDuration);
+
+            if (frameIndex < explosionReactionFrames) {
+                currentFrame = frameIndex;
+            } else {
+                currentFrame = 0;
+                currentRow = 0; // Idle
+                reactingToExplosion = false;
+            }
+            return; // Skip input/movement during explosion reaction
+        }
+
         boolean moved = false;
         double newX = x;
         double newY = y;
 
-        // Check if the game is in dialogue state or pause state and do not allow movement
         if (game.GameState == game.playState) {
-            // WASD input handling with collision checking
             if (keys.contains(KeyCode.W)) {
                 double testY = y - speed;
-                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(x, testY, width, height) &&
                         !checkObjectCollisionsAndInteract(x, testY, width, height, game) &&
-                        !checkNpcCollision(x, testY, game)) { // Check NPC collision
+                        !checkNpcCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
                 }
             }
             if (keys.contains(KeyCode.S)) {
                 double testY = y + speed;
-                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(x, testY, width, height) &&
                         !checkObjectCollisionsAndInteract(x, testY, width, height, game) &&
-                        !checkNpcCollision(x, testY, game)) { // Check NPC collision
+                        !checkNpcCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
                 }
             }
             if (keys.contains(KeyCode.A)) {
                 double testX = x - speed;
-                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(testX, y, width, height) &&
                         !checkObjectCollisionsAndInteract(testX, y, width, height, game) &&
-                        !checkNpcCollision(testX, y, game)) { // Check NPC collision
+                        !checkNpcCollision(testX, y, game)) {
                     newX = testX;
                     moved = true;
                     facingRight = false;
@@ -63,10 +79,9 @@ public class Player extends Entity {
             }
             if (keys.contains(KeyCode.D)) {
                 double testX = x + speed;
-                // Check for level collision, object collision, and NPC collision
                 if (!level1.isCollisionRect(testX, y, width, height) &&
                         !checkObjectCollisionsAndInteract(testX, y, width, height, game) &&
-                        !checkNpcCollision(testX, y, game)) { // Check NPC collision
+                        !checkNpcCollision(testX, y, game)) {
                     newX = testX;
                     moved = true;
                     facingRight = true;
@@ -74,21 +89,17 @@ public class Player extends Entity {
             }
         }
 
-        // Check if the player is touching an NPC
         for (Npc npcEntity : game.npc) {
             if (npcEntity != null && npcEntity.playerIsTouching) {
-                // Trigger dialogue state
-                game.GameState = game.dialogueState;  // Switch to dialogue state
-                npcEntity.speak();  // Show NPC dialogue
-                break;  // Exit after triggering dialogue for the first NPC touched
+                game.GameState = game.dialogueState;
+                npcEntity.speak();
+                break;
             }
         }
 
-        // Apply movement only if no collision
         x = newX;
         y = newY;
 
-        // Animate walking
         if (moved) {
             currentRow = 3;
             animationTimer += deltaTime;
@@ -101,24 +112,29 @@ public class Player extends Entity {
             currentRow = 0;
         }
     }
-
-
-
-
     // Add this new method to check NPC collision
     // Inside checkNpcCollision method in Player class
 // Inside the Player class
     private boolean checkNpcCollision(double playerX, double playerY, Game game) {
         Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
 
+        // Check collision with NPCs
         for (Npc npcEntity : game.npc) {
             if (npcEntity != null) {
-                Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(),
-                        npcEntity.getWidth(), npcEntity.getHeight());
-
-                // Check for intersection (collision)
+                Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(), npcEntity.getWidth(), npcEntity.getHeight());
                 if (playerRect.intersects(npcRect)) {
                     npcEntity.notifyPlayerCollision(); // Notify NPC about collision
+                    return true;  // Collision detected, return true to block movement
+                }
+            }
+        }
+
+        // Check collision with Scouts
+        for (Scout scoutEntity : game.scout) {
+            if (scoutEntity != null) {
+                Rectangle2D scoutRect = new Rectangle2D(scoutEntity.getX(), scoutEntity.getY(), scoutEntity.getWidth(), scoutEntity.getHeight());
+                if (playerRect.intersects(scoutRect)) {
+                    scoutEntity.setPlayerInRange(true); // Notify Scout about collision with Player
                     return true;  // Collision detected, return true to block movement
                 }
             }
@@ -127,6 +143,13 @@ public class Player extends Entity {
         return false;  // No collision, return false to allow movement
     }
 
+
+    //for explision
+    public void triggerExplosionReaction(long now) {
+        reactingToExplosion = true;
+        explosionReactionStartTime = now;
+        currentFrame = 0;
+    }
 
 
 

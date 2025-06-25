@@ -3,9 +3,7 @@ package platformgame.Entity;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import platformgame.Game;
-import platformgame.Objects.SuperObject;
-import platformgame.Map.Level_1;  // Import Level_1 class
-import java.util.Random;
+
 
 public class Npc extends Entity {
     private final int totalFrames_idle = 11;  // frames in idle animation (used here)

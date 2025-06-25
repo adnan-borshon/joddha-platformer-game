@@ -1,6 +1,7 @@
 package platformgame;
 
 import platformgame.Entity.Npc;
+import platformgame.Entity.Scout;
 import platformgame.Objects.Obj_Boots;
 import platformgame.Objects.Obj_Door;
 import platformgame.Objects.Obj_Key;
@@ -47,6 +48,15 @@ public class AssetSetter {
 
     public void setNpc(){
     gp.npc[0]= new Npc(30*gp.tileSize, 10*gp.tileSize, 50,40, 1,gp);
+
+
+    }
+public void setScout(){
+        gp.scout[0]= new Scout(43 * gp.tileSize, 12 * gp.tileSize, 50, 40, 2, gp);
+}
+    public void setExplosion(){
+        gp.eventHandler.addMine(42 * gp.tileSize, 5 * gp.tileSize, 32, 32, 3);
+        gp.eventHandler.addMine(24 * gp.tileSize, 16 * gp.tileSize, 32, 32, 2);
 
     }
 }

@@ -206,40 +206,6 @@ public class Level_1 {
         return false;
     }
 
-    // NEW: Check collision for next position (useful for movement prediction)
-    public boolean wouldCollide(double currentX, double currentY, double newX, double newY, double width, double height) {
-        return isCollisionRect(newX, newY, width, height);
-    }
-
-    // NEW: Get safe position (moves entity out of collision)
-    public double[] getSafePosition(double x, double y, double width, double height) {
-        double[] result = {x, y};
-
-        // If not currently colliding, return current position
-        if (!isCollisionRect(x, y, width, height)) {
-            return result;
-        }
-
-        // Try to move to nearby safe positions
-        int searchRadius = 3; // tiles to search around
-        for (int radius = 1; radius <= searchRadius; radius++) {
-            for (int dx = -radius; dx <= radius; dx++) {
-                for (int dy = -radius; dy <= radius; dy++) {
-                    double testX = x + (dx * tileWidth);
-                    double testY = y + (dy * tileHeight);
-
-                    if (!isCollisionRect(testX, testY, width, height)) {
-                        result[0] = testX;
-                        result[1] = testY;
-                        return result;
-                    }
-                }
-            }
-        }
-
-        return result; // Return original position if no safe position found
-    }
-
     // Draw only background layers
     public void drawBackground(GraphicsContext gc, double camX, double camY, double scale) {
         for (Layer layer : layers) {

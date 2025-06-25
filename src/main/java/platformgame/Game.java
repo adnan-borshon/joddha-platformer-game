@@ -12,6 +12,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Player;
+import platformgame.Entity.Scout;
+import platformgame.Event.EventHandler;
 import platformgame.Map.Level_1;
 import platformgame.Map.Level_1_controller;
 import platformgame.Objects.SuperObject;
@@ -36,9 +38,12 @@ public class Game extends Pane {
     public AssetSetter aSetter = new AssetSetter(this);
     // for npc store
     public Npc[] npc = new Npc[10];
-
+    //For scout
+    public Scout[] scout = new Scout[10];
     // for object store
     public SuperObject object[] = new SuperObject[10];
+
+
 
     public final double scale = 1.15; // tweak this between 1.1 to 1.5 for desired effect
 
@@ -58,6 +63,10 @@ public class Game extends Pane {
 
     // For UI elements and check messages
     public UI ui = new UI(this);
+//FOr event handeling
+public final EventHandler eventHandler = new EventHandler();
+
+
 
     // Camera position - make these accessible to other classes
     public double camX = 0;
@@ -163,10 +172,23 @@ public class Game extends Pane {
             }
         }
 
-        // 5. Draw player
+        // 5. Draw Scouts behind player
+        for (Scout scoutEntity : scout) {
+            if (scoutEntity != null && scoutEntity.isBehindPlayer(this)) {
+                scoutEntity.draw(gc, camX, camY, scale);
+            }
+        }
+        // 6. Draw player
         player.draw(gc, camX, camY, scale);
 
-        // 6. Draw NPCs in front of player
+
+//        Draw Scouts in front of player
+        for (Scout scoutEntity : scout) {
+            if (scoutEntity != null && !scoutEntity.isBehindPlayer(this)) {
+                scoutEntity.draw(gc, camX, camY, scale);
+            }
+        }
+        // . Draw NPCs in front of player
         for (Npc npcEntity : npc) {
             if (npcEntity != null && !npcEntity.isBehindPlayer(this)) {
                 npcEntity.draw(gc, camX, camY, scale);
@@ -179,6 +201,8 @@ public class Game extends Pane {
                 obj.draw(gc, this);
             }
         }
+        eventHandler.draw(gc, camX, camY, scale);
+
 
         // 8. Draw foreground layers (tree tops, rooftops, etc.)
         level1.drawForeground(gc, camX, camY, scale);
@@ -210,6 +234,8 @@ public class Game extends Pane {
     public void setUpObject() {
         aSetter.setObject();
         aSetter.setNpc();
+        aSetter.setScout();
+        aSetter.setExplosion();
         playMusic(0);
         GameState = playState;
 
@@ -257,6 +283,13 @@ public class Game extends Pane {
                     n.update(deltaTime, now);
                 }
             }
+            // For Scout update
+            for (Scout scoutEntity : scout) {
+                if (scoutEntity != null) {
+                    scoutEntity.update(deltaTime, now);  // Update Scout NPCs
+                }
+            }
+
 
             if (keysPressed.contains(KeyCode.ESCAPE)) {
                 // Save state and return to menu
@@ -264,6 +297,9 @@ public class Game extends Pane {
                 openMainMenu();
                 GameState = pauseState;
             }
+            //for event
+            eventHandler.update(player, this, now);
+
         }
     }
 
