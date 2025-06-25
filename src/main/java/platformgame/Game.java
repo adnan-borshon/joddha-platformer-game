@@ -10,6 +10,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import platformgame.Entity.Enemy;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Player;
 import platformgame.Entity.Scout;
@@ -43,7 +44,8 @@ public class Game extends Pane {
     // for object store
     public SuperObject object[] = new SuperObject[10];
 
-
+    //for soldier
+    public Enemy[] enemy = new Enemy[40];
 
     public final double scale = 1.15; // tweak this between 1.1 to 1.5 for desired effect
 
@@ -164,7 +166,12 @@ public final EventHandler eventHandler = new EventHandler();
                 obj.draw(gc, this);
             }
         }
-
+        // Draw the enemies in front of the player or behind the player
+        for (Enemy enemyEntity : enemy) {
+            if (enemyEntity != null) {
+                enemyEntity.draw(gc, camX, camY, scale);
+            }
+        }
         // 4. Draw NPCs behind player
         for (Npc npcEntity : npc) {
             if (npcEntity != null && npcEntity.isBehindPlayer(this)) {
@@ -178,6 +185,7 @@ public final EventHandler eventHandler = new EventHandler();
                 scoutEntity.draw(gc, camX, camY, scale);
             }
         }
+
         // 6. Draw player
         player.draw(gc, camX, camY, scale);
 
@@ -192,6 +200,13 @@ public final EventHandler eventHandler = new EventHandler();
         for (Npc npcEntity : npc) {
             if (npcEntity != null && !npcEntity.isBehindPlayer(this)) {
                 npcEntity.draw(gc, camX, camY, scale);
+            }
+        }
+
+        //enemy in front of player
+        for (Enemy enemyEntity : enemy) {
+            if (enemyEntity != null && !enemyEntity.isBehindPlayer(this)) {
+                enemyEntity.draw(gc, camX, camY, scale);
             }
         }
 
@@ -213,28 +228,13 @@ public final EventHandler eventHandler = new EventHandler();
 
     }
 
-    // Helper methods for debugging
-    private int countNonNullObjects() {
-        int count = 0;
-        for (SuperObject obj : object) {
-            if (obj != null) count++;
-        }
-        return count;
-    }
-
-    private int countNonNullNPCs() {
-        int count = 0;
-        for (Npc n : npc) {
-            if (n != null) count++;
-        }
-        return count;
-    }
 
     // Set up objects before game start (Borshon)
     public void setUpObject() {
         aSetter.setObject();
         aSetter.setNpc();
         aSetter.setScout();
+        aSetter.setEnemy();
         aSetter.setExplosion();
         playMusic(0);
         GameState = playState;
@@ -287,6 +287,15 @@ public final EventHandler eventHandler = new EventHandler();
             for (Scout scoutEntity : scout) {
                 if (scoutEntity != null) {
                     scoutEntity.update(deltaTime, now);  // Update Scout NPCs
+                }
+            }
+
+
+            //Enemy update
+            // Update enemy behavior (movement, attack, etc.)
+            for (Enemy enemyEntity : enemy) {
+                if (enemyEntity != null) {
+                    enemyEntity.update(deltaTime, now);  // Update enemy state
                 }
             }
 
