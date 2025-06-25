@@ -86,10 +86,10 @@ public final EventHandler eventHandler = new EventHandler();
         if (level1 != null) {
             double startX = 27*tileSize;  // Use correct tileSize
             double startY = 5*tileSize;
-            player = new Player(startX, startY, 50, 40, 3, this);
+            player = new Player(startX, startY, 40, 40, 3, this);
         } else {
             // Fallback if level1 is null
-            player = new Player(500, 350, 50, 40, 3, this);
+            player = new Player(500, 350, 40, 40, 3, this);
         }
 
         setUpObject();
@@ -211,23 +211,6 @@ public final EventHandler eventHandler = new EventHandler();
         ui.draw(gc);
 
 
-    }
-
-    // Helper methods for debugging
-    private int countNonNullObjects() {
-        int count = 0;
-        for (SuperObject obj : object) {
-            if (obj != null) count++;
-        }
-        return count;
-    }
-
-    private int countNonNullNPCs() {
-        int count = 0;
-        for (Npc n : npc) {
-            if (n != null) count++;
-        }
-        return count;
     }
 
     // Set up objects before game start (Borshon)
