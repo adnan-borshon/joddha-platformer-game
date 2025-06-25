@@ -16,7 +16,6 @@ public class Level_1_controller {
 
     @FXML
     public void initialize() {
-        System.out.println("Level_1_controller initialized...");
 
         level = new Level_1();
 
@@ -24,7 +23,6 @@ public class Level_1_controller {
         double canvasWidth = level.mapWidth * 32;
         double canvasHeight = level.mapHeight * 32;
 
-        System.out.println("Canvas size: " + canvasWidth + "x" + canvasHeight);
 
         canvas = new Canvas(canvasWidth, canvasHeight);
         gc = canvas.getGraphicsContext2D();
@@ -39,7 +37,6 @@ public class Level_1_controller {
     private void renderMap() {
         // Render the map once to test
         level.draw(gc, 0, 0, 1.0);
-        System.out.println("Initial map render completed");
     }
 
     public Level_1 getLevelLogic() {

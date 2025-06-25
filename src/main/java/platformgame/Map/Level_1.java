@@ -39,7 +39,7 @@ public class Level_1 {
     private final List<Layer> layers = new ArrayList<>();
 
     public Level_1() {
-        System.out.println("Level_1 logic class created...");
+
         loadMapData();
     }
 
@@ -56,7 +56,7 @@ public class Level_1 {
             mapWidth = Integer.parseInt(mapElement.getAttribute("width"));
             mapHeight = Integer.parseInt(mapElement.getAttribute("height"));
 
-            System.out.println("Map dimensions: " + mapWidth + "x" + mapHeight);
+
 
             // Load tilesets
             NodeList tilesetList = doc.getElementsByTagName("tileset");
@@ -65,7 +65,6 @@ public class Level_1 {
 
                 // Handle external tilesets (source attribute)
                 if (tilesetElem.hasAttribute("source")) {
-                    System.out.println("Skipping external tileset: " + tilesetElem.getAttribute("source"));
                     continue;
                 }
 
@@ -80,13 +79,11 @@ public class Level_1 {
 
                 NodeList imageNodes = tilesetElem.getElementsByTagName("image");
                 if (imageNodes.getLength() == 0) {
-                    System.out.println("No image found for tileset with firstgid: " + firstGid);
                     continue;
                 }
 
                 Element imageElem = (Element) imageNodes.item(0);
                 String imagePath = imageElem.getAttribute("source");
-                System.out.println("Loading tileset image: " + imagePath);
 
                 // Extract just the filename from the path
                 String fileName = imagePath.substring(imagePath.lastIndexOf("/") + 1);
@@ -96,7 +93,6 @@ public class Level_1 {
                     // Try without Assets folder
                     imageStream = getClass().getResourceAsStream("/Level_1/" + fileName);
                     if (imageStream == null) {
-                        System.err.println("Tileset image not found: " + imagePath);
                         continue;
                     }
                 }
@@ -156,10 +152,7 @@ public class Level_1 {
                         layerName.contains("trees collisions");
 
                 layers.add(layer);
-                System.out.println("Layer loaded: " + layerName +
-                        " (Background: " + layer.isBackground +
-                        ", Foreground: " + layer.isForeground +
-                        ", Collision: " + layer.isCollision + ")");
+
             }
 
         } catch (Exception e) {
@@ -181,7 +174,6 @@ public class Level_1 {
         // Check all collision layers
         for (Layer layer : layers) {
             if (layer.isCollision && layer.data[tileY][tileX] != 0) {
-                System.out.println("Collision detected at (" + tileX + "," + tileY + ") in layer: " + layer.name);
                 return true;
             }
         }
@@ -358,7 +350,6 @@ public class Level_1 {
                         try {
                             result[y][x] = Integer.parseInt(token);
                         } catch (NumberFormatException e) {
-                            System.err.println("Invalid token: '" + token + "' at position (" + x + "," + y + ")");
                             result[y][x] = 0;
                         }
                     }

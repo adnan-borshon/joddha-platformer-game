@@ -78,11 +78,9 @@ public class Game extends Pane {
             double startX = 27*tileSize;  // Use correct tileSize
             double startY = 5*tileSize;
             player = new Player(startX, startY, 50, 40, 3, this);
-            System.out.println("Player initialized at: " + startX + ", " + startY);
         } else {
             // Fallback if level1 is null
             player = new Player(500, 350, 50, 40, 3, this);
-            System.err.println("Level1 is null, using default player position");
         }
 
         setUpObject();
@@ -93,7 +91,6 @@ public class Game extends Pane {
 
     private void loadLevel() {
         try {
-            System.out.println("Loading level...");
 
             URL url = getClass().getResource("/Level_1/Level_1.fxml");
             if(url == null){
@@ -216,9 +213,6 @@ public class Game extends Pane {
         playMusic(0);
         GameState = playState;
 
-        // Debug: Print what was set up
-        System.out.println("Objects set up: " + countNonNullObjects());
-        System.out.println("NPCs set up: " + countNonNullNPCs());
     }
 
     private void onKeyPressed(KeyEvent e) {

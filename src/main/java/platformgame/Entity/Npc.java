@@ -55,9 +55,10 @@ public class Npc extends Entity {
     }
 
     public void setDialogue() {
-        dialogues[0] = "Hello Borshon";
-        dialogues[1] = "I hope you are fine";
-        dialogues[2] = "I am here to guide for the whole game";
+        dialogues[0] = "Rohan please be careful. There are many soldiers with weapons and there are hostages please save them.";
+        dialogues[1] = "Stay alert and watch your back.";
+        dialogues[2] = "The enemies are heavily armed.";
+        dialogues[3] = "Save the hostages at all costs.";
     }
 
     public void speak() {
