@@ -27,6 +27,8 @@ public class Game extends Pane {
     private final Canvas canvas;
     private final GraphicsContext gc;
     private final Set<KeyCode> keysPressed = new HashSet<>();
+    public final int gameOverState = 4;
+
 
     private long lastTime = System.nanoTime(); //  OPTIMIZED: for deltaTime
     // Game state for resume and pause

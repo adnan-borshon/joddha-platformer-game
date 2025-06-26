@@ -38,6 +38,11 @@ public class Player extends Entity {
 
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
 
+        // ✅ Test Damage: Press 'T' to lose 10% health
+        if (keys.contains(KeyCode.T)) {
+            takeDamage(0.10);
+        }
+
         // Explosion priority
         if (reactingToExplosion) {
             currentRow = explosionReactionRow;
@@ -75,12 +80,10 @@ public class Player extends Entity {
             currentFrame = 0;
             currentRow = fistAttackRow;
 
-            // Add punch hitbox
             Rectangle2D punchBox = facingRight
                     ? new Rectangle2D(x + width, y, width * 0.6, height)
                     : new Rectangle2D(x - width * 0.6, y, width * 0.6, height);
 
-            // Check if punch hits any scout
             for (Scout scoutEntity : game.scout) {
                 if (scoutEntity != null && punchBox.intersects(scoutEntity.getHitbox())) {
                     scoutEntity.takeDamage();
@@ -190,6 +193,23 @@ public class Player extends Entity {
         currentFrame = 0;
     }
 
+    public void takeDamage(double percentage) {
+        int damage = (int)(maxHp * percentage);
+        hp -= damage;
+        if (hp < 0) hp = 0;
+
+        triggerExplosionReaction(System.nanoTime());
+        gp.ui.showMessage("You took damage -" + damage + " HP");
+        gp.playSoundEffects(2);
+
+        if (hp == 0) {
+            gp.GameState = gp.gameOverState;
+            gp.ui.showMessage("Game Over");
+        }
+
+        System.out.println("HP: " + hp + "/" + maxHp); // ✅ Debug log
+    }
+
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
 
@@ -262,16 +282,25 @@ public class Player extends Entity {
                                 }
                                 break;
 
+                            case "mine":
+                                takeDamage(0.10); // ✅ Now reduces health
+                                game.playSoundEffects(4); // Optional explosion SFX
+                                game.ui.showMessage("Stepped on a mine! -10% HP");
+                                game.object[i] = null; // Remove mine after step
+                                break;
+
                             default:
                                 if (obj.collision) {
                                     return true;
                                 }
                                 break;
                         }
+                        ;
+                        }
                     }
                 }
             }
-        }
+
 
         return false;
     }
