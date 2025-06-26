@@ -12,7 +12,7 @@ import java.util.Set;
 public class Player extends Entity {
     private final int totalFrames_walk = 10;
 
-    // ✅ Explosion
+    // ✅ Explosion reaction
     private boolean reactingToExplosion = false;
     private long explosionReactionStartTime = 0;
     private final int explosionReactionFrames = 4;
@@ -31,6 +31,24 @@ public class Player extends Entity {
     public int maxHp = 10;
     public int ammo = 0;
 
+    // ✅ Death animation (Row 10 → Index 9)
+    private boolean isDead = false;
+    private long deathStartTime = 0;
+    private final int deathAnimationRow = 9;
+    private final int totalDeathFrames = 6;
+    private final long deathFrameDuration = 150_000_000;
+
+    // ✅ Damage cooldown to prevent spam damage
+    private long lastDamageTime = 0;
+    private final long damageCooldown = 500_000_000; // 0.5 seconds
+
+    // ✅ New: Melee hit reaction
+    private boolean reactingToMeleeHit = false;
+    private long meleeHitStartTime = 0;
+    private final int meleeHitFrames = 4;
+    private final int meleeHitRow = 8; // Add row 7 to sprite sheet
+    private final long meleeHitFrameDuration = 100_000_000;
+
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
         imageSet(totalFrames_walk, "/image/main_character.png");
@@ -38,31 +56,61 @@ public class Player extends Entity {
 
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
 
-        // ✅ Test Damage: Press 'T' to lose 10% health
-        if (keys.contains(KeyCode.T)) {
-            takeDamage(0.10);
+        if (isDead) {
+            currentRow = deathAnimationRow;
+            int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
+            if (frameIndex < totalDeathFrames) {
+                currentFrame = frameIndex;
+            } else {
+                currentFrame = totalDeathFrames - 1;
+                game.GameState = game.gameOverState;
+            }
+            return;
         }
 
-        // Explosion priority
         if (reactingToExplosion) {
             currentRow = explosionReactionRow;
             int frameIndex = (int) ((now - explosionReactionStartTime) / explosionFrameDuration);
-
             if (frameIndex < explosionReactionFrames) {
                 currentFrame = frameIndex;
             } else {
                 currentFrame = 0;
                 currentRow = 0;
                 reactingToExplosion = false;
+
+                if (hp <= 0 && !isDead) {
+                    isDead = true;
+                    deathStartTime = now;
+                    gp.ui.showMessage("You Died!");
+                    gp.playSoundEffects(2);
+                }
             }
             return;
         }
 
-        // Fist attack priority
+        if (reactingToMeleeHit) {
+            currentRow = meleeHitRow;
+            int frameIndex = (int) ((now - meleeHitStartTime) / meleeHitFrameDuration);
+            if (frameIndex < meleeHitFrames) {
+                currentFrame = frameIndex;
+            } else {
+                currentFrame = 0;
+                currentRow = 0;
+                reactingToMeleeHit = false;
+
+                if (hp <= 0 && !isDead) {
+                    isDead = true;
+                    deathStartTime = now;
+                    gp.ui.showMessage("You Died!");
+                    gp.playSoundEffects(2);
+                }
+            }
+            return;
+        }
+
         if (attackingWithFist) {
             currentRow = fistAttackRow;
             int frameIndex = (int) ((now - fistAttackStartTime) / fistFrameDuration);
-
             if (frameIndex < totalFistFrames) {
                 currentFrame = frameIndex;
             } else {
@@ -73,8 +121,7 @@ public class Player extends Entity {
             return;
         }
 
-        // Start fist attack if 'F' is pressed
-        if (keys.contains(KeyCode.F) && !attackingWithFist) {
+        if (keys.contains(KeyCode.SPACE) && !attackingWithFist) {
             attackingWithFist = true;
             fistAttackStartTime = now;
             currentFrame = 0;
@@ -89,6 +136,19 @@ public class Player extends Entity {
                     scoutEntity.takeDamage();
                 }
             }
+
+            for (Enemy enemyEntity : game.enemies) {
+                if (enemyEntity != null && !enemyEntity.isDead()) {
+                    Rectangle2D enemyHitbox = new Rectangle2D(
+                            enemyEntity.getX(), enemyEntity.getY(),
+                            enemyEntity.getWidth(), enemyEntity.getHeight()
+                    );
+                    if (punchBox.intersects(enemyHitbox)) {
+                        enemyEntity.receiveDamage();
+                    }
+                }
+            }
+
             return;
         }
 
@@ -99,27 +159,27 @@ public class Player extends Entity {
         if (game.GameState == game.playState) {
             if (keys.contains(KeyCode.W)) {
                 double testY = y - speed;
-                if (!level1.isCollisionRect(x, testY, width, height) &&
-                        !checkObjectCollisionsAndInteract(x, testY, width, height, game) &&
-                        !checkNpcCollision(x, testY, game)) {
+                if (!level1.isCollisionRect(x, testY, width, height)
+                        && !checkObjectCollisionsAndInteract(x, testY, width, height, game)
+                        && !checkNpcCollision(x, testY, game, now)) {
                     newY = testY;
                     moved = true;
                 }
             }
             if (keys.contains(KeyCode.S)) {
                 double testY = y + speed;
-                if (!level1.isCollisionRect(x, testY, width, height) &&
-                        !checkObjectCollisionsAndInteract(x, testY, width, height, game) &&
-                        !checkNpcCollision(x, testY, game)) {
+                if (!level1.isCollisionRect(x, testY, width, height)
+                        && !checkObjectCollisionsAndInteract(x, testY, width, height, game)
+                        && !checkNpcCollision(x, testY, game, now)) {
                     newY = testY;
                     moved = true;
                 }
             }
             if (keys.contains(KeyCode.A)) {
                 double testX = x - speed;
-                if (!level1.isCollisionRect(testX, y, width, height) &&
-                        !checkObjectCollisionsAndInteract(testX, y, width, height, game) &&
-                        !checkNpcCollision(testX, y, game)) {
+                if (!level1.isCollisionRect(testX, y, width, height)
+                        && !checkObjectCollisionsAndInteract(testX, y, width, height, game)
+                        && !checkNpcCollision(testX, y, game, now)) {
                     newX = testX;
                     moved = true;
                     facingRight = false;
@@ -127,15 +187,17 @@ public class Player extends Entity {
             }
             if (keys.contains(KeyCode.D)) {
                 double testX = x + speed;
-                if (!level1.isCollisionRect(testX, y, width, height) &&
-                        !checkObjectCollisionsAndInteract(testX, y, width, height, game) &&
-                        !checkNpcCollision(testX, y, game)) {
+                if (!level1.isCollisionRect(testX, y, width, height)
+                        && !checkObjectCollisionsAndInteract(testX, y, width, height, game)
+                        && !checkNpcCollision(testX, y, game, now)) {
                     newX = testX;
                     moved = true;
                     facingRight = true;
                 }
             }
         }
+
+        checkEnemyCollisions(game, now);
 
         for (Npc npcEntity : game.npc) {
             if (npcEntity != null && npcEntity.playerIsTouching) {
@@ -148,25 +210,51 @@ public class Player extends Entity {
         x = newX;
         y = newY;
 
-        if (moved) {
+        if (moved && !reactingToExplosion && !attackingWithFist && !isDead && !reactingToMeleeHit) {
             currentRow = 3;
             animationTimer += deltaTime;
             if (animationTimer > 100_000_000) {
                 nextFrame(totalFrames_walk);
                 animationTimer = 0;
             }
-        } else {
+        } else if (!reactingToExplosion && !attackingWithFist && !isDead && !reactingToMeleeHit) {
             currentFrame = 0;
             currentRow = 0;
         }
     }
+    private void checkEnemyCollisions(Game game, long now) {
+        double playerCenterX = x + width / 2;
+        double playerCenterY = y + height / 2;
 
-    private boolean checkNpcCollision(double playerX, double playerY, Game game) {
+        for (Enemy enemyEntity : game.enemies) {
+            if (enemyEntity != null && !enemyEntity.isDead()) {
+                double enemyCenterX = enemyEntity.getX() + enemyEntity.getWidth() / 2;
+                double enemyCenterY = enemyEntity.getY() + enemyEntity.getHeight() / 2;
+
+                double dx = playerCenterX - enemyCenterX;
+                double dy = playerCenterY - enemyCenterY;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= 25) { // 👈 Only hit if within 25 pixels
+                    if (!reactingToExplosion && !reactingToMeleeHit && !isDead && (now - lastDamageTime) > damageCooldown) {
+                        takeMeleeDamageFromEnemy(1, now);
+                        lastDamageTime = now;
+                    }
+                }
+            }
+        }
+    }
+
+
+    private boolean checkNpcCollision(double playerX, double playerY, Game game, long now) {
         Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
 
         for (Npc npcEntity : game.npc) {
             if (npcEntity != null) {
-                Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(), npcEntity.getWidth(), npcEntity.getHeight());
+                Rectangle2D npcRect = new Rectangle2D(
+                        npcEntity.getX(), npcEntity.getY(),
+                        npcEntity.getWidth(), npcEntity.getHeight()
+                );
                 if (playerRect.intersects(npcRect)) {
                     npcEntity.notifyPlayerCollision();
                     return true;
@@ -176,9 +264,24 @@ public class Player extends Entity {
 
         for (Scout scoutEntity : game.scout) {
             if (scoutEntity != null) {
-                Rectangle2D scoutRect = new Rectangle2D(scoutEntity.getX(), scoutEntity.getY(), scoutEntity.getWidth(), scoutEntity.getHeight());
+                Rectangle2D scoutRect = new Rectangle2D(
+                        scoutEntity.getX(), scoutEntity.getY(),
+                        scoutEntity.getWidth(), scoutEntity.getHeight()
+                );
                 if (playerRect.intersects(scoutRect)) {
                     scoutEntity.setPlayerInRange(true);
+                    return true;
+                }
+            }
+        }
+
+        for (Enemy enemyEntity : game.enemies) {
+            if (enemyEntity != null && !enemyEntity.isDead()) {
+                Rectangle2D enemyRect = new Rectangle2D(
+                        enemyEntity.getX(), enemyEntity.getY(),
+                        enemyEntity.getWidth(), enemyEntity.getHeight()
+                );
+                if (playerRect.intersects(enemyRect)) {
                     return true;
                 }
             }
@@ -193,35 +296,47 @@ public class Player extends Entity {
         currentFrame = 0;
     }
 
-    public void takeDamage(double percentage) {
-        int damage = (int)(maxHp * percentage);
-        hp -= damage;
-        if (hp < 0) hp = 0;
+    public void takeDamage(double percentage, long now) {
+        if (isDead) return;
 
-        triggerExplosionReaction(System.nanoTime());
+        int damage = (int) (maxHp * percentage);
+        if (hp < 0) {
+            hp = 0;
+        }
+
+        triggerExplosionReaction(now);
         gp.ui.showMessage("You took damage -" + damage + " HP");
         gp.playSoundEffects(2);
 
-        if (hp == 0) {
-            gp.GameState = gp.gameOverState;
-            gp.ui.showMessage("Game Over");
+        if (hp == 0 && !isDead) {
+            System.out.println("Player will die after hit animation");
         }
 
-        System.out.println("HP: " + hp + "/" + maxHp); // ✅ Debug log
+        System.out.println("HP: " + hp + "/" + maxHp);
+    }
+
+    public void takeMeleeDamageFromEnemy(int rawDamage, long now) {
+        if (isDead || reactingToExplosion || reactingToMeleeHit) return;
+
+        this.hp -= rawDamage;
+        if (hp < 0) hp = 0;
+
+        reactingToMeleeHit = true;
+        meleeHitStartTime = now;
+        currentFrame = 0;
+
+        gp.ui.showMessage("Enemy attacked! -" + rawDamage + " HP");
+        gp.playSoundEffects(2);
+
+        if (hp == 0 && !isDead) {
+            System.out.println("Player will die after melee hit animation");
+        }
+
+        System.out.println("HP: " + hp + "/" + maxHp);
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
-
-        gc.save();
-        gc.setLineWidth(1);
-        gc.setStroke(javafx.scene.paint.Color.GREEN);
-        double drawX = (x - camX) * scale;
-        double drawY = (y - camY) * scale;
-        double drawW = width * scale;
-        double drawH = height * scale;
-        gc.strokeRect(drawX, drawY, drawW, drawH);
-        gc.restore();
     }
 
     public boolean checkObjectCollisionsAndInteract(double nextX, double nextY, double width, double height, Game game) {
@@ -243,7 +358,6 @@ public class Player extends Entity {
                                 game.playSoundEffects(1);
                                 game.ui.showMessage("You got a key");
                                 break;
-
                             case "door":
                                 if (game.hasKey > 0) {
                                     game.hasKey--;
@@ -255,21 +369,18 @@ public class Player extends Entity {
                                     return true;
                                 }
                                 break;
-
                             case "boots":
                                 speed += 2;
                                 game.object[i] = null;
                                 game.playSoundEffects(2);
                                 game.ui.showMessage("You got speed up +2");
                                 break;
-
                             case "ammo":
                                 ammo += 10;
                                 game.object[i] = null;
                                 game.playSoundEffects(3);
                                 game.ui.showMessage("Picked up 10 ammo");
                                 break;
-
                             case "life":
                                 if (hp < maxHp) {
                                     hp += maxHp * 0.1;
@@ -281,26 +392,20 @@ public class Player extends Entity {
                                     game.ui.showMessage("Health already full");
                                 }
                                 break;
-
                             case "mine":
-                                takeDamage(0.10); // ✅ Now reduces health
-                                game.playSoundEffects(4); // Optional explosion SFX
+                                takeDamage(0.10, System.nanoTime());
+                                game.playSoundEffects(4);
                                 game.ui.showMessage("Stepped on a mine! -10% HP");
-                                game.object[i] = null; // Remove mine after step
+                                game.object[i] = null;
                                 break;
-
                             default:
-                                if (obj.collision) {
-                                    return true;
-                                }
+                                if (obj.collision) return true;
                                 break;
-                        }
-                        ;
                         }
                     }
                 }
             }
-
+        }
 
         return false;
     }
