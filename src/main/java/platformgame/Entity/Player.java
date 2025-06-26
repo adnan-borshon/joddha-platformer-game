@@ -11,6 +11,9 @@ import platformgame.Objects.SuperObject;
 import java.util.Set;
 
 public class Player extends Entity {
+
+
+
     private final int totalFrames_walk = 10;
 
     // ✅ Explosion reaction
@@ -146,6 +149,18 @@ public class Player extends Entity {
                     );
                     if (punchBox.intersects(enemyHitbox)) {
                         enemyEntity.receiveDamage();
+                    }
+                }
+            }
+            // Add soldier punch detection:
+            for (Soldier soldierEntity : game.soldiers) {
+                if (soldierEntity != null && !soldierEntity.isDead()) {
+                    Rectangle2D soldierHitbox = new Rectangle2D(
+                            soldierEntity.getX(), soldierEntity.getY(),
+                            soldierEntity.getWidth(), soldierEntity.getHeight()
+                    );
+                    if (punchBox.intersects(soldierHitbox)) {
+                        soldierEntity.receiveDamage();
                     }
                 }
             }

@@ -6,37 +6,37 @@ import platformgame.Game;
 
 public class Enemy extends Entity {
 
-    private final int totalFramesIdle = 7;
-    private final int totalFramesWalk = 8;
-    private final int totalFramesRun = 6;
-    private final int totalFramesAttack = 8;
+    protected final int totalFramesIdle = 7;
+    protected final int totalFramesWalk = 8;
+    protected final int totalFramesRun = 6;
+    protected final int totalFramesAttack = 8;
 
-    private boolean isIdle = true;
-    private boolean isWalking = false;
-    private boolean isRunning = false;
-    private boolean isAttacking = false;
+    protected boolean isIdle = true;
+    protected boolean isWalking = false;
+    protected boolean isRunning = false;
+    protected boolean isAttacking = false;
 
-    private long attackStartTime = 0;
-    private double patrolRange = 7 * gp.tileSize;
-    private double patrolStartX, patrolStartY;
-    private double patrolTargetX, patrolTargetY;
-    private boolean isFollowingPlayer = false;
+    protected long attackStartTime = 0;
+    protected double patrolRange = 7 * gp.tileSize;
+    protected double patrolStartX, patrolStartY;
+    protected double patrolTargetX, patrolTargetY;
+    protected boolean isFollowingPlayer = false;
 
     // 🔴 Health system
-    private int maxHealth = 5;
-    private int currentHealth = 5;
-    private boolean isDead = false;
+    protected int maxHealth = 5;
+    protected int currentHealth = 5;
+    protected boolean isDead = false;
 
     // ✅ Damage Cooldown (2 seconds)
-    private long lastAttackTime = 0;
-    private long damageCooldown = 2_000_000_000L;
+    protected long lastAttackTime = 0;
+    protected long damageCooldown = 2_000_000_000L;
 
     // ✅ Hit Animation (Row 9)
-    private boolean isHit = false;
-    private long hitStartTime = 0;
-    private final int hitRow = 9;
-    private final int totalHitFrames = 4;
-    private final long hitFrameDuration = 100_000_000L;
+    protected boolean isHit = false;
+    protected long hitStartTime = 0;
+    protected final int hitRow = 9;
+    protected final int totalHitFrames = 4;
+    protected final long hitFrameDuration = 100_000_000L;
 
     public Enemy(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -98,21 +98,21 @@ public class Enemy extends Entity {
         }
     }
 
-    private void startAttack(long now) {
+    protected void startAttack(long now) {
         isAttacking = true;
         attackStartTime = now;
         isWalking = false;
         isRunning = false;
     }
 
-    private void startFollowingPlayer(long now) {
+    protected void startFollowingPlayer(long now) {
         isFollowingPlayer = true;
         isWalking = false;
         isRunning = true;
         moveTowardsTarget(gp.player.getX(), gp.player.getY(), speed);
     }
 
-    private void patrol(long now) {
+    protected void patrol(long now) {
         isFollowingPlayer = false;
         isWalking = true;
         isRunning = false;
@@ -137,7 +137,7 @@ public class Enemy extends Entity {
         return distance < 10;
     }
 
-    private void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
+    protected void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
         double newX = x;
         double newY = y;
 
@@ -176,6 +176,7 @@ public class Enemy extends Entity {
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         if (isDead) return;
 
+        // Draw the actual enemy (including animations)
         drawEntity(gc, camX, camY, scale);
 
         // 🔴 Draw health bar above enemy
@@ -193,7 +194,18 @@ public class Enemy extends Entity {
 
         gc.setStroke(Color.BLACK);
         gc.strokeRect(barX, barY, barWidth, barHeight);
+
+        // 🔴 Debug Rectangle: Show bounding box around the enemy entity
+        double debugRectX = (x - camX) * scale;
+        double debugRectY = (y - camY) * scale;
+        double debugRectWidth = width * scale;
+        double debugRectHeight = height * scale;
+
+        gc.setStroke(Color.BLUE);  // Color for the debug rectangle
+        gc.setLineWidth(2);        // Make the outline a little thicker
+        gc.strokeRect(debugRectX, debugRectY, debugRectWidth, debugRectHeight);
     }
+
 
     // 🔴 Called from player punch detection
     public void receiveDamage() {

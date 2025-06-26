@@ -9,10 +9,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import platformgame.Entity.Enemy;
-import platformgame.Entity.Npc;
-import platformgame.Entity.Player;
-import platformgame.Entity.Scout;
+import platformgame.Entity.*;
 import platformgame.Event.EventHandler;
 import platformgame.Map.Level_1;
 import platformgame.Map.Level_1_controller;
@@ -40,6 +37,8 @@ public class Game extends Pane {
     public Scout[] scout = new Scout[10];
     public SuperObject[] object = new SuperObject[15];
     public Enemy[] enemies = new Enemy[40];
+    public Soldier[] soldiers = new Soldier[10];
+
 
     public final double scale = 1.15;
     public final Player player;
@@ -173,6 +172,12 @@ public class Game extends Pane {
                 enemyEntity.draw(gc, camX, camY, scale);
             }
         }
+        // Draw soldiers (make sure to draw them in the right order for depth)
+        for (Soldier soldier : soldiers) {
+            if (soldier != null) {
+                soldier.draw(gc, camX, camY, scale);
+            }
+        }
 
         for (SuperObject obj : object) {
             if (obj != null && !obj.isBehindPlayer(this)) {
@@ -203,6 +208,7 @@ public class Game extends Pane {
         aSetter.setNpc();
         aSetter.setScout();
         aSetter.setEnemy();
+        aSetter.setSoldiers();
         aSetter.setExplosion();
         playMusic(0);
         GameState = playState;
@@ -272,6 +278,11 @@ public class Game extends Pane {
                     enemyEntity.update(deltaTime, now);
                 }
             }
+            for (Soldier soldier : soldiers) {
+                if (soldier != null) {
+                    soldier.update(deltaTime, now);
+                }
+            }
 
             checkAndSpawnBoom();  // ✅ Call boom spawn check
 
@@ -280,6 +291,7 @@ public class Game extends Pane {
                 openMainMenu();
                 GameState = pauseState;
             }
+
 
             eventHandler.update(player, this, now);
         }

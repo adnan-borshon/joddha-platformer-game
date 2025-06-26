@@ -3,6 +3,7 @@ package platformgame;
 import platformgame.Entity.Enemy;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Scout;
+import platformgame.Entity.Soldier;
 import platformgame.Objects.*;
 
 public class AssetSetter {
@@ -70,9 +71,16 @@ public class AssetSetter {
     public void setEnemy() {
         // ✅ Corrected to match Game.java's enemies[]
         gp.enemies[0] = new Enemy(38 * gp.tileSize, 4 * gp.tileSize, 50, 40, 0.8, gp);
-        gp.enemies[1] = new Enemy(45 * gp.tileSize, 8 * gp.tileSize, 50, 40, 1, gp);
-        gp.enemies[2] = new Enemy(50 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[1] = new Enemy(45 * gp.tileSize, 8 * gp.tileSize, 50, 40, 1, gp);
+//        gp.enemies[2] = new Enemy(50 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
+
+
         // Add more if needed
+    }
+
+
+    public void setSoldiers(){
+        gp.soldiers[0]= new Soldier(36 * gp.tileSize, 19 * gp.tileSize, 50, 40, 1.2, gp);
     }
 
 }
