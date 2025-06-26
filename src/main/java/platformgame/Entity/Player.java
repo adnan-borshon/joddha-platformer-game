@@ -237,7 +237,9 @@ public class Player extends Entity {
 
                 if (distance <= 25) { // 👈 Only hit if within 25 pixels
                     if (!reactingToExplosion && !reactingToMeleeHit && !isDead && (now - lastDamageTime) > damageCooldown) {
-                        takeMeleeDamageFromEnemy(1, now);
+                        takeDamage(0.05, now); // 5% damage per hit from enemy
+
+
                         lastDamageTime = now;
                     }
                 }

@@ -27,9 +27,16 @@ public class Enemy extends Entity {
     private int currentHealth = 5;
     private boolean isDead = false;
 
-    // Damage cooldown
+    // ✅ Damage Cooldown (2 seconds)
     private long lastAttackTime = 0;
-    private long damageCooldown = 1_000_000_000L; // 1 second
+    private long damageCooldown = 2_000_000_000L;
+
+    // ✅ Hit Animation (Row 9)
+    private boolean isHit = false;
+    private long hitStartTime = 0;
+    private final int hitRow = 9;
+    private final int totalHitFrames = 4;
+    private final long hitFrameDuration = 100_000_000L;
 
     public Enemy(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -41,6 +48,19 @@ public class Enemy extends Entity {
 
     public void update(long deltaTime, long now) {
         if (isDead) return;
+
+        // ✅ If in hit animation, override everything else
+        if (isHit) {
+            currentRow = hitRow;
+            int frameIndex = (int) ((now - hitStartTime) / hitFrameDuration);
+            if (frameIndex < totalHitFrames) {
+                currentFrame = frameIndex;
+            } else {
+                isHit = false;
+                currentFrame = 0;
+            }
+            return;
+        }
 
         double distanceToPlayer = Math.sqrt(Math.pow(x - gp.player.getX(), 2) + Math.pow(y - gp.player.getY(), 2));
 
@@ -58,7 +78,7 @@ public class Enemy extends Entity {
 
         if (isAttacking) {
             currentRow = 6;
-            int frameIndex = (int) ((now - attackStartTime) / 80_000_000);
+            int frameIndex = (int) ((now - attackStartTime) / 150_000_000);
             if (frameIndex < totalFramesAttack) {
                 currentFrame = frameIndex;
             } else {
@@ -118,28 +138,40 @@ public class Enemy extends Entity {
     }
 
     private void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
+        double newX = x;
+        double newY = y;
+
         if (Math.abs(x - targetX) > moveSpeed) {
             if (x < targetX) {
-                x += moveSpeed;
+                newX += moveSpeed;
                 facingRight = true;
             } else {
-                x -= moveSpeed;
+                newX -= moveSpeed;
                 facingRight = false;
             }
         } else {
-            x = targetX;
+            newX = targetX;
+        }
+
+        if (!isColliding(newX, y)) {
+            x = newX;
         }
 
         if (Math.abs(y - targetY) > moveSpeed) {
             if (y < targetY) {
-                y += moveSpeed;
+                newY += moveSpeed;
             } else {
-                y -= moveSpeed;
+                newY -= moveSpeed;
             }
         } else {
-            y = targetY;
+            newY = targetY;
+        }
+
+        if (!isColliding(x, newY)) {
+            y = newY;
         }
     }
+
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         if (isDead) return;
@@ -151,7 +183,7 @@ public class Enemy extends Entity {
         double barHeight = 6;
         double healthPercent = (double) currentHealth / maxHealth;
         double barX = (x - camX) * scale + width * scale / 2 - barWidth / 2;
-        double barY = (y - camY) * scale -20 -20;
+        double barY = (y - camY) * scale - 40;
 
         gc.setFill(Color.GRAY);
         gc.fillRect(barX, barY, barWidth, barHeight);
@@ -163,13 +195,18 @@ public class Enemy extends Entity {
         gc.strokeRect(barX, barY, barWidth, barHeight);
     }
 
-    // 🔴 Call this from player punch detection
+    // 🔴 Called from player punch detection
     public void receiveDamage() {
         if (isDead) return;
+
         currentHealth--;
         if (currentHealth <= 0) {
             isDead = true;
-            // Optionally trigger death animation or remove from entity list
+        } else {
+            // ✅ Trigger hit animation
+            isHit = true;
+            hitStartTime = System.nanoTime();
+            currentFrame = 0;
         }
     }
 
