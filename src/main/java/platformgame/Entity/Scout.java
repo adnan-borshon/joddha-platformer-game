@@ -50,6 +50,8 @@ public class Scout extends Entity {
     private final double aggroRange = 4 * 32;
     private final double combatSpeed = speed * 1.2;
 
+    private String customDialogue = null;
+
     private Game gp;
 
     public Scout(double x, double y, double width, double height, double speed, Game gp) {
@@ -74,7 +76,6 @@ public class Scout extends Entity {
             inCombat = true;
             isFollowingPlayer = true;
             runningToBase = false;
-
             if (gp.player.getX() < x) facingRight = false;
             else facingRight = true;
         }
@@ -88,11 +89,7 @@ public class Scout extends Entity {
             currentRow = deathAnimationRow;
             deathStartTime = System.nanoTime();
         }
-
-
     }
-
-
 
     public Rectangle2D getHitbox() {
         return new Rectangle2D(x, y, width, height);
@@ -123,6 +120,7 @@ public class Scout extends Entity {
         if (showingDialogue) {
             if (now - dialogueStartTime >= dialogueDuration) {
                 showingDialogue = false;
+                customDialogue = null;
                 if (!isAggressive) runningToBase = true;
                 canBeAttacked = true;
             }
@@ -235,6 +233,11 @@ public class Scout extends Entity {
             idleAtBase = true;
             currentFrame = 0;
             currentRow = 2;
+
+            // Show custom dialogue at destination
+            showingDialogue = true;
+            dialogueStartTime = now;
+            customDialogue = "Alert! We've got an enemy inside our territory. Everyone, be on high alert!";
             return;
         }
         moveTowardsTarget(baseCampX, baseCampY, runSpeed);
@@ -347,17 +350,53 @@ public class Scout extends Entity {
     private void drawDialogue(GraphicsContext gc, double camX, double camY, double scale) {
         double screenX = (x - camX) * scale;
         double screenY = (y - camY) * scale - 60;
+
+        String dialogueText = (customDialogue != null) ? customDialogue : "TRAITOR!";
+
+        double boxWidth = 280;
+        double boxHeight = 70; // increased to fit multiple lines
+        double textX = screenX - boxWidth / 2 + 10;
+        double textY = screenY - boxHeight / 2 + 25;
+
         gc.setFill(Color.BLACK);
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
-        gc.fillRoundRect(screenX - 50, screenY - 30, 100, 30, 10, 10);
-        gc.strokeRoundRect(screenX - 50, screenY - 30, 100, 30, 10, 10);
+        gc.fillRoundRect(screenX - boxWidth / 2, screenY - boxHeight / 2, boxWidth, boxHeight, 10, 10);
+        gc.strokeRoundRect(screenX - boxWidth / 2, screenY - boxHeight / 2, boxWidth, boxHeight, 10, 10);
+
         gc.setFill(Color.RED);
         gc.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        gc.fillText("TRAITOR!", screenX - 30, screenY - 10);
+
+        // ✅ Wrapped text drawing
+        drawWrappedText(gc, dialogueText, textX, textY, boxWidth - 20);
+
         gc.setFill(Color.BLACK);
         gc.fillPolygon(new double[]{screenX - 5, screenX + 5, screenX}, new double[]{screenY, screenY, screenY + 10}, 3);
     }
+    private void drawWrappedText(GraphicsContext gc, String text, double x, double y, double maxWidth) {
+        String[] words = text.split(" ");
+        StringBuilder currentLine = new StringBuilder();
+        double lineHeight = gc.getFont().getSize() + 4;
+        double currentY = y;
+
+        for (String word : words) {
+            String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+            double testWidth = gc.getFont().getSize() * testLine.length() * 0.55;
+
+            if (testWidth > maxWidth && currentLine.length() > 0) {
+                gc.fillText(currentLine.toString(), x, currentY);
+                currentLine = new StringBuilder(word);
+                currentY += lineHeight;
+            } else {
+                currentLine = new StringBuilder(testLine);
+            }
+        }
+
+        if (currentLine.length() > 0) {
+            gc.fillText(currentLine.toString(), x, currentY);
+        }
+    }
+
 
     public void setPlayerInRange(boolean inRange) {
         this.playerInRange = inRange;
@@ -375,6 +414,4 @@ public class Scout extends Entity {
 
     public boolean isAggressive() { return isAggressive; }
     public boolean isInCombat() { return inCombat; }
-
-
 }
