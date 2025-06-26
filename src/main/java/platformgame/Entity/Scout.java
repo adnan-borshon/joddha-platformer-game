@@ -11,8 +11,8 @@ public class Scout extends Entity {
 
     private final int totalFramesWalk = 10;
     private final int totalFramesRun = 8;
-    private final int totalFramesAttack = 5; // ✅ Fixed: Attack has 5 frames
-    private final int attackRow = 7; // ✅ Fixed: Attack is in 8th row (index 7)
+    private final int totalFramesAttack = 5;
+    private final int attackRow = 7;
 
     private boolean playerInRange = false;
     private boolean attacking = false;
@@ -39,25 +39,30 @@ public class Scout extends Entity {
     private boolean visibleHealthBar = false;
     private long deathStartTime;
     private final int totalDeathFrames = 5;
-    private final int deathAnimationRow = 9;
-    private final long deathFrameDuration = 120_000_000;
+    private final int deathAnimationRow = 8;
+    private final long deathFrameDuration = 100_000_000;
 
-    private boolean canBeAttacked = false;
+    // ✅ FIXED: Hit reaction animation
+    private boolean reactingToHit = false;
+    private long hitReactionStartTime;
+    private final int hitReactionFrames = 4;
+    private final int hitReactionRow = 8; // 9th row (0-indexed)
+    private final long hitFrameDuration = 90_000_000;
+
+    private boolean canBeAttacked = true; // ✅ FIXED: Default to true so player can hit scout
     private boolean inCombat = false;
     private boolean isAggressive = false;
     private long lastAttackTime = 0;
     private final long attackCooldown = 1_500_000_000L;
     private final double combatRange = 2 * 32;
     private final double aggroRange = 4 * 32;
-    private final double combatSpeed = speed * 1.2;
+    private final double combatSpeed = speed * 1.3;
+
+    // ✅ UPDATED: Much smaller detection range (touching distance)
+    private final double touchDetectionRange = 3*32; // About 1.2 tiles instead of 3
 
     private String customDialogue = null;
-
     private Game gp;
-
-
-
-    // Fix 2: Add a damage prevention flag to prevent multiple hits in one attack
     private boolean hasDealtDamageThisAttack = false;
 
     public Scout(double x, double y, double width, double height, double speed, Game gp) {
@@ -72,49 +77,49 @@ public class Scout extends Entity {
     }
 
     public void takeDamage() {
-        if (!canBeAttacked || isDead) return;
+        if (isDead || reactingToHit) return; // ✅ FIXED: Removed canBeAttacked check
 
         health--;
         visibleHealthBar = true;
 
-        if (!isAggressive && !isDead) {
+        // ✅ FIXED: Always trigger hit animation when taking damage
+        reactingToHit = true;
+        hitReactionStartTime = System.nanoTime();
+        currentFrame = 0;
+        currentRow = hitReactionRow;
+
+        // ✅ FIXED: Stop any current attack when hit
+        attacking = false;
+        hasDealtDamageThisAttack = false;
+
+        if (!isAggressive && health > 0) { // ✅ FIXED: Only become aggressive if still alive
             isAggressive = true;
             inCombat = true;
             isFollowingPlayer = true;
             runningToBase = false;
-            if (gp.player.getX() < x) facingRight = false;
-            else facingRight = true;
+            facingRight = gp.player.getX() > x;
         }
 
-        if (health <= 0) {
-            isDead = true;
-            runningToBase = false;
-            inCombat = false;
-            isAggressive = false;
-            currentFrame = 0;
-            currentRow = deathAnimationRow;
-            deathStartTime = System.nanoTime();
-        }
+        // ✅ FIXED: Death is handled in update() after hit animation finishes
+        System.out.println("Scout took damage! Health: " + health); // Debug
     }
 
     public Rectangle2D getHitbox() {
-        return new Rectangle2D(x, y, width, height);
+        return new Rectangle2D(x-3, y+3, width, height);
     }
-    // Fix 1: Correct the canDamagePlayer() method
+
     public boolean canDamagePlayer() {
         if (!attacking || isDead) return false;
         long now = System.nanoTime();
         int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
-        // Fixed: Check if we're in the damage-dealing frames (2-3 out of 5 frames)
-        return frameIndex >= 2 && frameIndex <= 3; // Changed from <= 4 to <= 3
+        return frameIndex >= 2 && frameIndex <= 3;
     }
 
-
-    // Fix 3: Update the attack logic in handleCombat method
     private void handleCombat(long now, double distanceToPlayer) {
         double dx = gp.player.getX() - x;
         facingRight = dx > 0;
 
+        // If player is too far, stop being aggressive
         if (distanceToPlayer > aggroRange * 2.5) {
             isAggressive = false;
             inCombat = false;
@@ -123,58 +128,96 @@ public class Scout extends Entity {
             return;
         }
 
+        // Move towards player if not in range and not attacking
         if (distanceToPlayer > combatRange && !attacking) {
             moveTowardsPlayer(combatSpeed);
             currentRow = 3;
             currentFrame = (int) ((System.nanoTime() / 80_000_000) % totalFramesRun);
         }
 
+        // Start attack if in range and cooldown is over
         if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown) {
             attackStartTime = now;
             attacking = true;
-            hasDealtDamageThisAttack = false; // Reset damage flag
+            hasDealtDamageThisAttack = false;
             currentRow = attackRow;
             currentFrame = 0;
         }
+    }
 
+    private void handleAttack(long now) {
+        if (!attacking) return;
 
-// Fix 5: Update the main attack logic in the update method
-        if (attacking) {
-            currentRow = attackRow;
-            int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
-            if (frameIndex < totalFramesAttack) {
-                currentFrame = frameIndex;
+        currentRow = attackRow;
+        int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
 
-                // Fixed: Check damage dealing with prevention flag
-                if (canDamagePlayer() && !hasDealtDamageThisAttack) {
-                    Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
-                    Rectangle2D scoutHitbox = getHitbox();
-                    if (playerHitbox.intersects(scoutHitbox)) {
-                        gp.player.takeMeleeDamageFromEnemy(1, now);
-                        hasDealtDamageThisAttack = true;
-                        System.out.println("Scout dealt damage to player!"); // Debug message
-                    }
+        if (frameIndex < totalFramesAttack) {
+            currentFrame = frameIndex;
+
+            // Deal damage during specific frames
+            if (canDamagePlayer() && !hasDealtDamageThisAttack) {
+                Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
+                Rectangle2D scoutHitbox = getHitbox();
+                if (playerHitbox.intersects(scoutHitbox)) {
+                    gp.player.takeMeleeDamageFromEnemy(1, now);
+                    hasDealtDamageThisAttack = true;
+                    System.out.println("Scout dealt damage to player!"); // Debug line
                 }
-            } else {
-                currentFrame = 0;
-                attacking = false;
-                hasDealtDamageThisAttack = false; // Reset for next attack
-                lastAttackTime = now;
-                if (!isAggressive) returnToPatrolling();
             }
-            return;
-        }    }
+        } else {
+            // Attack animation finished
+            currentFrame = 0;
+            attacking = false;
+            hasDealtDamageThisAttack = false;
+            lastAttackTime = now;
+            if (!isAggressive) returnToPatrolling();
+        }
+    }
+
     public void update(long deltaTime, long now) {
+        // ✅ FIXED: Handle hit reaction animation first - PRIORITY OVER ALL OTHER ANIMATIONS
+        if (reactingToHit) {
+            currentRow = hitReactionRow;
+            int frameIndex = (int) ((now - hitReactionStartTime) / hitFrameDuration);
+            if (frameIndex < hitReactionFrames) {
+                currentFrame = frameIndex;
+            } else {
+                // Hit animation finished
+                reactingToHit = false;
+                currentFrame = 0;
+
+                // ✅ FIXED: Check if should transition to death AFTER hit animation
+                if (health <= 0) {
+                    isDead = true;
+                    currentRow = deathAnimationRow;
+                    deathStartTime = now;
+                    currentFrame = 0;
+
+                    // Stop all other behaviors when dead
+                    attacking = false;
+                    runningToBase = false;
+                    inCombat = false;
+                    isAggressive = false;
+                    isFollowingPlayer = false;
+                    showingDialogue = false;
+
+                    System.out.println("Scout died!"); // Debug
+                }
+            }
+            return; // Exit early, don't process other updates during hit reaction
+        }
+
+        // ✅ FIXED: Handle death animation
         if (isDead) {
             int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
             if (frameIndex < totalDeathFrames) {
                 currentRow = deathAnimationRow;
                 currentFrame = frameIndex;
             } else {
-                currentFrame = totalDeathFrames;
-                if (gp.scout != null) gp.scout[0] = null;
+                currentFrame = totalDeathFrames - 1; // Stay on last death frame
+                gp.scout[0]=null;
             }
-            return;
+            return; // Exit early, don't process other updates when dead
         }
 
         if (idleAtBase) return;
@@ -184,14 +227,14 @@ public class Scout extends Entity {
                 showingDialogue = false;
                 customDialogue = null;
                 if (!isAggressive) runningToBase = true;
-                canBeAttacked = true;
+                canBeAttacked = true; // ✅ FIXED: Set to true after dialogue
             }
             return;
         }
 
         double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
 
-        // ✅ Point 2: If running to base and player gets close, stop and attack
+        // If running to base and player gets close, stop and attack
         if (runningToBase && distanceToPlayer <= aggroRange) {
             runningToBase = false;
             isAggressive = true;
@@ -200,6 +243,13 @@ public class Scout extends Entity {
             facingRight = gp.player.getX() > x;
         }
 
+        // Handle attack animation and damage
+        if (attacking) {
+            handleAttack(now);
+            return;
+        }
+
+        // Handle combat behavior
         if (isAggressive && !isDead) {
             handleCombat(now, distanceToPlayer);
             return;
@@ -209,44 +259,23 @@ public class Scout extends Entity {
             Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
             Rectangle2D scoutHitbox = getHitbox();
             if (playerHitbox.intersects(scoutHitbox)) {
-                if (canBeAttacked) takeDamage();
-                return;
+                // ✅ FIXED: Player can always attack scout by punching
+                // No automatic damage here, damage is handled by player's punch
             }
             runToBase(now);
             return;
         }
 
-        if (attacking) {
-            currentRow = attackRow; // ✅ Fixed: Use correct attack row
-            int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
-            if (frameIndex < totalFramesAttack) {
-                currentFrame = frameIndex;
-
-                // ✅ Point 4: Deal damage to player during attack frames
-                if (canDamagePlayer()) {
-                    Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
-                    Rectangle2D scoutHitbox = getHitbox();
-                    if (playerHitbox.intersects(scoutHitbox)) {
-                        gp.player.takeMeleeDamageFromEnemy(1, now);
-                    }
-                }
-            } else {
-                currentFrame = 0;
-                attacking = false;
-                lastAttackTime = now;
-                if (!isAggressive) returnToPatrolling();
-            }
-            return;
-        }
-
-        if (distanceToPlayer <= 3 * gp.tileSize && !hasSeenPlayer) {
+        // ✅ UPDATED: Much smaller detection range for initial contact
+        if (distanceToPlayer <= touchDetectionRange && !hasSeenPlayer) {
             hasSeenPlayer = true;
             showingDialogue = true;
             dialogueStartTime = now;
             return;
         }
 
-        if (distanceToPlayer <= 3 * gp.tileSize && !isFollowingPlayer && hasSeenPlayer && !runningToBase) {
+        // ✅ UPDATED: Smaller range for following behavior
+        if (distanceToPlayer <= touchDetectionRange && !isFollowingPlayer && hasSeenPlayer && !runningToBase) {
             isFollowingPlayer = true;
         }
 
@@ -254,8 +283,6 @@ public class Scout extends Entity {
         else if (!runningToBase) patrol(now);
     }
 
-
-    // ✅ Point 6: Add collision checking to movement
     private void moveTowardsPlayer(double moveSpeed) {
         double dx = gp.player.getX() - x;
         double dy = gp.player.getY() - y;
@@ -265,7 +292,6 @@ public class Scout extends Entity {
             dx = (dx / distance) * moveSpeed;
             dy = (dy / distance) * moveSpeed;
 
-            // Check collision before moving
             double newX = x + dx;
             double newY = y + dy;
 
@@ -290,7 +316,6 @@ public class Scout extends Entity {
             currentFrame = 0;
             currentRow = 2;
 
-            // Show custom dialogue at destination
             showingDialogue = true;
             dialogueStartTime = now;
             customDialogue = "Alert! We've got an enemy inside our territory. Everyone, be on high alert!";
@@ -318,7 +343,6 @@ public class Scout extends Entity {
         return Math.hypot(x - patrolTargetX, y - patrolTargetY) < 10;
     }
 
-    // ✅ Point 6: Add collision checking to movement
     private void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
         double dx = targetX - x;
         double dy = targetY - y;
@@ -327,7 +351,6 @@ public class Scout extends Entity {
             dx = (dx / distance) * moveSpeed;
             dy = (dy / distance) * moveSpeed;
 
-            // Check collision before moving
             double newX = x + dx;
             double newY = y + dy;
 
@@ -342,13 +365,12 @@ public class Scout extends Entity {
         }
     }
 
-
-    // Fix 4: Also update the followPlayer method's attack logic
     private void followPlayer(long now, double distanceToPlayer) {
         double dx = gp.player.getX() - x;
         facingRight = dx > 0;
 
-        if (distanceToPlayer > 4 * gp.tileSize && !isAggressive) {
+        // ✅ UPDATED: Increased follow range but still reasonable
+        if (distanceToPlayer > 6 * gp.tileSize && !isAggressive) {
             isFollowingPlayer = false;
             returnToPatrolling();
             return;
@@ -357,7 +379,7 @@ public class Scout extends Entity {
         if (distanceToPlayer < 1.5 * gp.tileSize && !attacking) {
             attackStartTime = now;
             attacking = true;
-            hasDealtDamageThisAttack = false; // Reset damage flag
+            hasDealtDamageThisAttack = false;
             currentRow = attackRow;
             currentFrame = 0;
             return;
@@ -382,7 +404,6 @@ public class Scout extends Entity {
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-        // ✅ Point 1: Fixed sprite flipping - pass !facingRight to flip when facing left
         drawEntity(gc, camX, camY, scale, !facingRight);
 
         gc.save();
@@ -390,7 +411,7 @@ public class Scout extends Entity {
         gc.setStroke(isAggressive ? Color.RED : Color.LIME);
         double drawX = (x - camX) * scale;
         double drawY = (y - camY) * scale;
-        gc.strokeRect(drawX, drawY, width * scale, height * scale);
+        gc.strokeRect(drawX+2, drawY+2, width * scale, height * scale);
         gc.restore();
 
         if (showingDialogue) drawDialogue(gc, camX, camY, scale);
@@ -426,7 +447,7 @@ public class Scout extends Entity {
         String dialogueText = (customDialogue != null) ? customDialogue : "TRAITOR!";
 
         double boxWidth = 280;
-        double boxHeight = 70; // increased to fit multiple lines
+        double boxHeight = 70;
         double textX = screenX - boxWidth / 2 + 10;
         double textY = screenY - boxHeight / 2 + 25;
 
@@ -439,7 +460,6 @@ public class Scout extends Entity {
         gc.setFill(Color.RED);
         gc.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
-        // ✅ Wrapped text drawing
         drawWrappedText(gc, dialogueText, textX, textY, boxWidth - 20);
 
         gc.setFill(Color.BLACK);
@@ -474,11 +494,12 @@ public class Scout extends Entity {
         this.playerInRange = inRange;
         if (inRange && !isFollowingPlayer && !runningToBase) {
             double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
-            if (distanceToPlayer <= 3 * gp.tileSize && !hasSeenPlayer) {
+            // ✅ UPDATED: Use touch detection range instead of 3 tiles
+            if (distanceToPlayer <= touchDetectionRange && !hasSeenPlayer) {
                 hasSeenPlayer = true;
                 showingDialogue = true;
                 dialogueStartTime = System.nanoTime();
-            } else if (distanceToPlayer <= 3 * gp.tileSize && hasSeenPlayer && !runningToBase) {
+            } else if (distanceToPlayer <= touchDetectionRange && hasSeenPlayer && !runningToBase) {
                 isFollowingPlayer = true;
             }
         }
@@ -486,4 +507,5 @@ public class Scout extends Entity {
 
     public boolean isAggressive() { return isAggressive; }
     public boolean isInCombat() { return inCombat; }
+    public boolean isDead() { return isDead; } // ✅ ADDED: Missing getter method
 }
