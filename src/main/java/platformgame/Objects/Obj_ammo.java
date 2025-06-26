@@ -3,6 +3,7 @@ package platformgame.Objects;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import platformgame.Game;
+import platformgame.ImageLoader;
 
 import java.util.Objects;
 
@@ -10,11 +11,11 @@ public class Obj_ammo extends SuperObject {
 
     public Obj_ammo() {
         name = "Ammo";
-        image = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                "/image/Object/Ammo.png"
-        )));
+        // Instead of directly using new Image(), use ImageLoader:
+        image = ImageLoader.load("/image/Object/Ammo.png");
         collision = false; // Ammo doesn't block player
     }
+
 
     @Override
     public void draw(GraphicsContext gc, Game game) {

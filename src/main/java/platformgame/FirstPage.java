@@ -125,7 +125,7 @@ public class FirstPage {
     private void startNewGame() {
         try {
             // Add debug log
-            System.out.println("Game instance created, now starting game loop.");
+
             Game game = new Game();
 
             game.startGameLoop();
@@ -133,8 +133,7 @@ public class FirstPage {
             Scene currentScene = rootPane.getScene();
             currentScene.setRoot(game); //  Reuse current scene
             game.requestFocus();
-            // Debug log
-            System.out.println("Game scene set and focus requested.");
+
         } catch (Exception e) {
             e.printStackTrace();
         }

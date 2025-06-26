@@ -5,9 +5,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import platformgame.Game;
+import platformgame.ImageLoader;
 import platformgame.Objects.SuperObject;
 
-// Parent class for all entities like Player, NPC, Enemy
 public abstract class Entity {
     protected double x, y;
     protected double width, height;
@@ -22,14 +22,14 @@ public abstract class Entity {
     protected final int offsetX = (frameWidth - spriteWidth) / 2;
     protected final int offsetY = (frameHeight - spriteHeight); // Bottom align
 
-    //Sprite frame
+    // Sprite frame
     protected int currentFrame = 0;
     protected int currentRow = 0;
     protected boolean facingRight = true;
 
     protected long animationTimer = 0; // to accumulate time
 
-    protected int actionCounter = 0; //movement of Entity subclasses
+    protected int actionCounter = 0; // movement of Entity subclasses
 
     String dialogues[] = new String[10];
 
@@ -79,9 +79,9 @@ public abstract class Entity {
         }
     }
 
-    // Loads sprite image and extracts animation frames
+    // Loads sprite image and extracts animation frames using ImageLoader
     protected void imageSet(int n, String spritePath) {
-        sprite = new Image(getClass().getResourceAsStream(spritePath));
+        sprite = ImageLoader.load(spritePath);  // Use ImageLoader to load image
         frames = new WritableImage[n];
 
         for (int i = 0; i < n; i++) {
@@ -158,5 +158,4 @@ public abstract class Entity {
     public double getY() { return y; }
     public double getWidth() { return width; }
     public double getHeight() { return height; }
-
 }

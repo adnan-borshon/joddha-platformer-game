@@ -3,6 +3,7 @@ package platformgame.Objects;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import platformgame.Game;
+import platformgame.ImageLoader;
 
 import java.util.Objects;
 
@@ -10,11 +11,11 @@ public class Obj_Life extends SuperObject {
 
     public Obj_Life() {
         name = "life";
-        image = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                "/image/Object/Health-Icon.png"  // ✅ using this image
-        )));
+        // Instead of directly using new Image(), use ImageLoader:
+        image = ImageLoader.load("/image/Object/heart_full.png");
         collision = false;
     }
+
 
     @Override
     public void draw(GraphicsContext gc, Game game) {

@@ -3,6 +3,7 @@ package platformgame.Map;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import org.w3c.dom.*;
+import platformgame.ImageLoader;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -97,7 +98,14 @@ public class Level_1 {
                     }
                 }
 
-                Image image = new Image(imageStream);
+                Image image = ImageLoader.load("/Level_1/Assets/" + fileName);
+                if (image == null) {
+                    // Try without Assets folder
+                    image = ImageLoader.load("/Level_1/" + fileName);
+                    if (image == null) {
+                        continue;
+                    }
+                }
 
                 Tileset t = new Tileset();
                 t.firstGid = firstGid;

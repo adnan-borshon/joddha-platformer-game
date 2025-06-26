@@ -46,24 +46,16 @@ public class UI {
             Obj_Key key = new Obj_Key();
             keyIcon = key.image;
 
-            ammoIcon = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/Object/Ammo.png")));
+            // Replace direct image loading with ImageLoader
+            ammoIcon = ImageLoader.load("/image/Object/Ammo.png");
+            dialogueBoxImage = ImageLoader.load("/image/00_UI/dialogue/UI_board_Large_stone.png");
+            parchmentBoxImage = ImageLoader.load("/image/00_UI/dialogue/UI_board_Large_parchment.png");
+            exclamationIcon = ImageLoader.load("/image/00_UI/dialogue/Exclamation_Yellow.png");
+            cancelButtonImage = ImageLoader.load("/image/00_UI/dialogue/TextBTN_Cancel.png");
 
-            dialogueBoxImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/00_UI/dialogue/UI_board_Large_stone.png")));
-            parchmentBoxImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/00_UI/dialogue/UI_board_Large_parchment.png")));
-            exclamationIcon = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/00_UI/dialogue/Exclamation_Yellow.png")));
-            cancelButtonImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/00_UI/dialogue/TextBTN_Cancel.png")));
-
-            heartIcon = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/Object/Health-Icon.png")));
-            healthBarFull = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/Object/Health-Bar.png")));
-            healthBarEmpty = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                    "/image/Object/Health-line.png")));
+            heartIcon = ImageLoader.load("/image/Object/Health-Icon.png");
+            healthBarFull = ImageLoader.load("/image/Object/Health-Bar.png");
+            healthBarEmpty = ImageLoader.load("/image/Object/Health-line.png");
 
             Font baseFont = Font.loadFont(
                     Objects.requireNonNull(getClass().getResourceAsStream(
@@ -86,7 +78,6 @@ public class UI {
         dialogueScale = 0.0;
         dialogueOpacity = 0.0;
     }
-
 
     public void drawHealthBar(GraphicsContext gc, int currentHP, int maxHP) {
         double heartX = 20;
@@ -136,7 +127,6 @@ public class UI {
         }
     }
 
-
     private void updateDialogueAnimation() {
         if (dialogueAnimating) {
             animationProgress += ANIMATION_SPEED;
@@ -182,7 +172,6 @@ public class UI {
             if (keyIcon != null) {
                 gc.drawImage(keyIcon, 20, 20, 32, 32);
             }
-
 
             gc.fillText("x " + game.hasKey, 60, 45);
 

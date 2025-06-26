@@ -3,11 +3,7 @@ package platformgame;
 import platformgame.Entity.Enemy;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Scout;
-import platformgame.Objects.Obj_Boots;
-import platformgame.Objects.Obj_Door;
-import platformgame.Objects.Obj_Key;
-import platformgame.Objects.Obj_ammo;
-import platformgame.Objects.Obj_booth; // ✅ Telephone booth object
+import platformgame.Objects.*;
 
 public class AssetSetter {
     Game gp;
@@ -21,13 +17,7 @@ public class AssetSetter {
         gp.object[0].worldX = 48 * gp.tileSize;
         gp.object[0].worldY = 50 * gp.tileSize;
 
-        gp.object[1] = new Obj_Key();
-        gp.object[1].worldX = 50 * gp.tileSize;
-        gp.object[1].worldY = 54 * gp.tileSize;
 
-        gp.object[2] = new Obj_Door();
-        gp.object[2].worldX = 50 * gp.tileSize;
-        gp.object[2].worldY = 52 * gp.tileSize;
 
         gp.object[3] = new Obj_Door();
         gp.object[3].worldX = 62 * gp.tileSize;
@@ -56,6 +46,11 @@ public class AssetSetter {
         gp.object[9] = new Obj_booth();
         gp.object[9].worldX = 54 * gp.tileSize;
         gp.object[9].worldY = 22 * gp.tileSize;
+
+        gp.object[1] =new Obj_Life();
+        gp.object[1].worldX = 25 * gp.tileSize;
+        gp.object[1].worldY = 21 * gp.tileSize;
+
     }
 
     public void setNpc() {

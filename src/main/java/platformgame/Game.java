@@ -37,7 +37,7 @@ public class Game extends Pane {
     public AssetSetter aSetter = new AssetSetter(this);
     public Npc[] npc = new Npc[10];
     public Scout[] scout = new Scout[10];
-    public SuperObject[] object = new SuperObject[10];
+    public SuperObject[] object = new SuperObject[15];
     public Enemy[] enemies = new Enemy[40];
 
     public final double scale = 1.15;
@@ -283,13 +283,7 @@ public class Game extends Pane {
         }
     }
 
-    private void restartGame() {
-        this.getChildren().clear();
-        Game newGame = new Game();
-        Scene currentScene = this.getScene();
-        currentScene.setRoot(newGame);
-        newGame.startGameLoop();
-    }
+
 
     public void playMusic(int i) {
         music.loop(i);

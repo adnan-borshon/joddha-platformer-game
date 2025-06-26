@@ -1,20 +1,20 @@
 package platformgame.Objects;
 
 import javafx.scene.image.Image;
+import platformgame.ImageLoader;
 
 import java.util.Objects;
 
-public class Obj_heart {
+public class Obj_heart extends SuperObject{
     public Image heartIcon;
-    public Image healthFullBar;
-    public Image healthEmptyBar;
+
 
     public Obj_heart() {
-        heartIcon = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                "/image/Object/Health-Icon.png")));
-        healthFullBar = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                "/image/Object/Health-Bar.png")));
-        healthEmptyBar = new Image(Objects.requireNonNull(getClass().getResourceAsStream(
-                "/image/Object/Health-line.png")));
+
+        name="heart";
+
+        heartIcon = ImageLoader.load("/image/Object/Health-Icon.png");
+        collision = false;
     }
+
 }

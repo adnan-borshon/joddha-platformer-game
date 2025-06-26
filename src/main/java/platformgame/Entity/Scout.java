@@ -11,7 +11,8 @@ public class Scout extends Entity {
 
     private final int totalFramesWalk = 10;
     private final int totalFramesRun = 8;
-    private final int totalFramesAttack = 12;
+    private final int totalFramesAttack = 5; // ✅ Fixed: Attack has 5 frames
+    private final int attackRow = 7; // ✅ Fixed: Attack is in 8th row (index 7)
 
     private boolean playerInRange = false;
     private boolean attacking = false;
@@ -54,6 +55,11 @@ public class Scout extends Entity {
 
     private Game gp;
 
+
+
+    // Fix 2: Add a damage prevention flag to prevent multiple hits in one attack
+    private boolean hasDealtDamageThisAttack = false;
+
     public Scout(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
         this.gp = gp;
@@ -94,14 +100,70 @@ public class Scout extends Entity {
     public Rectangle2D getHitbox() {
         return new Rectangle2D(x, y, width, height);
     }
-
+    // Fix 1: Correct the canDamagePlayer() method
     public boolean canDamagePlayer() {
         if (!attacking || isDead) return false;
         long now = System.nanoTime();
         int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
-        return frameIndex >= 6 && frameIndex <= 8;
+        // Fixed: Check if we're in the damage-dealing frames (2-3 out of 5 frames)
+        return frameIndex >= 2 && frameIndex <= 3; // Changed from <= 4 to <= 3
     }
 
+
+    // Fix 3: Update the attack logic in handleCombat method
+    private void handleCombat(long now, double distanceToPlayer) {
+        double dx = gp.player.getX() - x;
+        facingRight = dx > 0;
+
+        if (distanceToPlayer > aggroRange * 2.5) {
+            isAggressive = false;
+            inCombat = false;
+            isFollowingPlayer = false;
+            runningToBase = true;
+            return;
+        }
+
+        if (distanceToPlayer > combatRange && !attacking) {
+            moveTowardsPlayer(combatSpeed);
+            currentRow = 3;
+            currentFrame = (int) ((System.nanoTime() / 80_000_000) % totalFramesRun);
+        }
+
+        if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown) {
+            attackStartTime = now;
+            attacking = true;
+            hasDealtDamageThisAttack = false; // Reset damage flag
+            currentRow = attackRow;
+            currentFrame = 0;
+        }
+
+
+// Fix 5: Update the main attack logic in the update method
+        if (attacking) {
+            currentRow = attackRow;
+            int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
+            if (frameIndex < totalFramesAttack) {
+                currentFrame = frameIndex;
+
+                // Fixed: Check damage dealing with prevention flag
+                if (canDamagePlayer() && !hasDealtDamageThisAttack) {
+                    Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
+                    Rectangle2D scoutHitbox = getHitbox();
+                    if (playerHitbox.intersects(scoutHitbox)) {
+                        gp.player.takeMeleeDamageFromEnemy(1, now);
+                        hasDealtDamageThisAttack = true;
+                        System.out.println("Scout dealt damage to player!"); // Debug message
+                    }
+                }
+            } else {
+                currentFrame = 0;
+                attacking = false;
+                hasDealtDamageThisAttack = false; // Reset for next attack
+                lastAttackTime = now;
+                if (!isAggressive) returnToPatrolling();
+            }
+            return;
+        }    }
     public void update(long deltaTime, long now) {
         if (isDead) {
             int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
@@ -128,6 +190,16 @@ public class Scout extends Entity {
         }
 
         double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
+
+        // ✅ Point 2: If running to base and player gets close, stop and attack
+        if (runningToBase && distanceToPlayer <= aggroRange) {
+            runningToBase = false;
+            isAggressive = true;
+            inCombat = true;
+            isFollowingPlayer = true;
+            facingRight = gp.player.getX() > x;
+        }
+
         if (isAggressive && !isDead) {
             handleCombat(now, distanceToPlayer);
             return;
@@ -145,10 +217,19 @@ public class Scout extends Entity {
         }
 
         if (attacking) {
-            currentRow = 5;
+            currentRow = attackRow; // ✅ Fixed: Use correct attack row
             int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
             if (frameIndex < totalFramesAttack) {
                 currentFrame = frameIndex;
+
+                // ✅ Point 4: Deal damage to player during attack frames
+                if (canDamagePlayer()) {
+                    Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
+                    Rectangle2D scoutHitbox = getHitbox();
+                    if (playerHitbox.intersects(scoutHitbox)) {
+                        gp.player.takeMeleeDamageFromEnemy(1, now);
+                    }
+                }
             } else {
                 currentFrame = 0;
                 attacking = false;
@@ -173,43 +254,8 @@ public class Scout extends Entity {
         else if (!runningToBase) patrol(now);
     }
 
-    private void handleCombat(long now, double distanceToPlayer) {
-        double dx = gp.player.getX() - x;
-        facingRight = dx > 0;
 
-        if (distanceToPlayer > aggroRange * 2) {
-            isAggressive = false;
-            inCombat = false;
-            returnToPatrolling();
-            return;
-        }
-
-        if (distanceToPlayer > combatRange && !attacking) {
-            moveTowardsPlayer(combatSpeed);
-            currentRow = 3;
-            currentFrame = (int) ((System.nanoTime() / 80_000_000) % totalFramesRun);
-        }
-
-        if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown) {
-            attackStartTime = now;
-            attacking = true;
-            currentRow = 5;
-            currentFrame = 0;
-        }
-
-        if (attacking) {
-            currentRow = 5;
-            int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
-            if (frameIndex < totalFramesAttack) {
-                currentFrame = frameIndex;
-            } else {
-                currentFrame = 0;
-                attacking = false;
-                lastAttackTime = now;
-            }
-        }
-    }
-
+    // ✅ Point 6: Add collision checking to movement
     private void moveTowardsPlayer(double moveSpeed) {
         double dx = gp.player.getX() - x;
         double dy = gp.player.getY() - y;
@@ -218,8 +264,18 @@ public class Scout extends Entity {
         if (distance > moveSpeed) {
             dx = (dx / distance) * moveSpeed;
             dy = (dy / distance) * moveSpeed;
-            x += dx;
-            y += dy;
+
+            // Check collision before moving
+            double newX = x + dx;
+            double newY = y + dy;
+
+            if (!isColliding(newX, y)) {
+                x = newX;
+            }
+            if (!isColliding(x, newY)) {
+                y = newY;
+            }
+
             facingRight = dx > 0;
         }
     }
@@ -262,6 +318,7 @@ public class Scout extends Entity {
         return Math.hypot(x - patrolTargetX, y - patrolTargetY) < 10;
     }
 
+    // ✅ Point 6: Add collision checking to movement
     private void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
         double dx = targetX - x;
         double dy = targetY - y;
@@ -269,26 +326,39 @@ public class Scout extends Entity {
         if (distance > moveSpeed) {
             dx = (dx / distance) * moveSpeed;
             dy = (dy / distance) * moveSpeed;
-            x += dx;
-            y += dy;
+
+            // Check collision before moving
+            double newX = x + dx;
+            double newY = y + dy;
+
+            if (!isColliding(newX, y)) {
+                x = newX;
+            }
+            if (!isColliding(x, newY)) {
+                y = newY;
+            }
+
             facingRight = dx > 0;
         }
     }
 
+
+    // Fix 4: Also update the followPlayer method's attack logic
     private void followPlayer(long now, double distanceToPlayer) {
         double dx = gp.player.getX() - x;
         facingRight = dx > 0;
 
-        if (distanceToPlayer > 6 * gp.tileSize && !isAggressive) {
+        if (distanceToPlayer > 4 * gp.tileSize && !isAggressive) {
             isFollowingPlayer = false;
             returnToPatrolling();
             return;
         }
 
-        if (distanceToPlayer < 2 * gp.tileSize && !attacking) {
+        if (distanceToPlayer < 1.5 * gp.tileSize && !attacking) {
             attackStartTime = now;
             attacking = true;
-            currentRow = 5;
+            hasDealtDamageThisAttack = false; // Reset damage flag
+            currentRow = attackRow;
             currentFrame = 0;
             return;
         }
@@ -312,7 +382,9 @@ public class Scout extends Entity {
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-        drawEntity(gc, camX, camY, scale);
+        // ✅ Point 1: Fixed sprite flipping - pass !facingRight to flip when facing left
+        drawEntity(gc, camX, camY, scale, !facingRight);
+
         gc.save();
         gc.setLineWidth(1);
         gc.setStroke(isAggressive ? Color.RED : Color.LIME);
@@ -373,6 +445,7 @@ public class Scout extends Entity {
         gc.setFill(Color.BLACK);
         gc.fillPolygon(new double[]{screenX - 5, screenX + 5, screenX}, new double[]{screenY, screenY, screenY + 10}, 3);
     }
+
     private void drawWrappedText(GraphicsContext gc, String text, double x, double y, double maxWidth) {
         String[] words = text.split(" ");
         StringBuilder currentLine = new StringBuilder();
@@ -396,7 +469,6 @@ public class Scout extends Entity {
             gc.fillText(currentLine.toString(), x, currentY);
         }
     }
-
 
     public void setPlayerInRange(boolean inRange) {
         this.playerInRange = inRange;

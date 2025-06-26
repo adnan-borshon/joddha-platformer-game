@@ -302,6 +302,7 @@ public class Player extends Entity {
         if (isDead) return;
 
         int damage = (int) (maxHp * percentage);
+        hp-=damage;
         if (hp < 0) {
             hp = 0;
         }
@@ -310,19 +311,25 @@ public class Player extends Entity {
         gp.ui.showMessage("You took damage -" + damage + " HP");
         gp.playSoundEffects(2);
 
-        if (hp == 0 && !isDead) {
-            System.out.println("Player will die after hit animation");
-        }
 
-        System.out.println("HP: " + hp + "/" + maxHp);
+
     }
 
+    // Fix for Player class - Update takeMeleeDamageFromEnemy method
     public void takeMeleeDamageFromEnemy(int rawDamage, long now) {
-        if (isDead || reactingToExplosion || reactingToMeleeHit) return;
+        // Simplified condition - only check if dead (remove other reaction checks)
+        if (isDead) return;
+
+        // Add damage cooldown check to prevent spam damage
+        if ((now - lastDamageTime) < damageCooldown) return;
 
         this.hp -= rawDamage;
         if (hp < 0) hp = 0;
 
+        // Update last damage time
+        lastDamageTime = now;
+
+        // Trigger melee hit reaction
         reactingToMeleeHit = true;
         meleeHitStartTime = now;
         currentFrame = 0;
@@ -330,13 +337,8 @@ public class Player extends Entity {
         gp.ui.showMessage("Enemy attacked! -" + rawDamage + " HP");
         gp.playSoundEffects(2);
 
-        if (hp == 0 && !isDead) {
-            System.out.println("Player will die after melee hit animation");
-        }
-
-        System.out.println("HP: " + hp + "/" + maxHp);
+        System.out.println("Player took melee damage: " + rawDamage + ", HP now: " + hp); // Debug message
     }
-
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
     }
@@ -380,16 +382,17 @@ public class Player extends Entity {
                             case "ammo":
                                 ammo += 10;
                                 game.object[i] = null;
-                                game.playSoundEffects(3);
+                                game.playSoundEffects(1);
                                 game.ui.showMessage("Picked up 10 ammo");
                                 break;
                             case "life":
                                 if (hp < maxHp) {
-                                    hp += maxHp * 0.1;
+                                    hp += maxHp * 0.2;
                                     if (hp > maxHp) hp = maxHp;
+                                    System.out.println("Picking up life, removing object: " + game.object[i].name);
                                     game.object[i] = null;
-                                    game.playSoundEffects(3);
-                                    game.ui.showMessage("Life restored +10%");
+                                    game.playSoundEffects(1);
+                                    game.ui.showMessage("Life restored +20%");
                                 } else {
                                     game.ui.showMessage("Health already full");
                                 }
