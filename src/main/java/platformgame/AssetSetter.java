@@ -51,6 +51,7 @@ public class AssetSetter {
         gp.object[1].worldX = 25 * gp.tileSize;
         gp.object[1].worldY = 21 * gp.tileSize;
 
+
     }
 
     public void setNpc() {
@@ -73,4 +74,5 @@ public class AssetSetter {
         gp.enemies[2] = new Enemy(50 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
         // Add more if needed
     }
+
 }

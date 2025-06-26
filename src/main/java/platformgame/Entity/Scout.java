@@ -486,4 +486,15 @@ public class Scout extends Entity {
 
     public boolean isAggressive() { return isAggressive; }
     public boolean isInCombat() { return inCombat; }
+
+    // Add this method to your Scout class
+    public boolean isDead() {
+        return isDead;
+    }
+
+    // Also add this getter method if you don't have it
+    public boolean isIsDead() {
+        return isDead;
+    }
+
 }

@@ -5,6 +5,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import platformgame.Game;
 import platformgame.Map.Level_1;
+import platformgame.Objects.Obj_Boom;
 import platformgame.Objects.SuperObject;
 
 import java.util.Set;
@@ -402,7 +403,28 @@ public class Player extends Entity {
                                 game.playSoundEffects(4);
                                 game.ui.showMessage("Stepped on a mine! -10% HP");
                                 game.object[i] = null;
-                                break;
+                                // Add this case to your switch statement in checkObjectCollisionsAndInteract method
+                                // Add this modification to your Player.java class in the checkObjectCollisionsAndInteract method:
+
+                            case "boom":
+                                if (obj instanceof Obj_Boom) {
+                                    Obj_Boom boomObj = (Obj_Boom) obj;
+                                    if (boomObj.shouldAppear() && !boomObj.isCollected()) {
+                                        boomObj.collect();
+                                        game.object[i] = null;
+                                        game.playSoundEffects(1);
+                                        game.ui.showMessage("You collected the mysterious boom!");
+
+                                        System.out.println("Player collected the boom!");
+
+                                        // ✅ Enable bridge destruction when boom is collected
+                                        game.eventHandler.enableBridgeDestruction();
+                                        game.ui.showMessage("You can now destroy the bridge!");
+                                    } else {
+                                        game.ui.showMessage("This boom seems inactive...");
+                                    }
+                                }
+                                break; // ✅ ADD THIS BREAK STATEMENT
                             default:
                                 if (obj.collision) return true;
                                 break;
