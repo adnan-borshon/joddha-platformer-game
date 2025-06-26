@@ -1,6 +1,7 @@
 package platformgame.Entity;
 
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 import platformgame.Game;
 
 public class Enemy extends Entity {
@@ -16,10 +17,19 @@ public class Enemy extends Entity {
     private boolean isAttacking = false;
 
     private long attackStartTime = 0;
-    private double patrolRange = 7 * gp.tileSize; // Patrol range
-    private double patrolStartX, patrolStartY; // Initial patrol position
-    private double patrolTargetX, patrolTargetY; // Target position for patrol
+    private double patrolRange = 7 * gp.tileSize;
+    private double patrolStartX, patrolStartY;
+    private double patrolTargetX, patrolTargetY;
     private boolean isFollowingPlayer = false;
+
+    // 🔴 Health system
+    private int maxHealth = 5;
+    private int currentHealth = 5;
+    private boolean isDead = false;
+
+    // Damage cooldown
+    private long lastAttackTime = 0;
+    private long damageCooldown = 1_000_000_000L; // 1 second
 
     public Enemy(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -30,23 +40,24 @@ public class Enemy extends Entity {
     }
 
     public void update(long deltaTime, long now) {
-        // Distance to player
+        if (isDead) return;
+
         double distanceToPlayer = Math.sqrt(Math.pow(x - gp.player.getX(), 2) + Math.pow(y - gp.player.getY(), 2));
 
-        // If player is within attack range (2 tiles), start attacking
-        if (distanceToPlayer <= 2 * gp.tileSize && !isAttacking) {
-            startAttack(now);
+        if (distanceToPlayer <= 2 * gp.tileSize) {
+            if (now - lastAttackTime > damageCooldown) {
+                startAttack(now);
+                gp.player.takeMeleeDamageFromEnemy(1, now);
+                lastAttackTime = now;
+            }
         } else if (distanceToPlayer <= 6 * gp.tileSize) {
-            // If player is within 6 tiles, start following the player
             startFollowingPlayer(now);
         } else {
-            // If player is out of range, patrol
             patrol(now);
         }
 
-        // Handle attack and movement animations
         if (isAttacking) {
-            currentRow = 6; // Attack animation row
+            currentRow = 6;
             int frameIndex = (int) ((now - attackStartTime) / 80_000_000);
             if (frameIndex < totalFramesAttack) {
                 currentFrame = frameIndex;
@@ -56,18 +67,17 @@ public class Enemy extends Entity {
                 isWalking = false;
             }
         } else if (isWalking) {
-            currentRow = 2; // Walking animation row
+            currentRow = 2;
             currentFrame = (int) ((now / 100_000_000) % totalFramesWalk);
         } else if (isRunning) {
-            currentRow = 3; // Running animation row
+            currentRow = 3;
             currentFrame = (int) ((now / 100_000_000) % totalFramesRun);
         } else {
-            currentRow = 1; // Idle animation row
+            currentRow = 1;
             currentFrame = (int) ((now / 100_000_000) % totalFramesIdle);
         }
     }
 
-    // Starts the attack animation
     private void startAttack(long now) {
         isAttacking = true;
         attackStartTime = now;
@@ -75,59 +85,49 @@ public class Enemy extends Entity {
         isRunning = false;
     }
 
-    // Starts following the player
     private void startFollowingPlayer(long now) {
         isFollowingPlayer = true;
         isWalking = false;
         isRunning = true;
-
-        // Move towards the player
         moveTowardsTarget(gp.player.getX(), gp.player.getY(), speed);
     }
 
-    // Patrols between points
     private void patrol(long now) {
         isFollowingPlayer = false;
         isWalking = true;
         isRunning = false;
 
-        // If patrol target reached, set a new target
         if (hasReachedTarget()) {
             setNewPatrolTarget();
         }
 
-        // Move towards patrol target
-        moveTowardsTarget(patrolTargetX, patrolTargetY, speed * 0.5); // Slower speed while patrolling
+        moveTowardsTarget(patrolTargetX, patrolTargetY, speed * 0.5);
     }
 
-    // Sets a new patrol target within the patrol range
     private void setNewPatrolTarget() {
         patrolTargetX = patrolStartX + (Math.random() * patrolRange) - (patrolRange / 2);
         patrolTargetY = patrolStartY + (Math.random() * patrolRange) - (patrolRange / 2);
 
-        // Ensure patrol target stays within the patrol bounds
         patrolTargetX = Math.max(patrolStartX, Math.min(patrolTargetX, patrolStartX + patrolRange));
         patrolTargetY = Math.max(patrolStartY, Math.min(patrolTargetY, patrolStartY + patrolRange));
     }
 
-    // Checks if the enemy has reached its patrol target
     private boolean hasReachedTarget() {
         double distance = Math.sqrt(Math.pow(x - patrolTargetX, 2) + Math.pow(y - patrolTargetY, 2));
-        return distance < 10; // Consider reached if within 10 pixels
+        return distance < 10;
     }
 
-    // Moves the enemy towards a target (either the player or patrol target)
     private void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
         if (Math.abs(x - targetX) > moveSpeed) {
             if (x < targetX) {
                 x += moveSpeed;
-                facingRight = true;  // Moving right
+                facingRight = true;
             } else {
                 x -= moveSpeed;
-                facingRight = false; // Moving left
+                facingRight = false;
             }
         } else {
-            x = targetX; // Snap to target if close enough
+            x = targetX;
         }
 
         if (Math.abs(y - targetY) > moveSpeed) {
@@ -137,29 +137,54 @@ public class Enemy extends Entity {
                 y -= moveSpeed;
             }
         } else {
-            y = targetY; // Snap to target if close enough
+            y = targetY;
         }
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-        // Draw the enemy entity with the current animation state and facing direction
+        if (isDead) return;
+
         drawEntity(gc, camX, camY, scale);
+
+        // 🔴 Draw health bar above enemy
+        double barWidth = 40;
+        double barHeight = 6;
+        double healthPercent = (double) currentHealth / maxHealth;
+        double barX = (x - camX) * scale + width * scale / 2 - barWidth / 2;
+        double barY = (y - camY) * scale -20 -20;
+
+        gc.setFill(Color.GRAY);
+        gc.fillRect(barX, barY, barWidth, barHeight);
+
+        gc.setFill(Color.RED);
+        gc.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+
+        gc.setStroke(Color.BLACK);
+        gc.strokeRect(barX, barY, barWidth, barHeight);
     }
 
-    // Collision detection with other entities (NPCs, Player, Scout, etc.)
+    // 🔴 Call this from player punch detection
+    public void receiveDamage() {
+        if (isDead) return;
+        currentHealth--;
+        if (currentHealth <= 0) {
+            isDead = true;
+            // Optionally trigger death animation or remove from entity list
+        }
+    }
+
+    public boolean isDead() {
+        return isDead;
+    }
+
     public boolean checkCollisionWithEntities() {
         return isColliding(x, y);
     }
 
-    // Getter methods for position and size
     public double getX() { return x; }
     public double getY() { return y; }
     public double getWidth() { return width; }
     public double getHeight() { return height; }
-
-    // Getter for facing direction
     public boolean isFacingRight() { return facingRight; }
-
-    // Setter for facing direction
     public void setFacingRight(boolean facingRight) { this.facingRight = facingRight; }
 }

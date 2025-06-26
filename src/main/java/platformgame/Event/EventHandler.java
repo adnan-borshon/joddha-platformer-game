@@ -46,7 +46,8 @@ public class EventHandler {
                 player.triggerExplosionReaction(now);
 
                 // ✅ Reduce player health by 10%
-                player.takeDamage(0.10);
+                player.takeDamage(0.10, System.nanoTime());
+
                 game.ui.showMessage("Stepped on a mine! -10% HP");
             }
         }
