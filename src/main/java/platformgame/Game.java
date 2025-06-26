@@ -13,6 +13,7 @@ import platformgame.Entity.*;
 import platformgame.Event.EventHandler;
 import platformgame.Map.Level_1;
 import platformgame.Map.Level_1_controller;
+import platformgame.Objects.Obj_Boom;
 import platformgame.Objects.SuperObject;
 
 import java.net.URL;
@@ -55,6 +56,10 @@ public class Game extends Pane {
 
     public double camX = 0;
     public double camY = 0;
+
+    // ✅ Boom spawn logic
+    private boolean boomSpawned = false;
+    private Obj_Boom boomObject;
 
     public Game() {
         this.setPrefSize(screenWidth, screenHeight);
@@ -184,9 +189,8 @@ public class Game extends Pane {
         level1.drawForeground(gc, camX, camY, scale);
         ui.draw(gc);
 
-        // ✅ Game Over Screen
         if (GameState == gameOverState) {
-            gc.setFill(Color.color(0, 0, 0, 0.6)); // semi-transparent overlay
+            gc.setFill(Color.color(0, 0, 0, 0.6));
             gc.fillRect(0, 0, screenWidth, screenHeight);
 
             gc.setFill(Color.RED);
@@ -214,12 +218,19 @@ public class Game extends Pane {
         KeyCode key = e.getCode();
         keysPressed.add(key);
 
-        // ✅ Game Over → Go to Menu
         if (GameState == gameOverState && key == KeyCode.ENTER) {
-            openMainMenu(); // Go to menu instead of restart
+            openMainMenu();
         }
 
+        // ✅ Handle bridge destruction popup
         if (GameState == dialogueState && key == KeyCode.ENTER) {
+            // Check if we're showing bridge popup
+            if (eventHandler.isShowingBridgePopup()) {
+                eventHandler.triggerBridgeExplosion(this, System.nanoTime());
+                return; // Don't process NPC dialogue
+            }
+
+            // Handle NPC dialogue (existing code)
             for (Npc n : npc) {
                 if (n != null && n.playerIsTouching) {
                     n.speak();
@@ -273,6 +284,8 @@ public class Game extends Pane {
                 }
             }
 
+            checkAndSpawnBoom();  // ✅ Call boom spawn check
+
             if (keysPressed.contains(KeyCode.ESCAPE)) {
                 GameManager.getInstance().saveState(this);
                 openMainMenu();
@@ -282,6 +295,107 @@ public class Game extends Pane {
 
             eventHandler.update(player, this, now);
         }
+    }
+
+    // ✅ Check if all enemies and scouts are dead → spawn boom
+    private void checkAndSpawnBoom() {
+        if (boomSpawned) return;
+
+        boolean allEnemiesDead = true;
+        boolean foundAnyEnemies = false;
+        boolean foundAnyScouts = false;
+
+        // Check enemies
+        for (Enemy e : enemies) {
+            if (e != null) {
+                foundAnyEnemies = true;
+                if (!e.isDead()) {
+                    allEnemiesDead = false;
+                    break;
+                }
+            }
+        }
+        // Check scouts
+        for (Scout s : scout) {
+            if (s != null) {
+                foundAnyScouts = true;
+                if (!s.isDead()) {
+                    allEnemiesDead = false;
+                    break;
+                }
+            }
+        }
+
+        // Only spawn boom if we actually had enemies/scouts to kill AND they're all dead
+
+        if (allEnemiesDead && (foundAnyEnemies || foundAnyScouts)) {
+            boomObject = new Obj_Boom(54 * tileSize, 24 * tileSize);
+
+            boolean placed = false;
+            for (int i = 0; i < object.length; i++) {
+                if (object[i] == null) {
+                    object[i] = boomObject;
+                    System.out.println("💥 Boom appeared at position: " + (54 * tileSize) + ", " + (24 * tileSize));
+                    placed = true;
+                    break;
+                }
+            }
+
+            if (!placed) {
+                System.out.println("⚠️ Could not place boom - object array is full!");
+            }
+
+            boomSpawned = true;
+
+            // ✅ Enable bridge destruction when boom spawns
+            eventHandler.enableBridgeDestruction();
+        } else if (!foundAnyEnemies && !foundAnyScouts) {
+            System.out.println("⚠️ No enemies or scouts found - spawning boom for testing");
+            boomObject = new Obj_Boom(54 * tileSize, 24 * tileSize);
+
+            for (int i = 0; i < object.length; i++) {
+                if (object[i] == null) {
+                    object[i] = boomObject;
+                    System.out.println("💥 Boom appeared (no enemies/scouts mode)");
+                    break;
+                }
+            }
+            boomSpawned = true;
+
+            // ✅ Enable bridge destruction for testing mode too
+            eventHandler.enableBridgeDestruction();
+        }
+    }
+    // ✅ Also add this method to help debug boom spawning
+    public void debugBoomStatus() {
+        System.out.println("=== BOOM DEBUG INFO ===");
+        System.out.println("Boom spawned: " + boomSpawned);
+
+        int aliveEnemies = 0;
+        int totalEnemies = 0;
+        for (Enemy e : enemies) {
+            if (e != null) {
+                totalEnemies++;
+                if (!e.isDead()) {
+                    aliveEnemies++;
+                }
+            }
+        }
+
+        int aliveScouts = 0;
+        int totalScouts = 0;
+        for (Scout s : scout) {
+            if (s != null) {
+                totalScouts++;
+                if (!s.isDead()) {
+                    aliveScouts++;
+                }
+            }
+        }
+
+        System.out.println("Enemies: " + aliveEnemies + "/" + totalEnemies + " alive");
+        System.out.println("Scouts: " + aliveScouts + "/" + totalScouts + " alive");
+        System.out.println("=======================");
     }
 
     private void openMainMenu() {
@@ -294,8 +408,6 @@ public class Game extends Pane {
             e.printStackTrace();
         }
     }
-
-
 
     public void playMusic(int i) {
         music.loop(i);

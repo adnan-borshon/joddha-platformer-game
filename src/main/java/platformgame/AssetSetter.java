@@ -52,6 +52,7 @@ public class AssetSetter {
         gp.object[1].worldX = 25 * gp.tileSize;
         gp.object[1].worldY = 21 * gp.tileSize;
 
+
     }
 
     public void setNpc() {
@@ -77,7 +78,9 @@ public class AssetSetter {
         // Add more if needed
     }
 
+
     public void setSoldiers(){
         gp.soldiers[0]= new Soldier(36 * gp.tileSize, 19 * gp.tileSize, 50, 40, 1.2, gp);
     }
+
 }
