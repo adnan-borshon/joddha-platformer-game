@@ -16,9 +16,9 @@ public class EventHandler {
     private final List<Explosion> activeExplosions = new ArrayList<>();
     private final Image explosionSpriteSheet;
 
-    private final int frameWidth = 32;     // Adjust if your new frame size differs
+    private final int frameWidth = 32;
     private final int frameHeight = 32;
-    private final int totalFrames = 6;     // Based on your updated image
+    private final int totalFrames = 6;
 
     public EventHandler() {
         explosionSpriteSheet = ImageLoader.load("/image/explosion.png");
@@ -36,12 +36,18 @@ public class EventHandler {
         for (EventRect mine : mines) {
             if (!mine.isTriggered() && playerRect.intersects(mine.getBounds())) {
                 mine.setTriggered(true);
+
                 double centerX = mine.getX() + mine.getWidth() / 2.0;
                 double centerY = mine.getY() + mine.getHeight() / 2.0;
+
+                // ✅ Trigger explosion
                 activeExplosions.add(new Explosion(centerX, centerY, now, mine.getScaleFactor()));
                 game.playSoundEffects(4);
                 player.triggerExplosionReaction(now);
 
+                // ✅ Reduce player health by 10%
+                player.takeDamage(0.10);
+                game.ui.showMessage("Stepped on a mine! -10% HP");
             }
         }
 
@@ -67,7 +73,7 @@ public class EventHandler {
 
             gc.drawImage(
                     explosionSpriteSheet,
-                    frame * frameWidth, 0, frameWidth, frameHeight,  // only first row
+                    frame * frameWidth, 0, frameWidth, frameHeight,
                     drawX, drawY, drawW, drawH
             );
         }
@@ -78,7 +84,7 @@ public class EventHandler {
         private final long startTime;
         private final double scaleFactor;
         private int currentFrame = 0;
-        private final long frameDuration = 100_000_000; // 100ms per frame = smooth
+        private final long frameDuration = 100_000_000; // 100ms per frame
         private final int totalFrames = 6;
 
         public Explosion(double x, double y, long startTime, double scaleFactor) {

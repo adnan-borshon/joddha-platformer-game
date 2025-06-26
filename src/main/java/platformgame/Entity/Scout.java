@@ -38,11 +38,20 @@ public class Scout extends Entity {
     private boolean isDead = false;
     private boolean visibleHealthBar = false;
     private long deathStartTime;
-    private final int totalDeathFrames = 6;
-    private final int deathAnimationRow = 6;
+    private final int totalDeathFrames = 5;
+    private final int deathAnimationRow = 9;
     private final long deathFrameDuration = 120_000_000;
 
     private boolean canBeAttacked = false;
+
+    // Combat system improvements
+    private boolean inCombat = false;
+    private boolean isAggressive = false;
+    private long lastAttackTime = 0;
+    private final long attackCooldown = 1_500_000_000L; // 1.5 seconds between attacks
+    private final double combatRange = 2 * 32; // Attack range
+    private final double aggroRange = 4 * 32; // Range to become aggressive
+    private final double combatSpeed = speed * 1.2; // Faster movement in combat
 
     public Scout(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -56,11 +65,23 @@ public class Scout extends Entity {
 
     public void takeDamage() {
         if (!canBeAttacked || isDead) return;
+
         health--;
         visibleHealthBar = true;
+
+        // When attacked, scout becomes aggressive and fights back
+        if (!isAggressive && !isDead) {
+            isAggressive = true;
+            inCombat = true;
+            isFollowingPlayer = true;
+            runningToBase = false; // Stop running to base, fight back instead
+        }
+
         if (health <= 0) {
             isDead = true;
             runningToBase = false;
+            inCombat = false;
+            isAggressive = false;
             currentFrame = 0;
             currentRow = deathAnimationRow;
             deathStartTime = System.nanoTime();
@@ -71,6 +92,18 @@ public class Scout extends Entity {
         return new Rectangle2D(x, y, width, height);
     }
 
+    // Method to check if scout can deal damage to player
+    public boolean canDamagePlayer() {
+        if (!attacking || isDead) return false;
+
+        // Check if we're in the middle of attack animation
+        long now = System.nanoTime();
+        int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
+
+        // Deal damage at specific frame of attack animation (around frame 6-8)
+        return frameIndex >= 6 && frameIndex <= 8;
+    }
+
     public void update(long deltaTime, long now) {
         if (isDead) {
             int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
@@ -78,7 +111,8 @@ public class Scout extends Entity {
                 currentRow = deathAnimationRow;
                 currentFrame = frameIndex;
             } else {
-                currentFrame = totalDeathFrames - 1;
+                currentFrame = totalDeathFrames;
+                gp.scout[0] = null;
             }
             return;
         }
@@ -88,9 +122,20 @@ public class Scout extends Entity {
         if (showingDialogue) {
             if (now - dialogueStartTime >= dialogueDuration) {
                 showingDialogue = false;
-                runningToBase = true;
+                if (!isAggressive) {
+                    runningToBase = true;
+                }
                 canBeAttacked = true;
             }
+            return;
+        }
+
+        // Handle combat state
+        double distanceToPlayer = Math.sqrt(Math.pow(x - gp.player.getX(), 2) + Math.pow(y - gp.player.getY(), 2));
+
+        // If scout is aggressive (has been attacked), prioritize combat over running
+        if (isAggressive && !isDead) {
+            handleCombat(now, distanceToPlayer);
             return;
         }
 
@@ -122,12 +167,14 @@ public class Scout extends Entity {
             } else {
                 currentFrame = 0;
                 attacking = false;
-                returnToPatrolling();
+                lastAttackTime = now;
+
+                if (!isAggressive) {
+                    returnToPatrolling();
+                }
             }
             return;
         }
-
-        double distanceToPlayer = Math.sqrt(Math.pow(x - gp.player.getX(), 2) + Math.pow(y - gp.player.getY(), 2));
 
         if (distanceToPlayer <= 3 * gp.tileSize && !hasSeenPlayer) {
             hasSeenPlayer = true;
@@ -144,6 +191,65 @@ public class Scout extends Entity {
             followPlayer(now, distanceToPlayer);
         } else if (!runningToBase) {
             patrol(now);
+        }
+    }
+
+    private void handleCombat(long now, double distanceToPlayer) {
+        // If player is too far, stop being aggressive after some time
+        if (distanceToPlayer > aggroRange * 2) {
+            isAggressive = false;
+            inCombat = false;
+            returnToPatrolling();
+            return;
+        }
+
+        // Move towards player aggressively
+        if (distanceToPlayer > combatRange && !attacking) {
+            moveTowardsPlayer(combatSpeed);
+            currentRow = 3; // Running animation
+            currentFrame = (int) ((System.nanoTime() / 80_000_000) % totalFramesRun);
+        }
+
+        // Attack if in range and cooldown is over
+        if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown) {
+            attackStartTime = now;
+            attacking = true;
+            currentRow = 5;
+            currentFrame = 0;
+        }
+
+        // Continue current attack if attacking
+        if (attacking) {
+            currentRow = 5;
+            int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
+            if (frameIndex < totalFramesAttack) {
+                currentFrame = frameIndex;
+            } else {
+                currentFrame = 0;
+                attacking = false;
+                lastAttackTime = now;
+            }
+        }
+    }
+
+    private void moveTowardsPlayer(double moveSpeed) {
+        double playerX = gp.player.getX();
+        double playerY = gp.player.getY();
+
+        double dx = playerX - x;
+        double dy = playerY - y;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > moveSpeed) {
+            // Normalize direction and move
+            dx = (dx / distance) * moveSpeed;
+            dy = (dy / distance) * moveSpeed;
+
+            x += dx;
+            y += dy;
+
+            // Update facing direction
+            facingRight = dx > 0;
         }
     }
 
@@ -205,7 +311,7 @@ public class Scout extends Entity {
                 else y -= moveSpeed;
             }
         }
-        if (!runningToBase) {
+        if (!runningToBase && !isAggressive) {
             x = Math.max(patrolStartX, Math.min(x, patrolStartX + patrolRange));
             y = Math.max(patrolStartY, Math.min(y, patrolStartY + patrolRange));
         }
@@ -215,7 +321,7 @@ public class Scout extends Entity {
         double playerX = gp.player.getX();
         double playerY = gp.player.getY();
 
-        if (distanceToPlayer > 6 * gp.tileSize) {
+        if (distanceToPlayer > 6 * gp.tileSize && !isAggressive) {
             isFollowingPlayer = false;
             returnToPatrolling();
             return;
@@ -240,6 +346,8 @@ public class Scout extends Entity {
         playerInRange = false;
         isFollowingPlayer = false;
         movingToTarget = false;
+        inCombat = false;
+        isAggressive = false;
         patrolStartX = x;
         patrolStartY = y;
         setNewPatrolTarget();
@@ -248,10 +356,10 @@ public class Scout extends Entity {
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
 
-        // 🔲 Debug hitbox rectangle
+        // Debug hitbox rectangle
         gc.save();
         gc.setLineWidth(1);
-        gc.setStroke(Color.LIME); // Use a bright color for visibility
+        gc.setStroke(isAggressive ? Color.RED : Color.LIME); // Red when aggressive
         double drawX = (x - camX) * scale;
         double drawY = (y - camY) * scale;
         double drawW = width * scale;
@@ -261,6 +369,11 @@ public class Scout extends Entity {
 
         if (showingDialogue) drawDialogue(gc, camX, camY, scale);
         if (visibleHealthBar && !isDead) drawHealthBar(gc, camX, camY, scale);
+
+        // Show combat state indicator
+        if (isAggressive && !isDead) {
+            drawCombatIndicator(gc, camX, camY, scale);
+        }
     }
 
     private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
@@ -277,6 +390,14 @@ public class Scout extends Entity {
         gc.fillRoundRect(screenX, screenY, barWidth * healthRatio, barHeight, 4, 4);
         gc.setStroke(Color.BLACK);
         gc.strokeRoundRect(screenX, screenY, barWidth, barHeight, 4, 4);
+    }
+
+    private void drawCombatIndicator(GraphicsContext gc, double camX, double camY, double scale) {
+        double screenX = (x - camX) * scale + width * scale / 2;
+        double screenY = (y - camY) * scale - 20;
+
+        gc.setFill(Color.RED);
+        gc.fillText("!", screenX - 3, screenY);
     }
 
     private void drawDialogue(GraphicsContext gc, double camX, double camY, double scale) {
@@ -313,5 +434,14 @@ public class Scout extends Entity {
                 isFollowingPlayer = true;
             }
         }
+    }
+
+    // Getters for combat state
+    public boolean isAggressive() {
+        return isAggressive;
+    }
+
+    public boolean isInCombat() {
+        return inCombat;
     }
 }

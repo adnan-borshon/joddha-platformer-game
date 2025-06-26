@@ -88,7 +88,6 @@ public class UI {
     }
 
 
-
     public void drawHealthBar(GraphicsContext gc, int currentHP, int maxHP) {
         double heartX = 20;
         double heartY = 70;
@@ -109,30 +108,34 @@ public class UI {
         double fillHeight = frameHeight - paddingTop * 2;
 
         double ratio = Math.max(0, Math.min(1.0, (double) currentHP / maxHP));
-        double redBarDrawWidth = fillWidth * ratio;
+        double redLineWidth = fillWidth * ratio;
 
-        if (healthBarFull != null && ratio > 0) {
+        // ✅ 1. Draw full background bar (frame)
+        if (healthBarFull != null) {
             gc.drawImage(
                     healthBarFull,
-                    0, 0,
-                    healthBarFull.getWidth() * ratio, healthBarFull.getHeight(),
-                    fillX, fillY,
-                    redBarDrawWidth, fillHeight
-            );
-        }
-
-        if (healthBarEmpty != null) {
-            gc.drawImage(
-                    healthBarEmpty,
                     barX, barY,
                     frameWidth, frameHeight
             );
         }
 
+        // ✅ 2. Draw shrinking red health line
+        if (healthBarEmpty != null && ratio > 0) {
+            gc.drawImage(
+                    healthBarEmpty,
+                    0, 0,
+                    healthBarEmpty.getWidth() * ratio, healthBarEmpty.getHeight(),
+                    fillX, fillY,
+                    redLineWidth, fillHeight
+            );
+        }
+
+        // ✅ 3. Draw heart icon
         if (heartIcon != null) {
             gc.drawImage(heartIcon, heartX, heartY, heartSize, heartSize);
         }
     }
+
 
     private void updateDialogueAnimation() {
         if (dialogueAnimating) {
