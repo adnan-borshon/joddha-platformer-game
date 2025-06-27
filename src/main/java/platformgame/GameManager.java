@@ -53,4 +53,7 @@ public class GameManager {
     public void clearState() {
         lastState = null;
     }
+
+    public void saveState(Game_2 game2) {
+    }
 }

@@ -6,7 +6,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.geometry.Rectangle2D;
+import platformgame.Tanks.Main_Tank;
 import platformgame.Game;
+import platformgame.Game_2;
 import platformgame.ImageLoader;
 import platformgame.Entity.Player;
 
@@ -243,6 +245,15 @@ public class EventHandler {
 
     public boolean isMissionCompleted() {
         return missionCompleted;
+    }
+
+
+    public boolean isShowingMissionCompletePopup() {
+        return showMissionCompletePopup;
+    }
+
+    public void update(Main_Tank mainTank, Game_2 game2, long now) {
+
     }
 
     private static class Explosion {

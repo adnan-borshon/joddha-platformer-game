@@ -519,9 +519,5 @@ public class Scout extends Entity {
         return isDead;
     }
 
-    // Also add this getter method if you don't have it
-    public boolean isIsDead() {
-        return isDead;
-    }
 
 }

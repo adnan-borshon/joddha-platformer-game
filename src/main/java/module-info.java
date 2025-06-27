@@ -11,4 +11,6 @@ module platformgame {
 
     exports platformgame.Map;
     opens platformgame.Map to javafx.fxml;
+    exports platformgame.Tanks;
+    opens platformgame.Tanks to javafx.fxml;
 }

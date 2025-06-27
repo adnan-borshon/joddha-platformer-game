@@ -13,6 +13,9 @@ public class AssetSetter {
         this.gp = gp;
     }
 
+    public AssetSetter(Game_2 game2) {
+    }
+
     public void setObject() {
 
         gp.object[5] = new Obj_Boots();
