@@ -1,6 +1,7 @@
 package platformgame;
 
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.text.Text;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -261,28 +262,46 @@ public class UI {
     }
 
     private void drawWrappedText(String text, double x, double y, double maxWidth) {
-        String[] words = text.split(" ");
-        StringBuilder currentLine = new StringBuilder();
+        String[] lines = text.split("\n");
         double lineHeight = gc.getFont().getSize() + 6;
         double currentY = y;
 
-        for (String word : words) {
-            String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
-            double estimatedWidth = gc.getFont().getSize() * testLine.length() * 0.55;
+        for (String line : lines) {
+            String[] words = line.trim().split(" ");
+            StringBuilder currentLine = new StringBuilder();
 
-            if (estimatedWidth > maxWidth && currentLine.length() > 0) {
-                gc.fillText(currentLine.toString(), x, currentY);
-                currentLine = new StringBuilder(word);
+            for (String word : words) {
+                String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+                Text tempText = new Text(testLine);
+                tempText.setFont(gc.getFont());
+                double testLineWidth = tempText.getLayoutBounds().getWidth();
+
+                if (testLineWidth > maxWidth && currentLine.length() > 0) {
+                    drawCenteredLine(gc, currentLine.toString(), x, maxWidth, currentY);
+                    currentLine = new StringBuilder(word);
+                    currentY += lineHeight;
+                } else {
+                    currentLine = new StringBuilder(testLine);
+                }
+            }
+
+            if (currentLine.length() > 0) {
+                drawCenteredLine(gc, currentLine.toString(), x, maxWidth, currentY);
                 currentY += lineHeight;
-            } else {
-                currentLine = new StringBuilder(testLine);
             }
         }
-
-        if (currentLine.length() > 0) {
-            gc.fillText(currentLine.toString(), x, currentY);
-        }
     }
+    private void drawCenteredLine(GraphicsContext gc, String line, double x, double maxWidth, double y) {
+        Text tempText = new Text(line);
+        tempText.setFont(gc.getFont());
+        double textWidth = tempText.getLayoutBounds().getWidth();
+        double centeredX = x + (maxWidth - textWidth) / 2.0;
+        gc.fillText(line, centeredX, y);
+    }
+
+
+
+
 
     public void subWindows(int x, int y, int height, int width) {
         Color fillColor = Color.rgb(0, 0, 0, 0.85);

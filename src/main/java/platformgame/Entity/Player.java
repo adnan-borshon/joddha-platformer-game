@@ -12,9 +12,7 @@ import java.util.Set;
 
 public class Player extends Entity {
 
-
-
-    private final int totalFrames_walk = 10;
+    private final int totalFrames_walk = 5;
 
     // ✅ Explosion reaction
     private boolean reactingToExplosion = false;
@@ -26,8 +24,8 @@ public class Player extends Entity {
     // ✅ Fist attack
     private boolean attackingWithFist = false;
     private long fistAttackStartTime = 0;
-    private final int totalFistFrames = 5;
-    private final int fistAttackRow = 6;
+    private final int totalFistFrames = 3;
+    private final int fistAttackRow = 3;
     private final long fistFrameDuration = 100_000_000;
 
     // ✅ Health & Ammo
@@ -49,14 +47,16 @@ public class Player extends Entity {
     // ✅ New: Melee hit reaction
     private boolean reactingToMeleeHit = false;
     private long meleeHitStartTime = 0;
-    private final int meleeHitFrames = 4;
-    private final int meleeHitRow = 8; // Add row 7 to sprite sheet
+    private final int meleeHitFrames = 3;
+    private final int meleeHitRow = 0; // Add row 7 to sprite sheet
     private final long meleeHitFrameDuration = 100_000_000;
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
         imageSet(totalFrames_walk, "/image/main_character.png");
     }
+
+
 
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
 
@@ -177,7 +177,8 @@ public class Player extends Entity {
                 double testY = y - speed;
                 if (!level1.isCollisionRect(x, testY, width, height)
                         && !checkObjectCollisionsAndInteract(x, testY, width, height, game)
-                        && !checkNpcCollision(x, testY, game, now)) {
+                        && !checkNpcCollision(x, testY, game, now)
+                        && !checkSoldierCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
                 }
@@ -186,7 +187,8 @@ public class Player extends Entity {
                 double testY = y + speed;
                 if (!level1.isCollisionRect(x, testY, width, height)
                         && !checkObjectCollisionsAndInteract(x, testY, width, height, game)
-                        && !checkNpcCollision(x, testY, game, now)) {
+                        && !checkNpcCollision(x, testY, game, now)
+                        && !checkSoldierCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
                 }
@@ -195,7 +197,8 @@ public class Player extends Entity {
                 double testX = x - speed;
                 if (!level1.isCollisionRect(testX, y, width, height)
                         && !checkObjectCollisionsAndInteract(testX, y, width, height, game)
-                        && !checkNpcCollision(testX, y, game, now)) {
+                        && !checkNpcCollision(testX, y, game, now)
+                        && !checkSoldierCollision(testX, y, game)) {
                     newX = testX;
                     moved = true;
                     facingRight = false;
@@ -205,7 +208,8 @@ public class Player extends Entity {
                 double testX = x + speed;
                 if (!level1.isCollisionRect(testX, y, width, height)
                         && !checkObjectCollisionsAndInteract(testX, y, width, height, game)
-                        && !checkNpcCollision(testX, y, game, now)) {
+                        && !checkNpcCollision(testX, y, game, now)
+                        && !checkSoldierCollision(testX, y, game)) {
                     newX = testX;
                     moved = true;
                     facingRight = true;
@@ -214,6 +218,7 @@ public class Player extends Entity {
         }
 
         checkEnemyCollisions(game, now);
+        checkSoldierCollisions(game, now); // Add this line to check soldier collisions after movement
 
         for (Npc npcEntity : game.npc) {
             if (npcEntity != null && npcEntity.playerIsTouching) {
@@ -227,7 +232,7 @@ public class Player extends Entity {
         y = newY;
 
         if (moved && !reactingToExplosion && !attackingWithFist && !isDead && !reactingToMeleeHit) {
-            currentRow = 3;
+            currentRow = 4;
             animationTimer += deltaTime;
             if (animationTimer > 100_000_000) {
                 nextFrame(totalFrames_walk);
@@ -238,6 +243,7 @@ public class Player extends Entity {
             currentRow = 0;
         }
     }
+
     private void checkEnemyCollisions(Game game, long now) {
         double playerCenterX = x + width / 2;
         double playerCenterY = y + height / 2;
@@ -254,8 +260,6 @@ public class Player extends Entity {
                 if (distance <= 25) { // 👈 Only hit if within 25 pixels
                     if (!reactingToExplosion && !reactingToMeleeHit && !isDead && (now - lastDamageTime) > damageCooldown) {
                         takeDamage(0.05, now); // 5% damage per hit from enemy
-
-
                         lastDamageTime = now;
                     }
                 }
@@ -263,7 +267,32 @@ public class Player extends Entity {
         }
     }
 
+    // ✅ NEW: Add separate method to check soldier collisions for damage
+    private void checkSoldierCollisions(Game game, long now) {
+        if (game.soldiers == null) return;
 
+        Rectangle2D playerRect = new Rectangle2D(x, y, width, height);
+
+        for (Soldier soldierEntity : game.soldiers) {
+            if (soldierEntity != null && !soldierEntity.isDead()) {
+                Rectangle2D soldierRect = new Rectangle2D(
+                        soldierEntity.getX(), soldierEntity.getY(),
+                        soldierEntity.getWidth(), soldierEntity.getHeight()
+                );
+
+                // Check for collision and apply damage if colliding
+                if (playerRect.intersects(soldierRect)) {
+                    // Add damage when touching soldier (similar to other enemies)
+                    if (!reactingToExplosion && !reactingToMeleeHit && !isDead && (now - lastDamageTime) > damageCooldown) {
+                        takeMeleeDamageFromEnemy(1, now); // 1 damage from touching soldier
+                        lastDamageTime = now;
+                    }
+                }
+            }
+        }
+    }
+
+    // ✅ FIXED: Updated checkNpcCollision method
     private boolean checkNpcCollision(double playerX, double playerY, Game game, long now) {
         Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
 
@@ -308,6 +337,37 @@ public class Player extends Entity {
         return false;
     }
 
+    // ✅ IMPROVED: Enhanced soldier collision checking with better collision detection
+    private boolean checkSoldierCollision(double playerX, double playerY, Game game) {
+        if (game.soldiers == null) return false;
+
+        Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
+
+        for (Soldier soldierEntity : game.soldiers) {
+            if (soldierEntity != null && !soldierEntity.isDead()) {
+                Rectangle2D soldierRect = new Rectangle2D(
+                        soldierEntity.getX(), soldierEntity.getY(),
+                        soldierEntity.getWidth(), soldierEntity.getHeight()
+                );
+
+                // More precise collision detection
+                if (playerRect.intersects(soldierRect)) {
+                    // Additional check: ensure significant overlap to prevent edge cases
+                    double overlapX = Math.min(playerRect.getMaxX(), soldierRect.getMaxX()) -
+                            Math.max(playerRect.getMinX(), soldierRect.getMinX());
+                    double overlapY = Math.min(playerRect.getMaxY(), soldierRect.getMaxY()) -
+                            Math.max(playerRect.getMinY(), soldierRect.getMinY());
+
+                    // Only block movement if there's significant overlap (at least 5 pixels)
+                    if (overlapX >= 5 && overlapY >= 5) {
+                        return true; // Block player movement
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public void triggerExplosionReaction(long now) {
         reactingToExplosion = true;
         explosionReactionStartTime = now;
@@ -326,9 +386,6 @@ public class Player extends Entity {
         triggerExplosionReaction(now);
         gp.ui.showMessage("You took damage -" + damage + " HP");
         gp.playSoundEffects(2);
-
-
-
     }
 
     // Fix for Player class - Update takeMeleeDamageFromEnemy method
@@ -355,9 +412,12 @@ public class Player extends Entity {
 
         System.out.println("Player took melee damage: " + rawDamage + ", HP now: " + hp); // Debug message
     }
+
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
     }
+
+    // Fixed checkObjectCollisionsAndInteract method in Player.java
 
     public boolean checkObjectCollisionsAndInteract(double nextX, double nextY, double width, double height, Game game) {
         Rectangle2D playerRect = new Rectangle2D(nextX, nextY, width, height);
@@ -402,13 +462,18 @@ public class Player extends Entity {
                                 game.ui.showMessage("Picked up 10 ammo");
                                 break;
                             case "life":
+                            case "obj": // ✅ FIXED: Added "obj" case since your AssetSetter sets name = "obj"
                                 if (hp < maxHp) {
-                                    hp += maxHp * 0.2;
+                                    int healAmount = (int)(maxHp * 0.2); // Calculate heal amount
+                                    hp += healAmount;
                                     if (hp > maxHp) hp = maxHp;
-                                    System.out.println("Picking up life, removing object: " + game.object[i].name);
+
+                                    System.out.println("Picking up life, removing object: " + obj.name);
+                                    System.out.println("Healed for: " + healAmount + ", current HP: " + hp + "/" + maxHp);
+
                                     game.object[i] = null;
                                     game.playSoundEffects(1);
-                                    game.ui.showMessage("Life restored +20%");
+                                    game.ui.showMessage("Life restored +" + healAmount + " HP");
                                 } else {
                                     game.ui.showMessage("Health already full");
                                 }
@@ -418,9 +483,7 @@ public class Player extends Entity {
                                 game.playSoundEffects(4);
                                 game.ui.showMessage("Stepped on a mine! -10% HP");
                                 game.object[i] = null;
-                                // Add this case to your switch statement in checkObjectCollisionsAndInteract method
-                                // Add this modification to your Player.java class in the checkObjectCollisionsAndInteract method:
-
+                                break;
                             case "boom":
                                 if (obj instanceof Obj_Boom) {
                                     Obj_Boom boomObj = (Obj_Boom) obj;
@@ -439,7 +502,7 @@ public class Player extends Entity {
                                         game.ui.showMessage("This boom seems inactive...");
                                     }
                                 }
-                                break; // ✅ ADD THIS BREAK STATEMENT
+                                break;
                             default:
                                 if (obj.collision) return true;
                                 break;
