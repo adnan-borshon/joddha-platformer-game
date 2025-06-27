@@ -3,6 +3,7 @@ package platformgame;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
@@ -271,6 +272,7 @@ public class Game extends Pane {
         keysPressed.add(key);
 
         if (GameState == gameOverState && key == KeyCode.ENTER) {
+            GameManager.getInstance().clearState();
             openMainMenu();
         }
 
@@ -356,6 +358,73 @@ public class Game extends Pane {
             eventHandler.update(player, this, now);
         }
     }
+// Add these methods to your Game class
+
+    // In your Game class, add this method to handle player bullet collisions with enemies
+    public void checkPlayerBulletCollisions() {
+        if (player == null || player.getBullets() == null) return;
+
+        for (Bullet bullet : player.getBullets()) {
+            if (bullet.shouldRemove()) continue;
+
+            Rectangle2D bulletRect = new Rectangle2D(
+                    bullet.getX() - bullet.getWidth() / 2,
+                    bullet.getY() - bullet.getHeight() / 2,
+                    bullet.getWidth(),
+                    bullet.getHeight()
+            );
+
+            // Check collision with scouts
+            for (int i = 0; i < scout.length; i++) {
+                if (scout[i] != null) {
+                    Rectangle2D scoutRect = scout[i].getHitbox();
+                    if (bulletRect.intersects(scoutRect)) {
+                        scout[i].takeDamage();
+                        bullet.markForRemoval();
+                        ui.showMessage("Scout eliminated!");
+                        playSoundEffects(1); // Hit sound
+                        break;
+                    }
+                }
+            }
+
+            // Check collision with enemies
+            for (int i = 0; i < enemies.length; i++) {
+                if (enemies[i] != null && !enemies[i].isDead()) {
+                    Rectangle2D enemyRect = new Rectangle2D(
+                            enemies[i].getX(), enemies[i].getY(),
+                            enemies[i].getWidth(), enemies[i].getHeight()
+                    );
+                    if (bulletRect.intersects(enemyRect)) {
+                        enemies[i].receiveDamage();
+                        bullet.markForRemoval();
+                        ui.showMessage("Enemy hit!");
+                        playSoundEffects(1); // Hit sound
+                        break;
+                    }
+                }
+            }
+
+            // Check collision with soldiers
+            for (int i = 0; i < soldiers.length; i++) {
+                if (soldiers[i] != null && !soldiers[i].isDead()) {
+                    Rectangle2D soldierRect = new Rectangle2D(
+                            soldiers[i].getX(), soldiers[i].getY(),
+                            soldiers[i].getWidth(), soldiers[i].getHeight()
+                    );
+                    if (bulletRect.intersects(soldierRect)) {
+                        soldiers[i].receiveDamage();
+                        bullet.markForRemoval();
+                        ui.showMessage("Soldier hit!");
+                        playSoundEffects(1); // Hit sound
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+
 
     private void checkAndSpawnBoom() {
         if (boomSpawned) return;

@@ -2,16 +2,13 @@ package platformgame.Event;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
+
 import javafx.geometry.Rectangle2D;
 import platformgame.Tanks.Main_Tank;
 import platformgame.Game;
 import platformgame.Game_2;
 import platformgame.ImageLoader;
 import platformgame.Entity.Player;
-import platformgame.UI;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -68,7 +65,7 @@ public class EventHandler {
 
     public void enableBridgeDestruction() {
         bridgeDestructionEnabled = true;
-        System.out.println("Bridge destruction enabled!");
+
     }
 
     public void update(Player player, Game game, long now) {
@@ -106,9 +103,9 @@ public class EventHandler {
             updateBridgeExplosion(now);
         }
 
-        // ✅ Handle mission completion delay
+        // ✅ Handle mission completion delay (short delay after explosions end)
         if (waitingForMissionComplete && !missionCompleted) {
-            if (now - missionCompleteDelayStart >= MISSION_COMPLETE_DELAY) {
+            if (now - missionCompleteDelayStart >= 1_000_000_000L) { // 1 second delay after explosions
                 completeMission(now, game);
                 waitingForMissionComplete = false;
             }
@@ -126,7 +123,7 @@ public class EventHandler {
             // ✅ Set the popup message in UI dialogue system
             game.ui.dialogue = "Press Enter to destroy the bridge and save villagers from pakistan military";
             game.GameState = game.dialogueState;
-            System.out.println("Player entered bridge trigger area!");
+
         } else if (!currentlyInArea && playerInTriggerArea) {
             playerInTriggerArea = false;
             showBridgePopup = false;
@@ -144,30 +141,47 @@ public class EventHandler {
             showBridgePopup = false;
             game.GameState = game.playState;
 
-            double explosionCenterX = bridgeExplosionArea.getMinX() + bridgeExplosionArea.getWidth() / 2;
-            double explosionCenterY = bridgeExplosionArea.getMinY() + bridgeExplosionArea.getHeight() / 2;
-            activeExplosions.add(new Explosion(explosionCenterX, explosionCenterY, now, 2.0));
+            // ✅ Create multiple explosions for better visibility
+            double explosionCenterX = bridgeExplosionArea.getMinX();
+            double explosionCenterY = bridgeExplosionArea.getMinY() ;
+
+            // Main explosion at center
+            activeExplosions.add(new Explosion(explosionCenterX, explosionCenterY, now, 3.0));
+
+// Additional explosions for better effect
+// Generate explosions along the x-axis with increment of 16
+            for (int i = -180; i <= -60; i += 16) {
+                activeExplosions.add(new Explosion(explosionCenterX + i, explosionCenterY, now + 200_000_000L, 2.0));
+                activeExplosions.add(new Explosion(explosionCenterX + i, explosionCenterY + 30, now + 300_000_000L, 2.0));
+                activeExplosions.add(new Explosion(explosionCenterX + i, explosionCenterY - 30, now + 400_000_000L, 2.0));
+            }
+
+// Additional explosions at specific points
+            activeExplosions.add(new Explosion(explosionCenterX - 120, explosionCenterY - 30, now + 500_000_000L, 2.0));
+            activeExplosions.add(new Explosion(explosionCenterX - 142, explosionCenterY, now + 500_000_000L, 2.0));
+
+// Explosions at both the edges of the bridge
+            activeExplosions.add(new Explosion(explosionCenterX - 180, explosionCenterY, now + 500_000_000L, 2.0));
+            activeExplosions.add(new Explosion(explosionCenterX - 180, explosionCenterY + 60, now + 500_000_000L, 2.0));
+            activeExplosions.add(new Explosion(explosionCenterX - 180, explosionCenterY - 60, now + 500_000_000L, 2.0));
 
             game.playSoundEffects(4);
             game.ui.showMessage("Bridge destroyed!");
 
-            if (game.level1 != null) {
-                game.level1.removeBridgeTiles(102, 42);
-                System.out.println("Bridge tiles removed from map!");
-            }
 
-            // ✅ Start mission completion delay instead of completing immediately
-            waitingForMissionComplete = true;
-            missionCompleteDelayStart = now;
-
-            System.out.println("Bridge explosion triggered!");
         }
     }
 
     private void updateBridgeExplosion(long now) {
-        if (now - bridgeExplosionStartTime > 2_000_000_000L) {
+        // ✅ Check if all explosions are finished, then show mission complete
+        if (bridgeExplosionActive && activeExplosions.isEmpty()) {
             bridgeExplosionActive = false;
-            System.out.println("Bridge explosion finished!");
+
+            // ✅ Start mission completion after explosions end
+            if (!waitingForMissionComplete && !missionCompleted) {
+                waitingForMissionComplete = true;
+                missionCompleteDelayStart = now;
+            }
         }
     }
 
@@ -179,11 +193,11 @@ public class EventHandler {
             game.ui.dialogue = "🎉 MISSION COMPLETE! 🎉\n\nYou saved the villagers!\n\nThe bridge has been destroyed successfully.\nThe enemy can no longer reach the village!\n\nThank you for playing!";
             game.GameState = game.dialogueState;
 
-            System.out.println("🎉 MISSION COMPLETED! 🎉");
         }
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
+        // ✅ Draw explosions with debug info
         for (Explosion explosion : activeExplosions) {
             int frame = explosion.getCurrentFrame();
             double explosionScale = scale * explosion.getScaleFactor();
@@ -192,6 +206,11 @@ public class EventHandler {
 
             double drawX = (explosion.getX() - camX) * scale - drawW / 2.0;
             double drawY = (explosion.getY() - camY) * scale - drawH / 2.0;
+
+            // ✅ Debug: Check if explosion is in view
+            if (drawX > -drawW && drawX < 1020 && drawY > -drawH && drawY < 700) {
+                System.out.println("Drawing explosion at screen pos: " + drawX + ", " + drawY + " frame: " + frame);
+            }
 
             gc.drawImage(
                     explosionSpriteSheet,
@@ -224,7 +243,7 @@ public class EventHandler {
         private final long startTime;
         private final double scaleFactor;
         private int currentFrame = 0;
-        private final long frameDuration = 100_000_000;
+        private final long frameDuration = 150_000_000; // ✅ Slower animation (150ms per frame)
         private final int totalFrames = 6;
 
         public Explosion(double x, double y, long startTime, double scaleFactor) {
