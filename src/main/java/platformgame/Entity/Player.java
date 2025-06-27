@@ -83,6 +83,16 @@ public class Player extends Entity {
     private final int GunWalkFrame=6;
     private final int GunWalkRow=13;
 
+    //idle with gun (NEW: Using gun idle frames)
+    private final int GunFrontIdleFrame=2;
+    private final int GunFrontIdleRow=16; // Assuming gun front idle is row 16
+
+    private final int GunIdleFrame=2;
+    private final int GunIdleRow=17; // Assuming gun idle is row 17
+
+    private final int GunBackIdleFrame=2;
+    private final int GunBackIdleRow=18; // Assuming gun back idle is row 18
+
     //hurt with gun
     private final int GunHitFrame=2;
     private final int GunHitRow=17;
@@ -90,20 +100,20 @@ public class Player extends Entity {
     private final int GunFrontHitFrame=2;
     private final int GunFrontHitRow=16;
 
-//animation timer
+    //animation timer
     //fist
-private boolean attackingWithFist = false;
-private long fistAttackStartTime = 0;
+    private boolean attackingWithFist = false;
+    private long fistAttackStartTime = 0;
     private final long fistFrameDuration = 100_000_000;
-//shoot
-private boolean shooting = false;
+    //shoot
+    private boolean shooting = false;
     private long shootStartTime = 0;
     private final long shootFrameDuration = 80_000_000;
     // ✅ Shooting mechanics
     private long lastShotTime = 0;
     private final long shootCooldown = 300_000_000; // 300ms between shots
     private List<Bullet> bullets;
-    private final double bulletSpeed = 4.0;
+    private final double bulletSpeed = 6.0;
     private double lastDirectionX = 1.0; // Default facing right
     private double lastDirectionY = 0.0; // Default horizontal
     // ✅ Death animation (Row 10 → Index 9)
@@ -122,6 +132,9 @@ private boolean shooting = false;
 
     private final int totalFrames_walk = 5;
 
+    // ✅ NEW: Movement direction tracking
+    private int currentDirection = 0; // 0 = right/left, 1 = front (down), 2 = back (up)
+    private boolean lastMovedVertically = false;
 
     // ✅ Explosion reaction
     private boolean reactingToExplosion = false;
@@ -180,9 +193,21 @@ private boolean shooting = false;
         }
 
         if (reactingToMeleeHit) {
-            currentRow = HitRow;
+            // ✅ FIXED: Use directional hit animations with proper frame counts
+            int maxFrames;
+            if (currentDirection == 1) {
+                currentRow = FrontHitRow;
+                maxFrames = FrontHitFrame;
+            } else if (currentDirection == 2) {
+                currentRow = BackHitRow;
+                maxFrames = BackHitFrame;
+            } else {
+                currentRow = HitRow;
+                maxFrames = HitFrame;
+            }
+
             int frameIndex = (int) ((now - meleeHitStartTime) / meleeHitFrameDuration);
-            if (frameIndex < HitFrame) {
+            if (frameIndex < maxFrames) {
                 currentFrame = frameIndex;
             } else {
                 currentFrame = 0;
@@ -201,9 +226,21 @@ private boolean shooting = false;
 
         // Handle shooting animation
         if (shooting) {
-            currentRow = ShootRow;
+            // ✅ FIXED: Use directional shooting animations with proper frame counts
+            int maxFrames;
+            if (currentDirection == 1) {
+                currentRow = FrontShootRow;
+                maxFrames = FrontShootFrame;
+            } else if (currentDirection == 2) {
+                currentRow = BackShootRow;
+                maxFrames = BackShootFrame;
+            } else {
+                currentRow = ShootRow;
+                maxFrames = ShootFrame;
+            }
+
             int frameIndex = (int) ((now - shootStartTime) / shootFrameDuration);
-            if (frameIndex < ShootFrame) {
+            if (frameIndex < maxFrames) {
                 currentFrame = frameIndex;
             } else {
                 shooting = false;
@@ -214,9 +251,21 @@ private boolean shooting = false;
         }
 
         if (attackingWithFist) {
-            currentRow = FistRow;
+            // ✅ FIXED: Use directional fist animations with proper frame counts
+            int maxFrames;
+            if (currentDirection == 1) {
+                currentRow = FrontFistRow;
+                maxFrames = FrontFistFrame;
+            } else if (currentDirection == 2) {
+                currentRow = BackFistRow;
+                maxFrames = BackFistFrame;
+            } else {
+                currentRow = FistRow;
+                maxFrames = FistFrame;
+            }
+
             int frameIndex = (int) ((now - fistAttackStartTime) / fistFrameDuration);
-            if (frameIndex < FistFrame) {
+            if (frameIndex < maxFrames) {
                 currentFrame = frameIndex;
             } else {
                 attackingWithFist = false;
@@ -230,8 +279,10 @@ private boolean shooting = false;
             hp = 10;
         }
 
-        // Handle shooting input (using F key)
+        // ✅ FIXED: Handle shooting input with proper direction tracking
         if (keys.contains(KeyCode.F) && !shooting && !attackingWithFist) {
+            // Update shooting direction based on current movement or last direction
+            updateShootingDirection(keys);
             shoot(now);
         }
 
@@ -240,7 +291,6 @@ private boolean shooting = false;
             attackingWithFist = true;
             fistAttackStartTime = now;
             currentFrame = 0;
-            currentRow = FrontFistRow;
 
             Rectangle2D punchBox = facingRight
                     ? new Rectangle2D(x + width, y, width * 0.6, height)
@@ -279,12 +329,13 @@ private boolean shooting = false;
             return;
         }
 
-        // Movement logic remains unchanged
+        // ✅ FIXED: Movement logic with proper direction tracking
         boolean moved = false;
         double newX = x;
         double newY = y;
 
         if (game.GameState == game.playState) {
+            // ✅ Track movement direction for animations
             if (keys.contains(KeyCode.W)) {
                 double testY = y - speed;
                 if (!level1.isCollisionRect(x, testY, width, height)
@@ -293,6 +344,10 @@ private boolean shooting = false;
                         && !checkSoldierCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
+                    currentDirection = 2; // Back direction
+                    lastDirectionY = -1.0; // Moving up
+                    lastDirectionX = 0.0;
+                    lastMovedVertically = true;
                 }
             }
             if (keys.contains(KeyCode.S)) {
@@ -303,6 +358,10 @@ private boolean shooting = false;
                         && !checkSoldierCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
+                    currentDirection = 1; // Front direction
+                    lastDirectionY = 1.0; // Moving down
+                    lastDirectionX = 0.0;
+                    lastMovedVertically = true;
                 }
             }
             if (keys.contains(KeyCode.A)) {
@@ -314,6 +373,10 @@ private boolean shooting = false;
                     newX = testX;
                     moved = true;
                     facingRight = false;
+                    currentDirection = 0; // Side direction
+                    lastDirectionX = -1.0; // Moving left
+                    lastDirectionY = 0.0;
+                    lastMovedVertically = false;
                 }
             }
             if (keys.contains(KeyCode.D)) {
@@ -325,6 +388,10 @@ private boolean shooting = false;
                     newX = testX;
                     moved = true;
                     facingRight = true;
+                    currentDirection = 0; // Side direction
+                    lastDirectionX = 1.0; // Moving right
+                    lastDirectionY = 0.0;
+                    lastMovedVertically = false;
                 }
             }
         }
@@ -343,22 +410,62 @@ private boolean shooting = false;
         x = newX;
         y = newY;
 
+        // ✅ FIXED: Movement animation with proper directional frames
         if (moved && !reactingToExplosion && !attackingWithFist && !isDead && !reactingToMeleeHit && !shooting) {
-            currentRow = WalkRow;
+            // Use directional walking animations with proper frame counts
+            int maxFrames;
+            if (currentDirection == 1) { // Front (S key)
+                currentRow = GunFrontWalkRow; // Using gun walk frames
+                maxFrames = GunFrontWalkFrame;
+            } else if (currentDirection == 2) { // Back (W key)
+                currentRow = GunBackWalkRow; // Using gun walk frames
+                maxFrames = GunBackWalkFrame;
+            } else { // Side (A/D keys)
+                currentRow = GunWalkRow; // Using gun walk frames
+                maxFrames = GunWalkFrame;
+            }
+
             animationTimer += deltaTime;
             if (animationTimer > 100_000_000) {
-                nextFrame(totalFrames_walk);
+                nextFrame(maxFrames);
                 animationTimer = 0;
             }
         } else if (!reactingToExplosion && !attackingWithFist && !isDead && !reactingToMeleeHit && !shooting) {
+            // ✅ FIXED: Idle animation with gun and proper direction
             currentFrame = 0;
-            currentRow = 0;
+            if (currentDirection == 1) { // Front idle
+                currentRow = GunFrontIdleRow;
+            } else if (currentDirection == 2) { // Back idle
+                currentRow = GunBackIdleRow;
+            } else { // Side idle
+                currentRow = GunIdleRow;
+            }
         }
     }
 
+    // ✅ NEW: Update shooting direction based on current movement
+    private void updateShootingDirection(Set<KeyCode> keys) {
+        // Check current movement keys for shooting direction
+        if (keys.contains(KeyCode.W)) {
+            lastDirectionX = 0.0;
+            lastDirectionY = -1.0; // Shoot up
+            currentDirection = 2;
+        } else if (keys.contains(KeyCode.S)) {
+            lastDirectionX = 0.0;
+            lastDirectionY = 1.0; // Shoot down
+            currentDirection = 1;
+        } else if (keys.contains(KeyCode.A)) {
+            lastDirectionX = -1.0; // Shoot left
+            lastDirectionY = 0.0;
+            currentDirection = 0;
+        } else if (keys.contains(KeyCode.D)) {
+            lastDirectionX = 1.0; // Shoot right
+            lastDirectionY = 0.0;
+            currentDirection = 0;
+        }
+        // If no movement keys are pressed, keep the last direction
+    }
 
-
-    // Updated shoot method - replace your existing shoot() method
     private void shoot(long now) {
         if ((now - lastShotTime) < shootCooldown) {
             return;
@@ -369,11 +476,39 @@ private boolean shooting = false;
             return;
         }
 
+        // Start from center of player
         double bulletStartX = x + width / 2;
         double bulletStartY = y + height / 2;
+        System.out.println("Start x: "+bulletStartX+", Start Y: "+bulletStartY);
+        System.out.println("Last x: "+lastDirectionX+", Last Y: "+lastDirectionY);
+        System.out.println("Facing right: "+facingRight+", Current direction: "+currentDirection);
 
-        bulletStartX += lastDirectionX * (width / 2 + 5);
-        bulletStartY += lastDirectionY * (height / 2 + 5);
+        // Adjust starting position based on shooting direction
+        if (currentDirection == 0) { // Horizontal shooting (left/right)
+            bulletStartX += lastDirectionX * (width / 2 );
+            bulletStartY -= 18;
+            System.out.println("Horizontal - After Start x: "+bulletStartX+", After Start Y: "+bulletStartY);
+        } else if (currentDirection == 1) { // Front/Down shooting
+            bulletStartY += (height / 2 ); // Move to bottom edge
+            // For vertical shooting, use the facing direction for X offset
+            if (facingRight) {
+                bulletStartX -= (width/2 ); // Shoot from right side when facing right
+            } else {
+                bulletStartX += (width/2
+                ); // Shoot from left side when facing left
+            }
+            System.out.println("Down - After Start x: "+bulletStartX+", After Start Y: "+bulletStartY);
+        } else if (currentDirection == 2) { // Back/Up shooting
+            bulletStartY -= (height / 2 ); // Move to top edge
+            // For vertical shooting, use the facing direction for X offset
+            if (facingRight) {
+                bulletStartX -= (width/2 ); // Shoot from right side when facing right
+            } else {
+                bulletStartX += (width/2 ); // Shoot from left side when facing left
+            }
+            System.out.println("Up - After Start x: "+bulletStartX+", After Start Y: "+bulletStartY);
+        }
+        System.out.println("Done\n");
 
         double velX = lastDirectionX * bulletSpeed;
         double velY = lastDirectionY * bulletSpeed;
@@ -389,18 +524,7 @@ private boolean shooting = false;
         gp.playSoundEffects(4);
 
         currentFrame = 0;
-        currentRow = ShootRow;
     }
-
-
-
-
-
-
-
-
-
-
     // ✅ NEW: Update bullets
     private void updateBullets(long deltaTime, long now) {
         Iterator<Bullet> bulletIterator = bullets.iterator();
@@ -415,7 +539,6 @@ private boolean shooting = false;
             }
         }
     }
-
 
     // ✅ NEW: Check bullet collisions with enemies
     private void checkBulletEnemyCollisions(Bullet bullet) {
@@ -454,7 +577,6 @@ private boolean shooting = false;
         }
     }
 
-
     private void checkEnemyCollisions(Game game, long now) {
         double playerCenterX = x + width / 2;
         double playerCenterY = y + height / 2;
@@ -478,7 +600,6 @@ private boolean shooting = false;
         }
     }
 
-
     private void checkSoldierCollisions(Game game, long now) {
         if (game.soldiers == null) return;
 
@@ -500,7 +621,6 @@ private boolean shooting = false;
             }
         }
     }
-
 
     private boolean checkNpcCollision(double playerX, double playerY, Game game, long now) {
         Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
@@ -610,7 +730,6 @@ private boolean shooting = false;
         gp.ui.showMessage("Enemy attacked! -" + rawDamage + " HP");
         gp.playSoundEffects(2);
     }
-
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
