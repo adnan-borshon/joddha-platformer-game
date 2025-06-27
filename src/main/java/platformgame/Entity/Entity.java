@@ -158,4 +158,5 @@ public abstract class Entity {
     public double getY() { return y; }
     public double getWidth() { return width; }
     public double getHeight() { return height; }
+
 }

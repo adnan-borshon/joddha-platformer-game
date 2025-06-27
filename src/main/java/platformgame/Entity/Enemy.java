@@ -138,39 +138,28 @@ public class Enemy extends Entity {
     }
 
     protected void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
-        double newX = x;
-        double newY = y;
+        double dx = 0;
+        double dy = 0;
 
         if (Math.abs(x - targetX) > moveSpeed) {
-            if (x < targetX) {
-                newX += moveSpeed;
-                facingRight = true;
-            } else {
-                newX -= moveSpeed;
-                facingRight = false;
-            }
-        } else {
-            newX = targetX;
-        }
-
-        if (!isColliding(newX, y)) {
-            x = newX;
+            dx = (x < targetX) ? moveSpeed : -moveSpeed;
+            facingRight = (dx > 0);
         }
 
         if (Math.abs(y - targetY) > moveSpeed) {
-            if (y < targetY) {
-                newY += moveSpeed;
-            } else {
-                newY -= moveSpeed;
-            }
-        } else {
-            newY = targetY;
+            dy = (y < targetY) ? moveSpeed : -moveSpeed;
         }
 
-        if (!isColliding(x, newY)) {
-            y = newY;
+        // ✅ Collision check before applying movement
+        if (!isColliding(x + dx, y)) {
+            x += dx;
+        }
+
+        if (!isColliding(x, y + dy)) {
+            y += dy;
         }
     }
+
 
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {

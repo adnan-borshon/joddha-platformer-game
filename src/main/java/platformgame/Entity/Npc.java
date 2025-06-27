@@ -4,12 +4,19 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import platformgame.Game;
 
-
 public class Npc extends Entity {
     private final int totalFrames_idle = 11;  // frames in idle animation (used here)
     private int dialogueIndex = 0;
     public boolean playerIsTouching = false;
 
+    // Constructor with custom dialogue
+    public Npc(double x, double y, double width, double height, double speed, Game gp, String[] customDialogue) {
+        super(x, y, width, height, speed, gp);
+        imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
+        setDialogue(customDialogue);
+    }
+
+    // Constructor with default dialogue (for backward compatibility)
     public Npc(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
         imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
@@ -42,7 +49,6 @@ public class Npc extends Entity {
     public void update(long deltaTime, long now) {
         if (gp.GameState == gp.dialogueState) return;  // Skip update if in dialogue state
 
-
         // Animate the idle sprite
         animationTimer += deltaTime;
         currentRow = 1;  // Use row 1 for idle animation
@@ -52,6 +58,14 @@ public class Npc extends Entity {
         }
     }
 
+    // Method to set custom dialogue
+    public void setDialogue(String[] customDialogue) {
+        for (int i = 0; i < customDialogue.length && i < dialogues.length; i++) {
+            dialogues[i] = customDialogue[i];
+        }
+    }
+
+    // Default dialogue method
     public void setDialogue() {
         dialogues[0] = "Rohan please be careful. There are many soldiers with weapons and there are hostages please save them.";
         dialogues[1] = "Stay alert and watch your back.";
@@ -74,7 +88,5 @@ public class Npc extends Entity {
 
     public void notifyPlayerCollision() {
         playerIsTouching = true;  // Player has touched the NPC
-
     }
-
 }

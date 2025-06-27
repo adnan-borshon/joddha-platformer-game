@@ -1,11 +1,14 @@
 package platformgame;
 
 import javafx.animation.AnimationTimer;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -37,8 +40,7 @@ public class Game extends Pane {
     public Scout[] scout = new Scout[10];
     public SuperObject[] object = new SuperObject[15];
     public Enemy[] enemies = new Enemy[40];
-    public Soldier[] soldiers = new Soldier[10];
-
+    public Soldier[] soldiers = new Soldier[20];
 
     public final double scale = 1.15;
     public final Player player;
@@ -61,11 +63,48 @@ public class Game extends Pane {
     private boolean boomSpawned = false;
     private Obj_Boom boomObject;
 
+    // ✅ Chat system integration
+    private ChatUI chatUI;
+    private StackPane gameRoot; // Container for game and UI elements
+
     public Game() {
-        this.setPrefSize(screenWidth, screenHeight);
+        // Create root container for layering
+        gameRoot = new StackPane();
+        gameRoot.setPrefSize(screenWidth, screenHeight);
+
+        // Initialize canvas
         canvas = new Canvas(screenWidth, screenHeight);
         gc = canvas.getGraphicsContext2D();
-        this.getChildren().add(canvas);
+
+        // Initialize chat system
+        chatUI = new ChatUI(this);
+
+        // Create UI overlay pane
+        Pane uiOverlay = new Pane();
+        uiOverlay.setPrefSize(screenWidth, screenHeight);
+
+        // Position chat toggle button (top-right corner)
+        chatUI.getToggleButton().setLayoutX(screenWidth - 80);
+        chatUI.getToggleButton().setLayoutY(10);
+
+        // Position chat container (top-left corner)
+        chatUI.getChatContainer().setLayoutX(10);
+        chatUI.getChatContainer().setLayoutY(10);
+
+        // Add elements to UI overlay
+        uiOverlay.getChildren().addAll(
+                chatUI.getToggleButton(),
+                chatUI.getChatContainer()
+        );
+
+        // Layer canvas and UI
+        gameRoot.getChildren().addAll(canvas, uiOverlay);
+        StackPane.setAlignment(canvas, Pos.CENTER);
+        StackPane.setAlignment(uiOverlay, Pos.TOP_LEFT);
+
+        // Add gameRoot to this pane
+        this.getChildren().add(gameRoot);
+        this.setPrefSize(screenWidth, screenHeight);
 
         loadLevel();
 
@@ -172,7 +211,7 @@ public class Game extends Pane {
                 enemyEntity.draw(gc, camX, camY, scale);
             }
         }
-        // Draw soldiers (make sure to draw them in the right order for depth)
+
         for (Soldier soldier : soldiers) {
             if (soldier != null) {
                 soldier.draw(gc, camX, camY, scale);
@@ -212,10 +251,22 @@ public class Game extends Pane {
         aSetter.setExplosion();
         playMusic(0);
         GameState = playState;
+
+        // ✅ Send chat notification that player joined
+        if (chatUI != null) {
+            chatUI.sendGameEvent("Player joined the game!");
+        }
     }
 
     private void onKeyPressed(KeyEvent e) {
         KeyCode key = e.getCode();
+
+        // ✅ Check if chat should handle this key event
+        if (chatUI.handleKeyEvent(key)) {
+            // If chat is handling the key, don't add it to game keys
+            return;
+        }
+
         keysPressed.add(key);
 
         if (GameState == gameOverState && key == KeyCode.ENTER) {
@@ -224,13 +275,11 @@ public class Game extends Pane {
 
         // ✅ Handle bridge destruction popup
         if (GameState == dialogueState && key == KeyCode.ENTER) {
-            // Check if we're showing bridge popup
             if (eventHandler.isShowingBridgePopup()) {
                 eventHandler.triggerBridgeExplosion(this, System.nanoTime());
-                return; // Don't process NPC dialogue
+                return;
             }
 
-            // Handle NPC dialogue (existing code)
             for (Npc n : npc) {
                 if (n != null && n.playerIsTouching) {
                     n.speak();
@@ -238,10 +287,20 @@ public class Game extends Pane {
                 }
             }
         }
+
+        // ✅ Toggle chat with 'T' key (common in games)
+        if (key == KeyCode.T && GameState == playState) {
+            if (!chatUI.isChatVisible()) {
+                chatUI.getToggleButton().fire(); // Simulate button click
+            }
+        }
     }
 
     private void onKeyReleased(KeyEvent e) {
-        keysPressed.remove(e.getCode());
+        // ✅ Only remove key if chat isn't handling it
+        if (!chatUI.handleKeyEvent(e.getCode())) {
+            keysPressed.remove(e.getCode());
+        }
     }
 
     public void startGameLoop() {
@@ -278,13 +337,14 @@ public class Game extends Pane {
                     enemyEntity.update(deltaTime, now);
                 }
             }
+
             for (Soldier soldier : soldiers) {
                 if (soldier != null) {
                     soldier.update(deltaTime, now);
                 }
             }
 
-            checkAndSpawnBoom();  // ✅ Call boom spawn check
+            checkAndSpawnBoom();
 
             if (keysPressed.contains(KeyCode.ESCAPE)) {
                 GameManager.getInstance().saveState(this);
@@ -292,12 +352,10 @@ public class Game extends Pane {
                 GameState = pauseState;
             }
 
-
             eventHandler.update(player, this, now);
         }
     }
 
-    // ✅ Check if all enemies and scouts are dead → spawn boom
     private void checkAndSpawnBoom() {
         if (boomSpawned) return;
 
@@ -305,7 +363,6 @@ public class Game extends Pane {
         boolean foundAnyEnemies = false;
         boolean foundAnyScouts = false;
 
-        // Check enemies
         for (Enemy e : enemies) {
             if (e != null) {
                 foundAnyEnemies = true;
@@ -315,7 +372,7 @@ public class Game extends Pane {
                 }
             }
         }
-        // Check scouts
+
         for (Scout s : scout) {
             if (s != null) {
                 foundAnyScouts = true;
@@ -326,8 +383,6 @@ public class Game extends Pane {
             }
         }
 
-        // Only spawn boom if we actually had enemies/scouts to kill AND they're all dead
-
         if (allEnemiesDead && (foundAnyEnemies || foundAnyScouts)) {
             boomObject = new Obj_Boom(54 * tileSize, 24 * tileSize);
 
@@ -336,6 +391,10 @@ public class Game extends Pane {
                 if (object[i] == null) {
                     object[i] = boomObject;
                     System.out.println("💥 Boom appeared at position: " + (54 * tileSize) + ", " + (24 * tileSize));
+
+                    // ✅ Notify other players via chat
+                    chatUI.sendGameEvent("💥 Explosives are now available!");
+
                     placed = true;
                     break;
                 }
@@ -346,8 +405,6 @@ public class Game extends Pane {
             }
 
             boomSpawned = true;
-
-            // ✅ Enable bridge destruction when boom spawns
             eventHandler.enableBridgeDestruction();
         } else if (!foundAnyEnemies && !foundAnyScouts) {
             System.out.println("⚠️ No enemies or scouts found - spawning boom for testing");
@@ -361,12 +418,10 @@ public class Game extends Pane {
                 }
             }
             boomSpawned = true;
-
-            // ✅ Enable bridge destruction for testing mode too
             eventHandler.enableBridgeDestruction();
         }
     }
-    // ✅ Also add this method to help debug boom spawning
+
     public void debugBoomStatus() {
         System.out.println("=== BOOM DEBUG INFO ===");
         System.out.println("Boom spawned: " + boomSpawned);
@@ -400,6 +455,12 @@ public class Game extends Pane {
 
     private void openMainMenu() {
         try {
+            // ✅ Disconnect from chat before leaving
+            if (chatUI != null) {
+                chatUI.sendGameEvent("Player left the game");
+                chatUI.disconnect();
+            }
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FirstPage.fxml"));
             Pane menuRoot = loader.load();
             Scene currentScene = this.getScene();
@@ -419,5 +480,10 @@ public class Game extends Pane {
 
     public void playSoundEffects(int i) {
         sound.play(i);
+    }
+
+    // ✅ Getter for chat UI (if needed elsewhere)
+    public ChatUI getChatUI() {
+        return chatUI;
     }
 }

@@ -59,7 +59,7 @@ public class Scout extends Entity {
     private final double combatSpeed = speed * 1.3;
 
     // ✅ UPDATED: Much smaller detection range (touching distance)
-    private final double touchDetectionRange = 3*32; // About 1.2 tiles instead of 3
+    private final double touchDetectionRange = 3 * 32; // About 1.2 tiles instead of 3
 
     private String customDialogue = null;
     private Game gp;
@@ -105,7 +105,7 @@ public class Scout extends Entity {
     }
 
     public Rectangle2D getHitbox() {
-        return new Rectangle2D(x-3, y+3, width, height);
+        return new Rectangle2D(x - 3, y + 3, width, height);
     }
 
     public boolean canDamagePlayer() {
@@ -215,7 +215,7 @@ public class Scout extends Entity {
                 currentFrame = frameIndex;
             } else {
                 currentFrame = totalDeathFrames - 1; // Stay on last death frame
-                gp.scout[0]=null;
+                gp.scout[0] = null;
             }
             return; // Exit early, don't process other updates when dead
         }
@@ -411,7 +411,7 @@ public class Scout extends Entity {
         gc.setStroke(isAggressive ? Color.RED : Color.LIME);
         double drawX = (x - camX) * scale;
         double drawY = (y - camY) * scale;
-        gc.strokeRect(drawX+2, drawY+2, width * scale, height * scale);
+        gc.strokeRect(drawX + 2, drawY + 2, width * scale, height * scale);
         gc.restore();
 
         if (showingDialogue) drawDialogue(gc, camX, camY, scale);
@@ -505,15 +505,19 @@ public class Scout extends Entity {
         }
     }
 
-    public boolean isAggressive() { return isAggressive; }
-    public boolean isInCombat() { return inCombat; }
+    public boolean isAggressive() {
+        return isAggressive;
+    }
+
+    public boolean isInCombat() {
+        return inCombat;
+    }
 
 
     // Add this method to your Scout class
     public boolean isDead() {
         return isDead;
     }
-
 
 
 }
