@@ -67,6 +67,9 @@ public class UI {
         }
     }
 
+    public UI(Game_2 game2) {
+    }
+
     public void showMessage(String text) {
         message = text;
         messageOn = true;

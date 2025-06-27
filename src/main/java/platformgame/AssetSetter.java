@@ -13,6 +13,9 @@ public class AssetSetter {
         this.gp = gp;
     }
 
+    public AssetSetter(Game_2 game2) {
+    }
+
     public void setObject() {
         gp.object[0] = new Obj_Key();
         gp.object[0].worldX = 48 * gp.tileSize;
