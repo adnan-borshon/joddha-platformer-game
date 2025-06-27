@@ -22,16 +22,13 @@ public class Enemy extends Entity {
     protected double patrolTargetX, patrolTargetY;
     protected boolean isFollowingPlayer = false;
 
-    // 🔴 Health system
     protected int maxHealth = 5;
     protected int currentHealth = 5;
     protected boolean isDead = false;
 
-    // ✅ Damage Cooldown (2 seconds)
     protected long lastAttackTime = 0;
     protected long damageCooldown = 2_000_000_000L;
 
-    // ✅ Hit Animation (Row 9)
     protected boolean isHit = false;
     protected long hitStartTime = 0;
     protected final int hitRow = 9;
@@ -49,16 +46,8 @@ public class Enemy extends Entity {
     public void update(long deltaTime, long now) {
         if (isDead) return;
 
-        // ✅ If in hit animation, override everything else
         if (isHit) {
-            currentRow = hitRow;
-            int frameIndex = (int) ((now - hitStartTime) / hitFrameDuration);
-            if (frameIndex < totalHitFrames) {
-                currentFrame = frameIndex;
-            } else {
-                isHit = false;
-                currentFrame = 0;
-            }
+            handleHitAnimation(now);
             return;
         }
 
@@ -77,25 +66,54 @@ public class Enemy extends Entity {
         }
 
         if (isAttacking) {
-            currentRow = 6;
-            int frameIndex = (int) ((now - attackStartTime) / 150_000_000);
-            if (frameIndex < totalFramesAttack) {
-                currentFrame = frameIndex;
-            } else {
-                currentFrame = 0;
-                isAttacking = false;
-                isWalking = false;
-            }
+            handleAttackAnimation(now);
         } else if (isWalking) {
-            currentRow = 2;
-            currentFrame = (int) ((now / 100_000_000) % totalFramesWalk);
-        } else if (isRunning) {
-            currentRow = 3;
-            currentFrame = (int) ((now / 100_000_000) % totalFramesRun);
-        } else {
-            currentRow = 1;
-            currentFrame = (int) ((now / 100_000_000) % totalFramesIdle);
+            handleWalkingAnimation(now);
+        }else if(isRunning){
+            handleRunAnimation(now);
         }
+        else {
+            handleIdleAnimation(now);
+        }
+    }
+
+    private void handleRunAnimation(long now) {
+        currentRow = 3;
+        currentFrame = (int) ((now / 100_000_000) % totalFramesRun);
+    }
+
+
+    private void handleHitAnimation(long now) {
+        currentRow = hitRow;
+        int frameIndex = (int) ((now - hitStartTime) / hitFrameDuration);
+        if (frameIndex < totalHitFrames) {
+            currentFrame = frameIndex;
+        } else {
+            isHit = false;
+            currentFrame = 0;
+        }
+    }
+
+    private void handleAttackAnimation(long now) {
+        currentRow = 6;
+        int frameIndex = (int) ((now - attackStartTime) / 150_000_000);
+        if (frameIndex < totalFramesAttack) {
+            currentFrame = frameIndex;
+        } else {
+            currentFrame = 0;
+            isAttacking = false;
+            isWalking = false;
+        }
+    }
+
+    private void handleWalkingAnimation(long now) {
+        currentRow = 2;
+        currentFrame = (int) ((now / 100_000_000) % totalFramesWalk);
+    }
+
+    private void handleIdleAnimation(long now) {
+        currentRow = 1;
+        currentFrame = (int) ((now / 100_000_000) % totalFramesIdle);
     }
 
     protected void startAttack(long now) {
@@ -127,7 +145,6 @@ public class Enemy extends Entity {
     private void setNewPatrolTarget() {
         patrolTargetX = patrolStartX + (Math.random() * patrolRange) - (patrolRange / 2);
         patrolTargetY = patrolStartY + (Math.random() * patrolRange) - (patrolRange / 2);
-
         patrolTargetX = Math.max(patrolStartX, Math.min(patrolTargetX, patrolStartX + patrolRange));
         patrolTargetY = Math.max(patrolStartY, Math.min(patrolTargetY, patrolStartY + patrolRange));
     }
@@ -138,37 +155,42 @@ public class Enemy extends Entity {
     }
 
     protected void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
-        double dx = 0;
-        double dy = 0;
+        // Calculate the difference in position
+        double dx = targetX - x;
+        double dy = targetY - y;
 
-        if (Math.abs(x - targetX) > moveSpeed) {
-            dx = (x < targetX) ? moveSpeed : -moveSpeed;
-            facingRight = (dx > 0);
+        // Calculate the distance to the target
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Normalize the direction vector
+        if (distance > 0) {
+            dx /= distance;  // Normalize x
+            dy /= distance;  // Normalize y
         }
 
-        if (Math.abs(y - targetY) > moveSpeed) {
-            dy = (y < targetY) ? moveSpeed : -moveSpeed;
+        // Interpolate the position towards the target using Lerp
+        double lerpFactor = 0.02;  // Adjust for smoother or faster movement
+        x = x + (targetX - x) * lerpFactor;
+        y = y + (targetY - y) * lerpFactor;
+
+        // Update the facing direction (left or right)
+        if (targetX > x) {
+            facingRight = true;  // Facing right
+        } else if (targetX < x) {
+            facingRight = false;  // Facing left
         }
 
-        // ✅ Collision check before applying movement
-        if (!isColliding(x + dx, y)) {
-            x += dx;
-        }
 
-        if (!isColliding(x, y + dy)) {
-            y += dy;
-        }
     }
-
-
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         if (isDead) return;
-
-        // Draw the actual enemy (including animations)
         drawEntity(gc, camX, camY, scale);
+        drawHealthBar(gc, camX, camY, scale);
+        drawDebugRectangle(gc, camX, camY, scale);
+    }
 
-        // 🔴 Draw health bar above enemy
+    private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
         double barWidth = 40;
         double barHeight = 6;
         double healthPercent = (double) currentHealth / maxHealth;
@@ -183,28 +205,25 @@ public class Enemy extends Entity {
 
         gc.setStroke(Color.BLACK);
         gc.strokeRect(barX, barY, barWidth, barHeight);
+    }
 
-        // 🔴 Debug Rectangle: Show bounding box around the enemy entity
+    private void drawDebugRectangle(GraphicsContext gc, double camX, double camY, double scale) {
         double debugRectX = (x - camX) * scale;
         double debugRectY = (y - camY) * scale;
         double debugRectWidth = width * scale;
         double debugRectHeight = height * scale;
 
-        gc.setStroke(Color.BLUE);  // Color for the debug rectangle
-        gc.setLineWidth(2);        // Make the outline a little thicker
+        gc.setStroke(Color.BLUE);
+        gc.setLineWidth(2);
         gc.strokeRect(debugRectX, debugRectY, debugRectWidth, debugRectHeight);
     }
 
-
-    // 🔴 Called from player punch detection
     public void receiveDamage() {
         if (isDead) return;
-
         currentHealth--;
         if (currentHealth <= 0) {
             isDead = true;
         } else {
-            // ✅ Trigger hit animation
             isHit = true;
             hitStartTime = System.nanoTime();
             currentFrame = 0;

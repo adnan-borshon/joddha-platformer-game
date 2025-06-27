@@ -19,8 +19,8 @@ public class AssetSetter {
     public void setObject() {
 
         gp.object[5] = new Obj_Boots();
-        gp.object[5].worldX = 50 * gp.tileSize;
-        gp.object[5].worldY = 48 * gp.tileSize;
+        gp.object[5].worldX = 36 * gp.tileSize;
+        gp.object[5].worldY = 5 * gp.tileSize;
 
 
         gp.object[7] = new Obj_ammo();
@@ -55,10 +55,7 @@ public class AssetSetter {
         gp.object[3].worldX = 54 * gp.tileSize;
         gp.object[3].worldY = 63 * gp.tileSize;
 
-        gp.object[4] = new Obj_Life();
-        gp.object[4].name = "obj";
-        gp.object[4].worldX = 85 * gp.tileSize;
-        gp.object[4].worldY = 52 * gp.tileSize;
+
 
 
     }
@@ -89,17 +86,17 @@ public class AssetSetter {
 
     public void setEnemy() {
         // ✅ Corrected to match Game.java's enemies[]
-        gp.enemies[0] = new Enemy(60 * gp.tileSize, 44 * gp.tileSize, 50, 40, 0.8, gp);
-        gp.enemies[1] = new Enemy(65 * gp.tileSize, 5 * gp.tileSize, 50, 40, 1, gp);
-        gp.enemies[2] = new Enemy(53 * gp.tileSize, 51 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[3] = new Enemy(81* gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[4] = new Enemy(82 * gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[5] = new Enemy(89* gp.tileSize, 48 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[6] = new Enemy(87 * gp.tileSize, 40 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[7] = new Enemy(88 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[8] = new Enemy(95 * gp.tileSize, 6 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[9] = new Enemy(58 * gp.tileSize, 29 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[10] = new Enemy(93 * gp.tileSize, 24 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[0] = new Enemy(62 * gp.tileSize, 44 * gp.tileSize, 50, 40, 0.8, gp);
+//        gp.enemies[1] = new Enemy(48 * gp.tileSize, 7 * gp.tileSize, 50, 40, 1, gp);
+//        gp.enemies[2] = new Enemy(55 * gp.tileSize, 53 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[3] = new Enemy(81* gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[4] = new Enemy(82 * gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[5] = new Enemy(89* gp.tileSize, 48 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[6] = new Enemy(87 * gp.tileSize, 40 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[7] = new Enemy(88 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[8] = new Enemy(95 * gp.tileSize, 6 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[9] = new Enemy(59 * gp.tileSize, 32 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[10] = new Enemy(94 * gp.tileSize, 26 * gp.tileSize, 50, 40, 1.2, gp);
 
 
         // Add more if needed
@@ -107,18 +104,18 @@ public class AssetSetter {
 
 
     public void setSoldiers() {
-        gp.soldiers[0] = new Soldier(13 * gp.tileSize, 50 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[1] = new Soldier(21 * gp.tileSize, 52 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[2] = new Soldier(32 * gp.tileSize, 45 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[3] = new Soldier(12 * gp.tileSize, 66 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[4] = new Soldier(23 * gp.tileSize, 64 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[5] = new Soldier(16 * gp.tileSize, 73 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[6] = new Soldier(42 * gp.tileSize, 68 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[7] = new Soldier(60 * gp.tileSize, 71 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[8] = new Soldier(63 * gp.tileSize, 58 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[9] = new Soldier(38 * gp.tileSize, 58 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[10] = new Soldier(1 * gp.tileSize, 67 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.soldiers[11] = new Soldier(12 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
+        gp.soldiers[0] = new Soldier(46 * gp.tileSize, 19 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[1] = new Soldier(21 * gp.tileSize, 52 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[2] = new Soldier(32 * gp.tileSize, 45 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[3] = new Soldier(12 * gp.tileSize, 62 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[4] = new Soldier(23 * gp.tileSize, 64 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[5] = new Soldier(16 * gp.tileSize, 73 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[6] = new Soldier(42 * gp.tileSize, 68 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[7] = new Soldier(60 * gp.tileSize, 71 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[8] = new Soldier(62 * gp.tileSize, 59 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[9] = new Soldier(38 * gp.tileSize, 58 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[10] = new Soldier(24 * gp.tileSize, 68 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[11] = new Soldier(10 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
     }
 
 

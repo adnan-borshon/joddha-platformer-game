@@ -168,11 +168,7 @@ public class Game extends Pane {
         level1.drawBackground(gc, camX, camY, scale);
         level1.drawMiddleground(gc, camX, camY, scale);
 
-        for (SuperObject obj : object) {
-            if (obj != null && obj.isBehindPlayer(this)) {
-                obj.draw(gc, this);
-            }
-        }
+
 
         for (Enemy enemyEntity : enemies) {
             if (enemyEntity != null && enemyEntity.isBehindPlayer(this)) {
@@ -183,6 +179,11 @@ public class Game extends Pane {
         for (Npc npcEntity : npc) {
             if (npcEntity != null && npcEntity.isBehindPlayer(this)) {
                 npcEntity.draw(gc, camX, camY, scale);
+            }
+        }
+        for (SuperObject obj : object) {
+            if (obj != null && obj.isBehindPlayer(this)) {
+                obj.draw(gc, this);
             }
         }
 
@@ -360,40 +361,50 @@ public class Game extends Pane {
         if (boomSpawned) return;
 
         boolean allEnemiesDead = true;
-        boolean foundAnyEnemies = false;
-        boolean foundAnyScouts = false;
+
+
+        boolean placed = false; //bomb placed
 
         for (Enemy e : enemies) {
             if (e != null) {
-                foundAnyEnemies = true;
                 if (!e.isDead()) {
                     allEnemiesDead = false;
-                    break;
                 }
             }
+            break;
         }
 
         for (Scout s : scout) {
             if (s != null) {
-                foundAnyScouts = true;
+
                 if (!s.isDead()) {
                     allEnemiesDead = false;
-                    break;
+
                 }
             }
+            break;
+        }
+        for (Soldier s : soldiers) {
+            if (s != null) {
+                if (!s.isDead()) {
+                    allEnemiesDead = false;
+
+                }
+            }
+            break;
         }
 
-        if (allEnemiesDead && (foundAnyEnemies || foundAnyScouts)) {
+        if (allEnemiesDead ) {
             boomObject = new Obj_Boom(54 * tileSize, 24 * tileSize);
 
-            boolean placed = false;
+
             for (int i = 0; i < object.length; i++) {
                 if (object[i] == null) {
                     object[i] = boomObject;
                     System.out.println("💥 Boom appeared at position: " + (54 * tileSize) + ", " + (24 * tileSize));
 
                     // ✅ Notify other players via chat
-                    chatUI.sendGameEvent("💥 Explosives are now available!");
+//                    chatUI.sendGameEvent("💥 Explosives are now available!");
 
                     placed = true;
                     break;
@@ -406,60 +417,20 @@ public class Game extends Pane {
 
             boomSpawned = true;
             eventHandler.enableBridgeDestruction();
-        } else if (!foundAnyEnemies && !foundAnyScouts) {
-            System.out.println("⚠️ No enemies or scouts found - spawning boom for testing");
-            boomObject = new Obj_Boom(54 * tileSize, 24 * tileSize);
-
-            for (int i = 0; i < object.length; i++) {
-                if (object[i] == null) {
-                    object[i] = boomObject;
-                    System.out.println("💥 Boom appeared (no enemies/scouts mode)");
-                    break;
-                }
-            }
-            boomSpawned = true;
-            eventHandler.enableBridgeDestruction();
         }
     }
 
-    public void debugBoomStatus() {
-        System.out.println("=== BOOM DEBUG INFO ===");
-        System.out.println("Boom spawned: " + boomSpawned);
-
-        int aliveEnemies = 0;
-        int totalEnemies = 0;
-        for (Enemy e : enemies) {
-            if (e != null) {
-                totalEnemies++;
-                if (!e.isDead()) {
-                    aliveEnemies++;
-                }
-            }
-        }
-
-        int aliveScouts = 0;
-        int totalScouts = 0;
-        for (Scout s : scout) {
-            if (s != null) {
-                totalScouts++;
-                if (!s.isDead()) {
-                    aliveScouts++;
-                }
-            }
-        }
-
-        System.out.println("Enemies: " + aliveEnemies + "/" + totalEnemies + " alive");
-        System.out.println("Scouts: " + aliveScouts + "/" + totalScouts + " alive");
-        System.out.println("=======================");
+private void chatDisconnection(){
+    // ✅ Disconnect from chat before leaving
+    if (chatUI != null) {
+        chatUI.sendGameEvent("Player left the game");
+        chatUI.disconnect();
     }
+}
 
     private void openMainMenu() {
         try {
-            // ✅ Disconnect from chat before leaving
-            if (chatUI != null) {
-                chatUI.sendGameEvent("Player left the game");
-                chatUI.disconnect();
-            }
+            chatDisconnection();
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FirstPage.fxml"));
             Pane menuRoot = loader.load();

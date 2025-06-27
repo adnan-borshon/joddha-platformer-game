@@ -11,6 +11,7 @@ import platformgame.Game;
 import platformgame.Game_2;
 import platformgame.ImageLoader;
 import platformgame.Entity.Player;
+import platformgame.UI;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,7 +35,11 @@ public class EventHandler {
     private long bridgeExplosionStartTime = 0;
     private boolean bridgeExplosionActive = false;
 
+    // ✅ Mission completion delay
     private boolean missionCompleted = false;
+    private boolean waitingForMissionComplete = false;
+    private long missionCompleteDelayStart = 0;
+    private final long MISSION_COMPLETE_DELAY = 4_000_000_000L; // 4 seconds in nanoseconds
 
     public EventHandler() {
         explosionSpriteSheet = ImageLoader.load("/image/explosion.png");
@@ -50,8 +55,8 @@ public class EventHandler {
 
         double explosionX = 102 * 32;
         double explosionY = 42 * 32;
-        double explosionWidth = 32;
-        double explosionHeight = 32;
+        double explosionWidth = 32*7;
+        double explosionHeight = 32*7;
         bridgeExplosionArea = new Rectangle2D(explosionX, explosionY, explosionWidth, explosionHeight);
     }
 
@@ -100,6 +105,14 @@ public class EventHandler {
         if (bridgeExplosionActive) {
             updateBridgeExplosion(now);
         }
+
+        // ✅ Handle mission completion delay
+        if (waitingForMissionComplete && !missionCompleted) {
+            if (now - missionCompleteDelayStart >= MISSION_COMPLETE_DELAY) {
+                completeMission(now, game);
+                waitingForMissionComplete = false;
+            }
+        }
     }
 
     private void handleBridgeDestruction(Player player, Game game, long now) {
@@ -110,6 +123,8 @@ public class EventHandler {
         if (currentlyInArea && !playerInTriggerArea) {
             playerInTriggerArea = true;
             showBridgePopup = true;
+            // ✅ Set the popup message in UI dialogue system
+            game.ui.dialogue = "Press Enter to destroy the bridge and save villagers from pakistan military";
             game.GameState = game.dialogueState;
             System.out.println("Player entered bridge trigger area!");
         } else if (!currentlyInArea && playerInTriggerArea) {
@@ -141,7 +156,9 @@ public class EventHandler {
                 System.out.println("Bridge tiles removed from map!");
             }
 
-            completeMission(now, game);
+            // ✅ Start mission completion delay instead of completing immediately
+            waitingForMissionComplete = true;
+            missionCompleteDelayStart = now;
 
             System.out.println("Bridge explosion triggered!");
         }
@@ -183,56 +200,7 @@ public class EventHandler {
             );
         }
 
-        if (showBridgePopup) {
-            drawBridgePopup(gc);
-        }
-
-        if (bridgeDestructionEnabled && !bridgeDestroyed) {
-            drawDebugTriggerArea(gc, camX, camY, scale);
-        }
-    }
-
-    private void drawBridgePopup(GraphicsContext gc) {
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, 1020, 700);
-
-        double boxWidth = 400;
-        double boxHeight = 150;
-        double boxX = (1020 - boxWidth) / 2;
-        double boxY = (700 - boxHeight) / 2;
-
-        gc.setFill(Color.DARKGRAY);
-        gc.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 10, 10);
-
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(3);
-        gc.strokeRoundRect(boxX, boxY, boxWidth, boxHeight, 10, 10);
-
-        gc.setFill(Color.WHITE);
-        gc.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        gc.fillText("Destroy the bridge with the boom?", boxX + 50, boxY + 60);
-
-        gc.setFont(Font.font("Arial", 16));
-        gc.fillText("Press ENTER to confirm", boxX + 120, boxY + 100);
-    }
-
-    private void drawDebugTriggerArea(GraphicsContext gc, double camX, double camY, double scale) {
-        double drawX = (bridgeTriggerArea.getMinX() - camX) * scale;
-        double drawY = (bridgeTriggerArea.getMinY() - camY) * scale;
-        double drawW = bridgeTriggerArea.getWidth() * scale;
-        double drawH = bridgeTriggerArea.getHeight() * scale;
-
-        gc.setStroke(Color.LIME);
-        gc.setLineWidth(2);
-        gc.strokeRect(drawX, drawY, drawW, drawH);
-
-        double expDrawX = (bridgeExplosionArea.getMinX() - camX) * scale;
-        double expDrawY = (bridgeExplosionArea.getMinY() - camY) * scale;
-        double expDrawW = bridgeExplosionArea.getWidth() * scale;
-        double expDrawH = bridgeExplosionArea.getHeight() * scale;
-
-        gc.setStroke(Color.RED);
-        gc.strokeRect(expDrawX, expDrawY, expDrawW, expDrawH);
+        // ✅ Remove the custom popup drawing since we're using the UI dialogue system
     }
 
     public boolean isShowingBridgePopup() {
@@ -247,13 +215,8 @@ public class EventHandler {
         return missionCompleted;
     }
 
-
-    public boolean isShowingMissionCompletePopup() {
-        return showMissionCompletePopup;
-    }
-
     public void update(Main_Tank mainTank, Game_2 game2, long now) {
-
+        // Empty implementation for Game_2
     }
 
     private static class Explosion {

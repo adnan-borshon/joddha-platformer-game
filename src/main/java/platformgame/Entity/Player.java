@@ -124,6 +124,9 @@ public class Player extends Entity {
             }
             return;
         }
+        if (keys.contains(KeyCode.L) ){
+            hp=10;
+        }
 
         if (keys.contains(KeyCode.SPACE) && !attackingWithFist) {
             attackingWithFist = true;
