@@ -5,11 +5,11 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import platformgame.Tanks.Enemy_Tank;
 import platformgame.Tanks.Main_Tank;
 import platformgame.Event.EventHandler;
 import platformgame.Map.Level_2;
@@ -18,6 +18,8 @@ import platformgame.Map.Level_2_controller;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Game_2 extends Pane {
     private final Canvas canvas;
@@ -35,18 +37,21 @@ public class Game_2 extends Pane {
     public int tileSize = 32;
     public final double screenWidth = 1020;
     public final double screenHeight = 700;
-    private Main_Tank mainTank;
+    public Main_Tank mainTank;
     Sound music = Sound.getInstance();
     Sound sound = Sound.getInstance();
+
+    // Array of enemy tanks
+    Enemy_Tank[] enemyTank = new Enemy_Tank[15];
+
+    // List to store all bullets
+    private ArrayList<Tank_Bullet> bullets = new ArrayList<>();
 
     public final EventHandler eventHandler = new EventHandler();
 
     public double camX = 0;
     public double camY = 0;
-
-    // Mouse tracking for turret control
-    private double mouseX = 0;
-    private double mouseY = 0;
+    AssetSetter assetSetter = new AssetSetter(this);
 
     public Game_2() {
         this.setPrefSize(screenWidth, screenHeight);
@@ -59,17 +64,44 @@ public class Game_2 extends Pane {
         double tankStartY = 35 * tileSize;
         mainTank = new Main_Tank(tankStartX, tankStartY, 128, 128, 200.0, null, this);
 
+        // Initialize enemy tanks
+        initializeEnemyTanks();
 
         loadLevel();
 
         setFocusTraversable(true);
         setOnKeyPressed(this::onKeyPressed);
         setOnKeyReleased(this::onKeyReleased);
-        setOnMouseMoved(this::onMouseMoved);
-        setOnMouseClicked(this::onMouseClicked);
+
+        setUpObject();
 
         // Request focus immediately
         requestFocus();
+    }
+
+    private void initializeEnemyTanks() {
+        // Initialize the enemy tank array with instances of Enemy_Tank
+        for (int i = 0; i < enemyTank.length; i++) {
+            // Example: Set initial positions for enemy tanks
+            double x = 100 + (i * 100);  // Simple positioning for demo
+            double y = 100 + (i * 50);
+            enemyTank[i] = new Enemy_Tank(x, y, 128, 128, 150.0, null, this); // Adjust speed as needed
+        }
+    }
+
+    private void setUpObject() {
+        assetSetter.setTank();
+    }
+
+    // Method to return all enemy tanks
+    public Enemy_Tank[] getEnemyTanks() {
+        return enemyTank;  // Return the enemy tank array
+    }
+
+    // Method to add bullets to the game
+    public void addBullet(Tank_Bullet bullet) {
+        bullets.add(bullet);
+        System.out.println("Bullet added! Total bullets: " + bullets.size()); // Debug output
     }
 
     private void loadLevel() {
@@ -103,7 +135,6 @@ public class Game_2 extends Pane {
         gc.fillRect(0, 0, screenWidth, screenHeight);
 
         if (level2 == null) {
-
             // Draw without level for testing
             gc.setFill(Color.RED);
             gc.fillText("Level2 not loaded", 10, 20);
@@ -115,17 +146,25 @@ public class Game_2 extends Pane {
         // Always draw tank (even if level2 is null)
         if (mainTank != null) {
             mainTank.draw(gc, camX, camY, 1);
-
         } else {
             System.err.println("mainTank is null!");
+        }
+
+        // Draw enemy tanks
+        for (Enemy_Tank enemy : enemyTank) {
+            if (enemy != null) {
+                enemy.draw(gc, camX, camY, 1);
+            }
+        }
+
+        // Draw all bullets
+        for (Tank_Bullet bullet : bullets) {
+            bullet.draw(gc, camX, camY, 1);
         }
 
         if (level2 != null) {
             level2.drawForeground(gc, camX, camY, 1.15);
         }
-
-        // Draw crosshair at mouse position
-        drawCrosshair();
 
         if (GameState == gameOverState) {
             gc.setFill(Color.color(0, 0, 0, 0.6));
@@ -141,29 +180,40 @@ public class Game_2 extends Pane {
         }
     }
 
-    private void drawCrosshair() {
-        gc.setStroke(Color.RED);
-        gc.setLineWidth(2);
-        double size = 15;
-        gc.strokeLine(mouseX - size, mouseY, mouseX + size, mouseY);
-        gc.strokeLine(mouseX, mouseY - size, mouseX, mouseY + size);
-    }
-
-    private void update(long now, long deltaTime) {
+    public void update(long now, long deltaTime) {
         if (GameState == playState) {
             if (mainTank != null) {
-                // Calculate world mouse position (accounting for camera)
-                double worldMouseX = mouseX + camX;
-                double worldMouseY = mouseY + camY;
-
-                mainTank.update(keysPressed, level2, this, now, deltaTime, worldMouseX, worldMouseY);
-
-                // Update camera to follow tank
+                mainTank.update(keysPressed, level2, this, now, deltaTime, 0, 0);
                 updateCamera();
             }
 
+            // Convert deltaTime from nanoseconds to seconds for enemy tanks
+            double deltaSeconds = deltaTime / 1_000_000_000.0;
+
+            // Update all enemy tanks
+            for (Enemy_Tank enemy : enemyTank) {
+                if (enemy != null) {
+                    enemy.updateBehavior(level2, this, deltaSeconds); // Pass deltaSeconds instead of deltaTime
+                }
+            }
+
+            updateBullets(deltaTime);
+
             if (eventHandler != null) {
                 eventHandler.update(mainTank, this, now);
+            }
+        }
+    }
+
+    private void updateBullets(long deltaTime) {
+        Iterator<Tank_Bullet> iterator = bullets.iterator();
+        while (iterator.hasNext()) {
+            Tank_Bullet bullet = iterator.next();
+            bullet.update(deltaTime);
+            bullet.checkCollisionWithEnemies();
+
+            if (bullet.shouldRemove()) {
+                iterator.remove();
             }
         }
     }
@@ -202,19 +252,7 @@ public class Game_2 extends Pane {
         keysPressed.remove(e.getCode());
     }
 
-    private void onMouseMoved(MouseEvent e) {
-        mouseX = e.getX();
-        mouseY = e.getY();
-    }
-
-    private void onMouseClicked(MouseEvent e) {
-        if (mainTank != null) {
-            mainTank.shoot();
-        }
-    }
-
     public void startGameLoop() {
-
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {

@@ -183,6 +183,8 @@ public class Level_2 {
     }
 
 
+
+
     // NEW COLLISION SYSTEM: Rectangle-based collision detection
     public boolean checkCollisionWithRectangle(double x, double y, double width, double height) {
         // Create a smaller collision rectangle

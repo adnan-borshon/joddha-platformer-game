@@ -1,19 +1,25 @@
 package platformgame;
 
-import platformgame.Entity.Enemy;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Scout;
 import platformgame.Entity.Soldier;
 import platformgame.Objects.*;
+import platformgame.Tanks.Enemy_Tank;
 
 public class AssetSetter {
     Game gp;
+    Game_2 gp2;
 
     public AssetSetter(Game gp) {
         this.gp = gp;
     }
 
-    public AssetSetter(Game_2 game2) {
+    public AssetSetter(Game_2 gp2) {
+        this.gp2 = gp2;
+    }
+
+    public void setTank(){
+        gp2.enemyTank[0]=new Enemy_Tank(33* gp2.tileSize, 30* gp2.tileSize, 128, 128, 200.0, null, gp2 );
     }
 
     public void setObject() {

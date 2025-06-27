@@ -3,12 +3,12 @@ package platformgame.Tanks;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
-import platformgame.Bullet;
+import platformgame.*;
 import platformgame.Entity.Entity;
-import platformgame.Game;
-import platformgame.Game_2;
-import platformgame.ImageLoader;
 import platformgame.Map.Level_2;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Tank extends Entity {
     // Common tank properties
@@ -42,6 +42,7 @@ public abstract class Tank extends Entity {
     protected final int totalCannonFrames = 3;
     protected int cannonFrameIndex = 1; // Start at center position
     protected final int cannonRow = 0;
+    protected List<Tank_Bullet> bullets;  // List to store bullets fired by the tank
 
     // Animation timing
     protected final long frameDuration = 100_000_000; // 0.1 seconds in nanoseconds
@@ -68,6 +69,8 @@ public abstract class Tank extends Entity {
         super(x, y, width, height, speed, gp);
         this.gp2 = gp2;
         this.health = maxHealth;
+        this.bullets = new ArrayList<>();  // Initialize bullets list
+
         loadTankSprite();
     }
 
@@ -306,8 +309,77 @@ public abstract class Tank extends Entity {
         }
     }
 
-    // Abstract method for creating tank-specific bullets
+
+    // Method to load the bullet image (can be used for all tanks)
+    private void loadBulletImage() {
+        try {
+            Image bulletImage = ImageLoader.load("/image/image.png");  // Load the bullet image
+            if (bulletImage == null) {
+                System.err.println("Failed to load bullet image.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading bullet image: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Abstract method for creating a bullet (implemented in Main_Tank class)
     protected abstract void createBullet(double x, double y);
+
+    // Common method to update all bullets
+// Common method to update all bullets
+    public void updateBullets(long deltaTime) {
+        if (bullets == null || bullets.isEmpty()) return;  // Check if bullets list is initialized and not empty
+
+        for (int i = 0; i < bullets.size(); i++) {
+            Tank_Bullet bullet = bullets.get(i);
+            // Update bullet position
+            bullet.update(deltaTime);
+
+            // If bullet has traveled enough distance, mark for removal
+            if (bullet.shouldRemove()) {
+                bullets.remove(i);
+                i--;  // Adjust index after removal to prevent skipping the next element
+            }
+
+            // Check for collisions with enemy tanks
+            bullet.checkCollisionWithEnemies();
+        }
+    }
+
+    // Method to apply damage to the tank
+    public void applyDamage(int damage) {
+        health -= damage;
+        if (health <= 0) {
+            alive = false;
+            onDestroyed();
+        }
+    }
+
+    // Common method to draw all bullets
+    public void drawBullets(GraphicsContext gc, double camX, double camY, double scale) {
+        for (Tank_Bullet bullet : bullets) {
+            bullet.draw(gc, camX, camY, scale);
+        }
+    }
+
+    // Method to create a bullet and add it to the list
+    protected void createBullet(double x, double y, double velocityX, double velocityY) {
+        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2);
+        bullets.add(bullet);
+    }
+
+    // Hook methods for damage/healing events
+    protected void onDamageTaken(int damage) {
+        // Default implementation - can be overridden
+        System.out.println("Tank took " + damage + " damage. Health: " + health);
+    }
+
+    protected void onDestroyed() {
+        // Default implementation - can be overridden
+        System.out.println("Tank destroyed!");
+    }
+
 
     // Health management
     public void takeDamage(int damage) {
@@ -321,31 +393,7 @@ public abstract class Tank extends Entity {
         }
     }
 
-    public void heal(int amount) {
-        if (alive) {
-            health = Math.min(maxHealth, health + amount);
-            onHealed(amount);
-        }
-    }
-
     // Hook methods for damage/healing events
-    protected void onDamageTaken(int damage) {
-        // Default implementation - can be overridden
-        System.out.println("Tank took " + damage + " damage. Health: " + health);
-    }
-
-    protected void onHealed(int amount) {
-        // Default implementation - can be overridden
-        System.out.println("Tank healed " + amount + " HP. Health: " + health);
-    }
-
-    protected void onDestroyed() {
-        // Default implementation - can be overridden
-        System.out.println("Tank destroyed!");
-    }
-
-    // Common getters and setters
-    public double getTankX() { return x; }
     public double getTankY() { return y; }
     public double getTankWidth() { return width; }
     public double getTankHeight() { return height; }
@@ -393,6 +441,8 @@ public abstract class Tank extends Entity {
         this.collisionOffsetX = offsetX;
         this.collisionOffsetY = offsetY;
     }
+
+
 }
 
 // Vector2D class (if not already defined elsewhere)
@@ -424,6 +474,15 @@ class Vector2D {
             y /= len;
         }
     }
+    // Getter methods for position (x and y)
+    public double getTankX() {
+        return x; // Return the x-coordinate of the tank
+    }
+
+    public double getTankY() {
+        return y; // Return the y-coordinate of the tank
+    }
+
 
     public Vector2D rotated(double angle) {
         double cos = Math.cos(angle);
