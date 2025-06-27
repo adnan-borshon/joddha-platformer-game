@@ -15,8 +15,113 @@ import java.util.List;
 import java.util.Set;
 
 public class Player extends Entity {
+    //without gun
+
+    //walk and run
+    private final int frontWalkFrame=4;
+    private final int frontWalkRow=3;
+
+    private final int backWalkFrame=4;
+    private final int backWalkRow=4;
+
+    private final int WalkFrame=6;
+    private final int WalkRow=5;
+
+    //idle
+    private final int frontIdleFrame=2;
+    private final int frontIdleRow=0;
+
+    private final int IdleFrame=2;
+    private final int IdleRow=1;
+
+    private final int backIdleFrame=2;
+    private final int backIdleRow=2;
+
+
+    //fist
+    private final int FrontFistFrame=2;
+    private final int FrontFistRow=6;
+
+    private final int FistFrame=2;
+    private final int FistRow=7;
+
+    private final int BackFistFrame=2;
+    private final int BackFistRow=8;
+
+    //hurt with no gun
+    private final int HitFrame=2;
+    private final int HitRow=19;
+
+    private final int FrontHitFrame=2;
+    private final int FrontHitRow=20;
+
+    private final int BackHitFrame=2;
+    private final int BackHitRow=21;
+
+    //with gun
+    //shoot
+    private final int FrontShootFrame=2;
+    private final int FrontShootRow=9;
+
+    private final int ShootFrame=2;
+    private final int ShootRow=10;
+    private final int BackShootFrame=2;
+    private final int BackShootRow=11;
+
+
+    //dead
+    private final int deadFrame=3;
+    private final int deadRow=12;
+
+    //walk and run with gun
+    private final int GunFrontWalkFrame=4;
+    private final int GunFrontWalkRow=14;
+
+    private final int GunBackWalkFrame=4;
+    private final int GunBackWalkRow=15;
+
+    private final int GunWalkFrame=6;
+    private final int GunWalkRow=13;
+
+    //hurt with gun
+    private final int GunHitFrame=2;
+    private final int GunHitRow=17;
+
+    private final int GunFrontHitFrame=2;
+    private final int GunFrontHitRow=16;
+
+//animation timer
+    //fist
+private boolean attackingWithFist = false;
+private long fistAttackStartTime = 0;
+    private final long fistFrameDuration = 100_000_000;
+//shoot
+private boolean shooting = false;
+    private long shootStartTime = 0;
+    private final long shootFrameDuration = 80_000_000;
+    // ✅ Shooting mechanics
+    private long lastShotTime = 0;
+    private final long shootCooldown = 300_000_000; // 300ms between shots
+    private List<Bullet> bullets;
+    private final double bulletSpeed = 4.0;
+    private double lastDirectionX = 1.0; // Default facing right
+    private double lastDirectionY = 0.0; // Default horizontal
+    // ✅ Death animation (Row 10 → Index 9)
+    private boolean isDead = false;
+    private long deathStartTime = 0;
+    private final long deathFrameDuration = 150_000_000;
+
+    // ✅ Damage cooldown to prevent spam damage
+    private long lastDamageTime = 0;
+    private final long damageCooldown = 500_000_000; // 0.5 seconds
+    // ✅ New: Melee hit reaction
+    private boolean reactingToMeleeHit = false;
+    private long meleeHitStartTime = 0;
+    private final long meleeHitFrameDuration = 100_000_000;
+
 
     private final int totalFrames_walk = 5;
+
 
     // ✅ Explosion reaction
     private boolean reactingToExplosion = false;
@@ -25,49 +130,12 @@ public class Player extends Entity {
     private final int explosionReactionRow = 8;
     private final long explosionFrameDuration = 120_000_000;
 
-    // ✅ Fist attack
-    private boolean attackingWithFist = false;
-    private long fistAttackStartTime = 0;
-    private final int totalFistFrames = 3;
-    private final int fistAttackRow = 3;
-    private final long fistFrameDuration = 100_000_000;
 
-    // ✅ NEW: Shooting animation
-    private boolean shooting = false;
-    private long shootStartTime = 0;
-    private final int totalShootFrames = 4;
-    private final int shootAnimationRow = 3; // You mentioned 4th row, but arrays are 0-indexed so row 3
-    private final long shootFrameDuration = 80_000_000; // 80ms per frame for quick shooting animation
-
-    // ✅ Shooting mechanics
-    private long lastShotTime = 0;
-    private final long shootCooldown = 300_000_000; // 300ms between shots
-    private List<Bullet> bullets;
-    private final double bulletSpeed = 4.0;
-    private double lastDirectionX = 1.0; // Default facing right
-    private double lastDirectionY = 0.0; // Default horizontal
     // ✅ Health & Ammo
     public int hp = 10;
     public int maxHp = 10;
     public int ammo = 30; // Start with some ammo
 
-    // ✅ Death animation (Row 10 → Index 9)
-    private boolean isDead = false;
-    private long deathStartTime = 0;
-    private final int deathAnimationRow = 9;
-    private final int totalDeathFrames = 6;
-    private final long deathFrameDuration = 150_000_000;
-
-    // ✅ Damage cooldown to prevent spam damage
-    private long lastDamageTime = 0;
-    private final long damageCooldown = 500_000_000; // 0.5 seconds
-
-    // ✅ New: Melee hit reaction
-    private boolean reactingToMeleeHit = false;
-    private long meleeHitStartTime = 0;
-    private final int meleeHitFrames = 3;
-    private final int meleeHitRow = 0;
-    private final long meleeHitFrameDuration = 100_000_000;
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -76,17 +144,16 @@ public class Player extends Entity {
     }
 
     public void update(Set<KeyCode> keys, Level_1 level1, Game game, long now, long deltaTime) {
-
         // Update bullets first
         updateBullets(deltaTime, now);
 
         if (isDead) {
-            currentRow = deathAnimationRow;
+            currentRow = deadRow;
             int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
-            if (frameIndex < totalDeathFrames) {
+            if (frameIndex < deadFrame) {
                 currentFrame = frameIndex;
             } else {
-                currentFrame = totalDeathFrames - 1;
+                currentFrame = deadFrame - 1;
                 game.GameState = game.gameOverState;
             }
             return;
@@ -113,9 +180,9 @@ public class Player extends Entity {
         }
 
         if (reactingToMeleeHit) {
-            currentRow = meleeHitRow;
+            currentRow = HitRow;
             int frameIndex = (int) ((now - meleeHitStartTime) / meleeHitFrameDuration);
-            if (frameIndex < meleeHitFrames) {
+            if (frameIndex < HitFrame) {
                 currentFrame = frameIndex;
             } else {
                 currentFrame = 0;
@@ -132,11 +199,11 @@ public class Player extends Entity {
             return;
         }
 
-        // ✅ NEW: Handle shooting animation
+        // Handle shooting animation
         if (shooting) {
-            currentRow = shootAnimationRow;
+            currentRow = ShootRow;
             int frameIndex = (int) ((now - shootStartTime) / shootFrameDuration);
-            if (frameIndex < totalShootFrames) {
+            if (frameIndex < ShootFrame) {
                 currentFrame = frameIndex;
             } else {
                 shooting = false;
@@ -147,9 +214,9 @@ public class Player extends Entity {
         }
 
         if (attackingWithFist) {
-            currentRow = fistAttackRow;
+            currentRow = FistRow;
             int frameIndex = (int) ((now - fistAttackStartTime) / fistFrameDuration);
-            if (frameIndex < totalFistFrames) {
+            if (frameIndex < FistFrame) {
                 currentFrame = frameIndex;
             } else {
                 attackingWithFist = false;
@@ -163,7 +230,7 @@ public class Player extends Entity {
             hp = 10;
         }
 
-        // ✅ NEW: Handle shooting input (using Q key like many games)
+        // Handle shooting input (using F key)
         if (keys.contains(KeyCode.F) && !shooting && !attackingWithFist) {
             shoot(now);
         }
@@ -173,7 +240,7 @@ public class Player extends Entity {
             attackingWithFist = true;
             fistAttackStartTime = now;
             currentFrame = 0;
-            currentRow = fistAttackRow;
+            currentRow = FrontFistRow;
 
             Rectangle2D punchBox = facingRight
                     ? new Rectangle2D(x + width, y, width * 0.6, height)
@@ -212,11 +279,11 @@ public class Player extends Entity {
             return;
         }
 
+        // Movement logic remains unchanged
         boolean moved = false;
         double newX = x;
         double newY = y;
 
-        // Updated movement section in your update() method - replace the movement handling part
         if (game.GameState == game.playState) {
             if (keys.contains(KeyCode.W)) {
                 double testY = y - speed;
@@ -226,19 +293,6 @@ public class Player extends Entity {
                         && !checkSoldierCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
-                    // Update shooting direction
-                    if (keys.contains(KeyCode.A)) {
-                        lastDirectionX = -0.707; // Diagonal up-left
-                        lastDirectionY = -0.707;
-                        facingRight = false;
-                    } else if (keys.contains(KeyCode.D)) {
-                        lastDirectionX = 0.707;  // Diagonal up-right
-                        lastDirectionY = -0.707;
-                        facingRight = true;
-                    } else {
-                        lastDirectionX = 0;      // Straight up
-                        lastDirectionY = -1;
-                    }
                 }
             }
             if (keys.contains(KeyCode.S)) {
@@ -249,19 +303,6 @@ public class Player extends Entity {
                         && !checkSoldierCollision(x, testY, game)) {
                     newY = testY;
                     moved = true;
-                    // Update shooting direction
-                    if (keys.contains(KeyCode.A)) {
-                        lastDirectionX = -0.707; // Diagonal down-left
-                        lastDirectionY = 0.707;
-                        facingRight = false;
-                    } else if (keys.contains(KeyCode.D)) {
-                        lastDirectionX = 0.707;  // Diagonal down-right
-                        lastDirectionY = 0.707;
-                        facingRight = true;
-                    } else {
-                        lastDirectionX = 0;      // Straight down
-                        lastDirectionY = 1;
-                    }
                 }
             }
             if (keys.contains(KeyCode.A)) {
@@ -273,11 +314,6 @@ public class Player extends Entity {
                     newX = testX;
                     moved = true;
                     facingRight = false;
-                    // Update shooting direction (only if not moving vertically)
-                    if (!keys.contains(KeyCode.W) && !keys.contains(KeyCode.S)) {
-                        lastDirectionX = -1;     // Straight left
-                        lastDirectionY = 0;
-                    }
                 }
             }
             if (keys.contains(KeyCode.D)) {
@@ -289,15 +325,9 @@ public class Player extends Entity {
                     newX = testX;
                     moved = true;
                     facingRight = true;
-                    // Update shooting direction (only if not moving vertically)
-                    if (!keys.contains(KeyCode.W) && !keys.contains(KeyCode.S)) {
-                        lastDirectionX = 1;      // Straight right
-                        lastDirectionY = 0;
-                    }
                 }
             }
         }
-
 
         checkEnemyCollisions(game, now);
         checkSoldierCollisions(game, now);
@@ -314,7 +344,7 @@ public class Player extends Entity {
         y = newY;
 
         if (moved && !reactingToExplosion && !attackingWithFist && !isDead && !reactingToMeleeHit && !shooting) {
-            currentRow = 4;
+            currentRow = WalkRow;
             animationTimer += deltaTime;
             if (animationTimer > 100_000_000) {
                 nextFrame(totalFrames_walk);
@@ -330,9 +360,8 @@ public class Player extends Entity {
 
     // Updated shoot method - replace your existing shoot() method
     private void shoot(long now) {
-        // Check cooldown and ammo
         if ((now - lastShotTime) < shootCooldown) {
-            return; // Still in cooldown
+            return;
         }
 
         if (ammo <= 0) {
@@ -340,36 +369,29 @@ public class Player extends Entity {
             return;
         }
 
-        // Calculate bullet starting position (outside player hitbox based on facing direction)
-        double bulletStartX = x + width / 2;  // Start from center
+        double bulletStartX = x + width / 2;
         double bulletStartY = y + height / 2;
 
-        // Offset the starting position slightly outside the player based on direction
         bulletStartX += lastDirectionX * (width / 2 + 5);
         bulletStartY += lastDirectionY * (height / 2 + 5);
 
-        // Calculate bullet velocity based on last movement direction
         double velX = lastDirectionX * bulletSpeed;
         double velY = lastDirectionY * bulletSpeed;
 
-        // Create and add bullet
         Bullet bullet = new Bullet(bulletStartX, bulletStartY, velX, velY, gp);
         bullets.add(bullet);
 
-        // Update shooting state
         shooting = true;
         shootStartTime = now;
         lastShotTime = now;
         ammo--;
 
-        // Play shooting sound effect
         gp.playSoundEffects(4);
 
         currentFrame = 0;
-        currentRow = shootAnimationRow;
-
-        System.out.println("Player shot in direction (" + lastDirectionX + ", " + lastDirectionY + ")! Ammo remaining: " + ammo);
+        currentRow = ShootRow;
     }
+
 
 
 
@@ -386,7 +408,6 @@ public class Player extends Entity {
             Bullet bullet = bulletIterator.next();
             bullet.update(deltaTime, now);
 
-            // Check if bullet hit any enemies
             checkBulletEnemyCollisions(bullet);
 
             if (bullet.shouldRemove()) {
@@ -394,6 +415,7 @@ public class Player extends Entity {
             }
         }
     }
+
 
     // ✅ NEW: Check bullet collisions with enemies
     private void checkBulletEnemyCollisions(Bullet bullet) {
@@ -404,51 +426,34 @@ public class Player extends Entity {
                 bullet.getHeight()
         );
 
-        // Check collision with scouts
         for (Scout scout : gp.scout) {
-            if (scout != null) {
-                Rectangle2D scoutRect = scout.getHitbox();
-                if (bulletRect.intersects(scoutRect)) {
-                    scout.takeDamage();
-                    bullet.markForRemoval();
-                    gp.ui.showMessage("Scout hit!");
-                    return;
-                }
+            if (scout != null && bulletRect.intersects(scout.getHitbox())) {
+                scout.takeDamage();
+                bullet.markForRemoval();
+                gp.ui.showMessage("Scout hit!");
+                return;
             }
         }
 
-        // Check collision with enemies
         for (Enemy enemy : gp.enemies) {
-            if (enemy != null && !enemy.isDead()) {
-                Rectangle2D enemyRect = new Rectangle2D(
-                        enemy.getX(), enemy.getY(),
-                        enemy.getWidth(), enemy.getHeight()
-                );
-                if (bulletRect.intersects(enemyRect)) {
-                    enemy.receiveDamage();
-                    bullet.markForRemoval();
-                    gp.ui.showMessage("Enemy hit!");
-                    return;
-                }
+            if (enemy != null && !enemy.isDead() && bulletRect.intersects(enemy.getHitbox())) {
+                enemy.receiveDamage();
+                bullet.markForRemoval();
+                gp.ui.showMessage("Enemy hit!");
+                return;
             }
         }
 
-        // Check collision with soldiers
         for (Soldier soldier : gp.soldiers) {
-            if (soldier != null && !soldier.isDead()) {
-                Rectangle2D soldierRect = new Rectangle2D(
-                        soldier.getX(), soldier.getY(),
-                        soldier.getWidth(), soldier.getHeight()
-                );
-                if (bulletRect.intersects(soldierRect)) {
-                    soldier.receiveDamage();
-                    bullet.markForRemoval();
-                    gp.ui.showMessage("Soldier hit!");
-                    return;
-                }
+            if (soldier != null && !soldier.isDead() && bulletRect.intersects(soldier.getHitbox())) {
+                soldier.receiveDamage();
+                bullet.markForRemoval();
+                gp.ui.showMessage("Soldier hit!");
+                return;
             }
         }
     }
+
 
     private void checkEnemyCollisions(Game game, long now) {
         double playerCenterX = x + width / 2;
@@ -473,6 +478,7 @@ public class Player extends Entity {
         }
     }
 
+
     private void checkSoldierCollisions(Game game, long now) {
         if (game.soldiers == null) return;
 
@@ -494,6 +500,7 @@ public class Player extends Entity {
             }
         }
     }
+
 
     private boolean checkNpcCollision(double playerX, double playerY, Game game, long now) {
         Rectangle2D playerRect = new Rectangle2D(playerX, playerY, width, height);
@@ -602,9 +609,8 @@ public class Player extends Entity {
 
         gp.ui.showMessage("Enemy attacked! -" + rawDamage + " HP");
         gp.playSoundEffects(2);
-
-        System.out.println("Player took melee damage: " + rawDamage + ", HP now: " + hp);
     }
+
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         drawEntity(gc, camX, camY, scale);
@@ -664,9 +670,6 @@ public class Player extends Entity {
                                     hp += healAmount;
                                     if (hp > maxHp) hp = maxHp;
 
-                                    System.out.println("Picking up life, removing object: " + obj.name);
-                                    System.out.println("Healed for: " + healAmount + ", current HP: " + hp + "/" + maxHp);
-
                                     game.object[i] = null;
                                     game.playSoundEffects(1);
                                     game.ui.showMessage("Life restored +" + healAmount + " HP");
@@ -688,9 +691,6 @@ public class Player extends Entity {
                                         game.object[i] = null;
                                         game.playSoundEffects(1);
                                         game.ui.showMessage("You collected the mysterious boom!");
-
-                                        System.out.println("Player collected the boom!");
-
                                         game.eventHandler.enableBridgeDestruction();
                                         game.ui.showMessage("You can now destroy the bridge!");
                                     } else {

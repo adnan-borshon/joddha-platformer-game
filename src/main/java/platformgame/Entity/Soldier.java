@@ -1,5 +1,6 @@
 package platformgame.Entity;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import platformgame.Bullet;
@@ -210,6 +211,11 @@ public class Soldier extends Enemy {
 
             }
         }
+    }
+    // In Soldier class (or override in Soldier class if necessary)
+    @Override
+    public Rectangle2D getHitbox() {
+        return new Rectangle2D(x, y, width, height);
     }
 
     @Override

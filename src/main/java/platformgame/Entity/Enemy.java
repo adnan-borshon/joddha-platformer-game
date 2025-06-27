@@ -1,5 +1,6 @@
 package platformgame.Entity;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import platformgame.Game;
@@ -188,6 +189,10 @@ public class Enemy extends Entity {
         drawEntity(gc, camX, camY, scale);
         drawHealthBar(gc, camX, camY, scale);
         drawDebugRectangle(gc, camX, camY, scale);
+    }
+    // In Enemy class
+    public Rectangle2D getHitbox() {
+        return new Rectangle2D(x, y, width, height);
     }
 
     private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
