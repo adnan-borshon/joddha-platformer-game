@@ -6,6 +6,7 @@ import platformgame.Entity.Scout;
 import platformgame.Entity.Soldier;
 import platformgame.Objects.*;
 import platformgame.Tanks.Enemy_Tank;
+import platformgame.Tanks.Tank2;
 
 public class AssetSetter {
     Game gp;
@@ -23,8 +24,8 @@ public class AssetSetter {
         // Clear existing enemy tanks
         gp2.enemyTanks.clear();
 
-        // Create array for 7 enemy tanks
-        gp2.enemyTank = new Enemy_Tank[7];
+        // Create array for 7 enemy tanks + 1 canon = 8 total
+        gp2.enemyTank = new Enemy_Tank[8];
 
         // Tank positions (x, y coordinates in tile units)
         int[][] tankPositions = {
@@ -34,11 +35,11 @@ public class AssetSetter {
                 {65, 19}, // Tank 4 - Center, lower area
                 {73, 37}, // Tank 5 - Right side, middle area
                 {89, 21}, // Tank 6 - Left side, upper area
-                {97, 16}  // Tank 7 - Center-right, lower area
+                {97, 16}, // Tank 7 - Center-right, lower area
         };
 
-        // Create and position all enemy tanks
-        for (int i = 0; i < tankPositions.length; i++) {
+        // Create regular enemy tanks (first 7)
+        for (int i = 0; i < 7; i++) {
             int worldX = tankPositions[i][0] * gp2.tileSize;
             int worldY = tankPositions[i][1] * gp2.tileSize;
 
@@ -50,6 +51,38 @@ public class AssetSetter {
 
             System.out.println("Enemy tank " + (i + 1) + " created at position: " + worldX + ", " + worldY);
         }
+
+    }
+    public void setTank2(){
+        // Clear existing enemy tanks
+        gp2.Tanks.clear();
+
+        // Create array for 7 enemy tanks + 1 canon = 8 total
+        gp2.Tanks2 = new Tank2[8];
+
+        // Tank positions (x, y coordinates in tile units)
+        int[][] tankPositions = {
+                {52, 39}, // Original tank position
+                {44, 31}, // Tank 2 - Left side, middle area
+                {52, 38}, // Tank 3 - Right side, upper area
+
+        };
+
+        // Create regular enemy tanks (first 7)
+        for (int i = 0; i < 1
+                ; i++) {
+            int worldX = tankPositions[i][0] * gp2.tileSize;
+            int worldY = tankPositions[i][1] * gp2.tileSize;
+
+            Tank2 enemy = new Tank2(worldX, worldY, 128, 128, 200.0, null, gp2);
+
+            // Add to both array and ArrayList
+            gp2.Tanks2[i]=enemy;
+            gp2.Tanks.add(enemy);
+
+            System.out.println("Enemy tank " + (i + 1) + " created at position: " + worldX + ", " + worldY);
+        }
+
 
         System.out.println("Total enemy tanks created: " + gp2.enemyTanks.size());
     }
@@ -152,31 +185,6 @@ public class AssetSetter {
         gp.object[20].worldY = 32 * gp.tileSize;
 
     }
-//public void setLauncherAndOpener(){
-//
-//        //key opener
-//        gp.Opener[0]=new Obj_key_opener();
-//        gp.Opener[0].worldX=15*gp.tileSize;
-//        gp.Opener[0].worldY=62*gp.tileSize;
-//    gp.Opener[1]=new Obj_key_opener();
-//    gp.Opener[1].worldX=67*gp.tileSize;
-//    gp.Opener[1].worldY=49*gp.tileSize;
-//
-//    gp.Opener[2]=new Obj_key_opener();
-//    gp.Opener[2].worldX=80*gp.tileSize;
-//    gp.Opener[2].worldY=33*gp.tileSize;
-//
-//    //granade launcher
-//
-//    gp.Launcher[0]= new Obj_granade_launcher();
-//    gp.Launcher[0].worldX=63*gp.tileSize;
-//    gp.Launcher[0].worldY=26*gp.tileSize;
-//
-//    gp.Launcher[1]= new Obj_granade_launcher();
-//    gp.Launcher[1].worldX=90*gp.tileSize;
-//    gp.Launcher[1].worldY=45*gp.tileSize;
-//}
-
 
     public void setNpc() {
         // First NPC with default dialogue (this will use the setDialogue() method)

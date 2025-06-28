@@ -87,7 +87,8 @@ public class Game extends Pane {
 
         // Create UI overlay pane
         // Find the position where you want the button to appear
-        double chatButtonX = 920; // <<<< Change this value to match the X you want
+        double chatButtonX = 700
+                ; // <<<< Change this value to match the X you want
         double chatButtonY = 35;  // <<<< Change this value to match the Y you want
 
         Pane uiOverlay = new Pane();
