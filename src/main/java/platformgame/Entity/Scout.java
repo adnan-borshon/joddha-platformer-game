@@ -129,6 +129,261 @@ public class Scout extends Entity {
         setIdleAnimation();
     }
 
+    // ✅ NEW: Comprehensive collision detection method similar to Player
+    private boolean checkAllCollisions(double testX, double testY) {
+        // Check map collision first
+        if (gp.level1.isCollisionRect(testX, testY, width, height)) {
+            return true;
+        }
+
+        // Check object collisions
+        if (checkObjectCollisions(testX, testY)) {
+            return true;
+        }
+
+        // Check player collision (if scout shouldn't overlap player)
+        if (checkPlayerCollision(testX, testY)) {
+            return true;
+        }
+
+        // Check other enemy collisions (prevent overlap)
+        if (checkOtherEnemyCollisions(testX, testY)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // ✅ NEW: Check object collisions similar to Player's method
+    private boolean checkObjectCollisions(double testX, double testY) {
+        Rectangle2D scoutRect = new Rectangle2D(testX, testY, width, height);
+
+        for (int i = 0; i < gp.object.length; i++) {
+            if (gp.object[i] != null) {
+                double dx = Math.abs(gp.object[i].worldX - testX);
+                double dy = Math.abs(gp.object[i].worldY - testY);
+
+                // Only check objects within reasonable distance
+                if (dx < 128 && dy < 128) {
+                    Rectangle2D objRect = gp.object[i].getBoundingBox();
+                    if (scoutRect.intersects(objRect) && gp.object[i].collision) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // ✅ NEW: Check player collision
+    private boolean checkPlayerCollision(double testX, double testY) {
+        if (gp.player == null) return false;
+
+        Rectangle2D scoutRect = new Rectangle2D(testX, testY, width, height);
+        Rectangle2D playerRect = new Rectangle2D(
+                gp.player.getX(), gp.player.getY(),
+                gp.player.getWidth(), gp.player.getHeight()
+        );
+
+        // Only block movement if not in combat/aggressive mode
+        if (!isAggressive && !inCombat && !attacking) {
+            return scoutRect.intersects(playerRect);
+        }
+
+        return false;
+    }
+
+    // ✅ NEW: Check collision with other enemies/NPCs
+    private boolean checkOtherEnemyCollisions(double testX, double testY) {
+        Rectangle2D scoutRect = new Rectangle2D(testX, testY, width, height);
+
+        // Check other scouts
+        if (gp.scout != null) {
+            for (Scout otherScout : gp.scout) {
+                if (otherScout != null && otherScout != this && !otherScout.isDead()) {
+                    Rectangle2D otherRect = new Rectangle2D(
+                            otherScout.getX(), otherScout.getY(),
+                            otherScout.getWidth(), otherScout.getHeight()
+                    );
+                    if (scoutRect.intersects(otherRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Check enemies
+        if (gp.enemies != null) {
+            for (Enemy enemy : gp.enemies) {
+                if (enemy != null && !enemy.isDead()) {
+                    Rectangle2D enemyRect = new Rectangle2D(
+                            enemy.getX(), enemy.getY(),
+                            enemy.getWidth(), enemy.getHeight()
+                    );
+                    if (scoutRect.intersects(enemyRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Check soldiers
+        if (gp.soldiers != null) {
+            for (Soldier soldier : gp.soldiers) {
+                if (soldier != null && !soldier.isDead()) {
+                    Rectangle2D soldierRect = new Rectangle2D(
+                            soldier.getX(), soldier.getY(),
+                            soldier.getWidth(), soldier.getHeight()
+                    );
+                    if (scoutRect.intersects(soldierRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Check NPCs
+        if (gp.npc != null) {
+            for (Npc npc : gp.npc) {
+                if (npc != null) {
+                    Rectangle2D npcRect = new Rectangle2D(
+                            npc.getX(), npc.getY(),
+                            npc.getWidth(), npc.getHeight()
+                    );
+                    if (scoutRect.intersects(npcRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // ✅ UPDATED: Replace the old isColliding method
+    public boolean isColliding(double testX, double testY) {
+        return checkAllCollisions(testX, testY);
+    }
+
+    // ✅ UPDATED: Improved movement with proper collision handling
+    private void moveTowardsTargetWithCollision(double targetX, double targetY, double moveSpeed) {
+        double dx = targetX - x;
+        double dy = targetY - y;
+        double distance = Math.hypot(dx, dy);
+
+        if (distance > moveSpeed) {
+            // Normalize direction
+            dx = (dx / distance) * moveSpeed;
+            dy = (dy / distance) * moveSpeed;
+
+            double newX = x + dx;
+            double newY = y + dy;
+
+            // Check collisions for each axis separately
+            boolean xCollision = checkAllCollisions(newX, y);
+            boolean yCollision = checkAllCollisions(x, newY);
+
+            // Move if no collision
+            if (!xCollision) {
+                x = newX;
+            }
+            if (!yCollision) {
+                y = newY;
+            }
+
+            // If both axes blocked, try alternative movement
+            if (xCollision && yCollision) {
+                // Try diagonal movement with reduced speed
+                double altDx = dx * 0.7;
+                double altDy = dy * 0.7;
+
+                if (!checkAllCollisions(x + altDx, y)) {
+                    x += altDx;
+                } else if (!checkAllCollisions(x, y + altDy)) {
+                    y += altDy;
+                } else {
+                    // Try moving around obstacle
+                    tryMoveAround(targetX, targetY, moveSpeed);
+                }
+            }
+
+            // Update facing direction
+            if (!xCollision || (!xCollision && !yCollision)) {
+                facingRight = dx > 0;
+            }
+        }
+    }
+
+    // ✅ NEW: Try to move around obstacles
+    private void tryMoveAround(double targetX, double targetY, double moveSpeed) {
+        // Try different angles to move around obstacles
+        double[] angles = {45, -45, 90, -90, 135, -135};
+
+        for (double angle : angles) {
+            double radians = Math.toRadians(angle);
+            double testDx = moveSpeed * Math.cos(radians);
+            double testDy = moveSpeed * Math.sin(radians);
+
+            if (!checkAllCollisions(x + testDx, y + testDy)) {
+                x += testDx;
+                y += testDy;
+                facingRight = testDx > 0;
+                break;
+            }
+        }
+    }
+
+    // ✅ UPDATED: Improved moveTowardsPlayer with better collision handling
+    private void moveTowardsPlayer(double moveSpeed) {
+        double playerX = gp.player.getX();
+        double playerY = gp.player.getY();
+
+        double dx = playerX - x;
+        double dy = playerY - y;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > moveSpeed) {
+            dx = (dx / distance) * moveSpeed;
+            dy = (dy / distance) * moveSpeed;
+
+            double newX = x + dx;
+            double newY = y + dy;
+
+            // Check collisions but allow player overlap in combat
+            boolean xCollision = gp.level1.isCollisionRect(newX, y, width, height) ||
+                    checkObjectCollisions(newX, y) ||
+                    checkOtherEnemyCollisions(newX, y);
+            boolean yCollision = gp.level1.isCollisionRect(x, newY, width, height) ||
+                    checkObjectCollisions(x, newY) ||
+                    checkOtherEnemyCollisions(x, newY);
+
+            if (!xCollision) {
+                x = newX;
+            } else {
+                // Try to move around X obstacle
+                facingRight = !facingRight;
+            }
+
+            if (!yCollision) {
+                y = newY;
+            } else {
+                // Try alternative Y movement
+                setNewPatrolTarget();
+            }
+
+            if (!xCollision || !yCollision) {
+                facingRight = dx > 0;
+                setMovementAnimation(dx, dy);
+            } else {
+                // Both directions blocked, find new approach
+                tryMoveAround(playerX, playerY, moveSpeed);
+                setIdleAnimation();
+            }
+        } else {
+            setIdleAnimation();
+        }
+    }
+
     private void setIdleAnimation() {
         currentDirection = MovementDirection.IDLE;
 
@@ -321,7 +576,7 @@ public class Scout extends Entity {
                     currentRow = deathAnimationRow;
                     deathStartTime = now;
                     currentFrame = 0;
-
+            gp.scout[1]=null;
                     attacking = false;
                     runningToBase = false;
                     inCombat = false;
@@ -445,49 +700,6 @@ public class Scout extends Entity {
         currentFrame = (int) ((now / frameDuration) % maxFrames);
     }
 
-    private void moveTowardsPlayer(double moveSpeed) {
-        double dx = gp.player.getX() - x;
-        double dy = gp.player.getY() - y;
-        double distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance > moveSpeed) {
-            dx = (dx / distance) * moveSpeed;
-            dy = (dy / distance) * moveSpeed;
-
-            double newX = x + dx;
-            double newY = y + dy;
-
-            // Improved collision handling with direction change
-            boolean xCollision = isColliding(newX, y);
-            boolean yCollision = isColliding(x, newY);
-
-            if (!xCollision) {
-                x = newX;
-            } else {
-                // If X movement is blocked, try to go around
-                facingRight = !facingRight;
-            }
-
-            if (!yCollision) {
-                y = newY;
-            } else {
-                // If Y movement is blocked, change direction
-                setNewPatrolTarget();
-            }
-
-            if (!xCollision || !yCollision) {
-                facingRight = dx > 0;
-                setMovementAnimation(dx, dy);
-            } else {
-                // Both directions blocked, find new target
-                setNewPatrolTarget();
-                setIdleAnimation();
-            }
-        } else {
-            setIdleAnimation();
-        }
-    }
-
     private void runToBase(long now) {
         double distanceToBase = Math.hypot(x - baseCampX, y - baseCampY);
         if (distanceToBase < gp.tileSize) {
@@ -555,47 +767,6 @@ public class Scout extends Entity {
             }
 
             facingRight = dx > 0;
-        }
-    }
-
-    // Improved collision handling method
-    private void moveTowardsTargetWithCollision(double targetX, double targetY, double moveSpeed) {
-        double dx = targetX - x;
-        double dy = targetY - y;
-        double distance = Math.hypot(dx, dy);
-
-        if (distance > moveSpeed) {
-            dx = (dx / distance) * moveSpeed;
-            dy = (dy / distance) * moveSpeed;
-
-            double newX = x + dx;
-            double newY = y + dy;
-
-            boolean xCollision = isColliding(newX, y);
-            boolean yCollision = isColliding(x, newY);
-
-            if (!xCollision) {
-                x = newX;
-            }
-            if (!yCollision) {
-                y = newY;
-            }
-
-            // If movement is blocked, try alternative paths
-            if (xCollision && yCollision) {
-                // Try moving diagonally around the obstacle
-                double altDx = dx * 0.7;
-                double altDy = dy * 0.7;
-
-                if (!isColliding(x + altDx, y)) {
-                    x += altDx;
-                    facingRight = altDx > 0;
-                } else if (!isColliding(x, y + altDy)) {
-                    y += altDy;
-                }
-            } else {
-                facingRight = dx > 0;
-            }
         }
     }
 

@@ -85,9 +85,6 @@ public class Enemy extends Entity {
     protected long hitStartTime = 0;
     protected final long hitFrameDuration = 100_000_000L;
 
-    // Collision detection
-    private double collisionMargin = 5.0; // Pixels of margin for collision detection
-
     public Enemy(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed * 1.3, gp); // Increased walk speed by 30%
         imageSet(walkFrame, "/image/Enemy.png");
@@ -281,8 +278,8 @@ public class Enemy extends Entity {
         // Determine facing direction based on player position
         updateFacingDirection(gp.player.getX(), gp.player.getY());
 
-        // Move with collision detection
-        moveTowardsTargetWithCollision(gp.player.getX(), gp.player.getY(), speed);
+        // Move with collision detection using Player's approach
+        moveTowardsTarget(gp.player.getX(), gp.player.getY(), speed);
     }
 
     protected void patrol(long now) {
@@ -297,8 +294,8 @@ public class Enemy extends Entity {
         // Determine facing direction based on patrol target
         updateFacingDirection(patrolTargetX, patrolTargetY);
 
-        // Move with collision detection
-        moveTowardsTargetWithCollision(patrolTargetX, patrolTargetY, speed * 0.6); // Slightly faster patrol
+        // Move with collision detection using Player's approach
+        moveTowardsTarget(patrolTargetX, patrolTargetY, speed * 0.6); // Slightly faster patrol
     }
 
     private void updateFacingDirection(double targetX, double targetY) {
@@ -314,9 +311,9 @@ public class Enemy extends Entity {
         // Determine primary direction based on larger component
         if (Math.abs(dy) > Math.abs(dx)) {
             if (dy > 0) {
-                isFacingFront = true; // Moving down (S direction) - FIXED
+                isFacingFront = true; // Moving down (S direction)
             } else {
-                isFacingBack = true;  // Moving up (W direction) - FIXED
+                isFacingBack = true;  // Moving up (W direction)
             }
         } else {
             if (dx > 0) {
@@ -329,159 +326,140 @@ public class Enemy extends Entity {
         }
     }
 
-
-    protected boolean hasReachedTarget() {
-        double distance = Math.hypot(x - patrolTargetX, y - patrolTargetY);
-        // only consider it reached when really very close
-        return distance < 8;
-    }
-
-    protected void moveTowardsTargetWithCollision(double targetX, double targetY, double moveSpeed) {
-        // Calculate the difference in position
+    // ✅ FIXED: Movement logic using Player's collision approach
+    private void moveTowardsTarget(double targetX, double targetY, double moveSpeed) {
         double dx = targetX - x;
         double dy = targetY - y;
-
-        // Calculate the distance to the target
         double distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance > 0) {
-            // Normalize the direction vector
+            // Normalize direction
             dx /= distance;
             dy /= distance;
 
-            // Calculate new position
+            // Calculate potential new positions
             double newX = x + dx * moveSpeed;
             double newY = y + dy * moveSpeed;
 
-            // IMPROVED: Try diagonal movement first, then fall back to axis-aligned movement
-            boolean canMoveX = !checkCollisionAt(newX, y);
-            boolean canMoveY = !checkCollisionAt(x, newY);
-            boolean canMoveBoth = !checkCollisionAt(newX, newY);
+            // Try movement similar to Player's movement logic
+            boolean canMoveHorizontally = canMoveTo(newX, y);
+            boolean canMoveVertically = canMoveTo(x, newY);
+            boolean canMoveDiagonally = canMoveTo(newX, newY);
 
-            if (canMoveBoth) {
-                // Best case: move diagonally
+            if (canMoveDiagonally) {
+                // Move diagonally if possible
                 x = newX;
                 y = newY;
-            } else if (canMoveX && canMoveY) {
-                // Choose the axis with larger movement component
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    x = newX;
-                } else {
-                    y = newY;
-                }
-            } else if (canMoveX) {
+            } else if (canMoveHorizontally && Math.abs(dx) > Math.abs(dy)) {
+                // Prefer horizontal movement if it's the primary direction
                 x = newX;
-            } else if (canMoveY) {
+            } else if (canMoveVertically) {
+                // Move vertically
                 y = newY;
-            } else {
-                // STUCK: Try to find alternative path by slightly adjusting position
-                tryAlternativePath(targetX, targetY, moveSpeed);
+            } else if (canMoveHorizontally) {
+                // Fall back to horizontal movement
+                x = newX;
             }
+            // If none work, stay in place (blocked)
         }
     }
 
-    // NEW: Alternative pathfinding when blocked
-    private void tryAlternativePath(double targetX, double targetY, double moveSpeed) {
-        // Try moving in perpendicular directions to get unstuck
-        double[] offsets = {-16, 16, -32, 32}; // Try different offset distances
-
-        for (double offsetX : offsets) {
-            double testX = x + offsetX;
-            if (!checkCollisionAt(testX, y)) {
-                x = testX;
-                return;
-            }
+    // ✅ Simplified collision check using Player's approach
+    private boolean canMoveTo(double testX, double testY) {
+        // Check level collision (similar to Player's level1.isCollisionRect)
+        if (gp.level1.isCollisionRect(testX, testY, width, height)) {
+            return false;
         }
 
-        for (double offsetY : offsets) {
-            double testY = y + offsetY;
-            if (!checkCollisionAt(x, testY)) {
-                y = testY;
-                return;
-            }
+        // Check object collisions (similar to Player's checkObjectCollisionsAndInteract)
+        if (checkObjectCollision(testX, testY)) {
+            return false;
         }
+
+        // Check other entity collisions (similar to Player's checkNpcCollision/checkSoldierCollision)
+        if (checkEntityCollision(testX, testY)) {
+            return false;
+        }
+
+        return true;
     }
 
-    private boolean checkCollisionAt(double newX, double newY) {
-        // Check tile collision
-        if (checkTileCollision(newX, newY)) {
-            return true;
-        }
+    // ✅ Object collision check (simplified from Player's logic)
+    public boolean checkObjectCollision(double testX, double testY) {
+        Rectangle2D enemyRect = new Rectangle2D(testX, testY, width, height);
 
-        // Check object collision
-        if (checkObjectCollision(newX, newY)) {
-            return true;
-        }
+        for (int i = 0; i < gp.object.length; i++) {
+            SuperObject obj = gp.object[i];
+            if (obj != null && obj.collision) {
+                double dx = Math.abs(obj.worldX - testX);
+                double dy = Math.abs(obj.worldY - testY);
 
-        // IMPROVED: Check NPC collision with exclusion of self and smaller hitbox
-        return checkNpcCollisionExcludingSelf(newX, newY);
-    }
-    private boolean checkNpcCollisionExcludingSelf(double newX, double newY) {
-        // Use smaller hitbox for collision detection (allows closer proximity)
-        double margin = 8.0; // Smaller margin for NPC-to-NPC collision
-
-        Rectangle2D myRect = new Rectangle2D(
-                newX + margin,
-                newY + margin,
-                width - 2 * margin,
-                height - 2 * margin
-        );
-
-        // Check against all NPCs except self
-//        for (Npc npcEntity : gp.npc) {
-//            if (npcEntity != null && npcEntity != this) {
-//                Rectangle2D npcRect = new Rectangle2D(
-//                        npcEntity.getX() + margin,
-//                        npcEntity.getY() + margin,
-//                        npcEntity.getWidth() - 2 * margin,
-//                        npcEntity.getHeight() - 2 * margin
-//                );
-//                if (myRect.intersects(npcRect)) {
-//                    return true;
-//                }
-//            }
-//        }
-
-        // Check against enemies (if this is not an enemy)
-        if (!(this instanceof Enemy)) {
-            for (Enemy enemy : gp.enemies) {
-                if (enemy != null && enemy != this && !enemy.isDead()) {
-                    Rectangle2D enemyRect = new Rectangle2D(
-                            enemy.getX() + margin,
-                            enemy.getY() + margin,
-                            enemy.getWidth() - 2 * margin,
-                            enemy.getHeight() - 2 * margin
-                    );
-                    if (myRect.intersects(enemyRect)) {
-                        return true;
+                if (dx < 128 && dy < 128) {
+                    Rectangle2D objRect = obj.getBoundingBox();
+                    if (enemyRect.intersects(objRect)) {
+                        return true; // Collision detected
                     }
                 }
             }
         }
+        return false;
+    }
 
-        // Check against soldiers (if this is not a soldier)
-        if (!(this instanceof Soldier)) {
-            for (Soldier soldier : gp.soldiers) {
-                if (soldier != null && soldier != this && !soldier.isDead()) {
-                    Rectangle2D soldierRect = new Rectangle2D(
-                            soldier.getX() + margin,
-                            soldier.getY() + margin,
-                            soldier.getWidth() - 2 * margin,
-                            soldier.getHeight() - 2 * margin
-                    );
-                    if (myRect.intersects(soldierRect)) {
-                        return true;
-                    }
+    // ✅ Entity collision check (similar to Player's NPC/Enemy/Soldier checks)
+    private boolean checkEntityCollision(double testX, double testY) {
+        Rectangle2D enemyRect = new Rectangle2D(testX, testY, width, height);
+
+        // Check collision with other enemies (exclude self)
+        for (Enemy otherEnemy : gp.enemies) {
+            if (otherEnemy != null && otherEnemy != this && !otherEnemy.isDead()) {
+                Rectangle2D otherRect = new Rectangle2D(
+                        otherEnemy.getX(), otherEnemy.getY(),
+                        otherEnemy.getWidth(), otherEnemy.getHeight()
+                );
+                if (enemyRect.intersects(otherRect)) {
+                    return true;
+                }
+            }
+        }
+
+        // Check collision with soldiers (exclude self if this enemy is a soldier)
+        for (Soldier soldier : gp.soldiers) {
+            if (soldier != null && soldier != this && !soldier.isDead()) {
+                Rectangle2D soldierRect = new Rectangle2D(
+                        soldier.getX(), soldier.getY(),
+                        soldier.getWidth(), soldier.getHeight()
+                );
+                if (enemyRect.intersects(soldierRect)) {
+                    return true;
+                }
+            }
+        }
+
+        // Check collision with NPCs
+        for (Npc npc : gp.npc) {
+            if (npc != null) {
+                Rectangle2D npcRect = new Rectangle2D(
+                        npc.getX(), npc.getY(),
+                        npc.getWidth(), npc.getHeight()
+                );
+                if (enemyRect.intersects(npcRect)) {
+                    return true;
                 }
             }
         }
 
         return false;
     }
+
+    protected boolean hasReachedTarget() {
+        double distance = Math.hypot(x - patrolTargetX, y - patrolTargetY);
+        return distance < 8;
+    }
+
     protected void setNewPatrolTarget() {
         final double halfRange = patrolRange / 2;
-        final double minDistance = 80;  // Increased minimum distance
-        final int maxAttempts = 10;     // Prevent infinite loops
+        final double minDistance = 80;
+        final int maxAttempts = 10;
 
         double tx, ty;
         int attempts = 0;
@@ -495,37 +473,12 @@ public class Enemy extends Entity {
             ty = Math.max(patrolStartY - halfRange, Math.min(ty, patrolStartY + halfRange));
 
             attempts++;
-        } while (Math.hypot(tx - x, ty - y) < minDistance &&
-                !wouldCollideWithOthersAt(tx, ty) &&
-                attempts < maxAttempts);
+        } while (Math.hypot(tx - x, ty - y) < minDistance && attempts < maxAttempts);
 
         patrolTargetX = tx;
         patrolTargetY = ty;
     }
-    private boolean wouldCollideWithOthersAt(double targetX, double targetY) {
-        double checkRadius = width; // Check in a radius around the target
 
-        // Check if any other entity is too close to this target position
-        for (Enemy enemy : gp.enemies) {
-            if (enemy != null && enemy != this && !enemy.isDead()) {
-                double distance = Math.hypot(enemy.getX() - targetX, enemy.getY() - targetY);
-                if (distance < checkRadius) {
-                    return true;
-                }
-            }
-        }
-
-        for (Soldier soldier : gp.soldiers) {
-            if (soldier != null && soldier != this && !soldier.isDead()) {
-                double distance = Math.hypot(soldier.getX() - targetX, soldier.getY() - targetY);
-                if (distance < checkRadius) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         // Only draw if not dead or if dead but animation not complete
         if (!isDead || (isDead && !deathAnimationComplete)) {
@@ -536,18 +489,10 @@ public class Enemy extends Entity {
         if (!isDead) {
             drawHealthBar(gc, camX, camY, scale);
         }
-
-        // Uncomment for debugging
-//         drawDebugRectangle(gc, camX, camY, scale);
     }
 
     public Rectangle2D getHitbox() {
-        return new Rectangle2D(
-                x + collisionMargin,
-                y + collisionMargin,
-                width - 2 * collisionMargin,
-                height - 2 * collisionMargin
-        );
+        return new Rectangle2D(x, y, width, height);
     }
 
     private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
@@ -555,7 +500,7 @@ public class Enemy extends Entity {
         double barHeight = 6;
         double healthPercent = (double) currentHealth / maxHealth;
         double barX = (x - camX) * scale + width * scale / 2 - barWidth / 2;
-        double barY = (y - camY) * scale - 15; // Adjusted position
+        double barY = (y - camY) * scale - 15;
 
         gc.setFill(Color.GRAY);
         gc.fillRect(barX, barY, barWidth, barHeight);
@@ -566,18 +511,6 @@ public class Enemy extends Entity {
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
         gc.strokeRect(barX, barY, barWidth, barHeight);
-    }
-
-    private void drawDebugRectangle(GraphicsContext gc, double camX, double camY, double scale) {
-        Rectangle2D hitbox = getHitbox();
-        double debugRectX = (hitbox.getMinX() - camX) * scale;
-        double debugRectY = (hitbox.getMinY() - camY) * scale;
-        double debugRectWidth = hitbox.getWidth() * scale;
-        double debugRectHeight = hitbox.getHeight() * scale;
-
-        gc.setStroke(Color.BLUE);
-        gc.setLineWidth(2);
-        gc.strokeRect(debugRectX, debugRectY, debugRectWidth, debugRectHeight);
     }
 
     public void receiveDamage() {
