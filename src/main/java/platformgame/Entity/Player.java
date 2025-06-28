@@ -4,6 +4,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import platformgame.Bullet;
+import platformgame.Event.EventHandler;
 import platformgame.Game;
 import platformgame.Map.Level_1;
 import platformgame.Objects.Obj_Boom;
@@ -660,94 +661,235 @@ public class Player extends Entity {
         }
     }
 
-    public boolean checkObjectCollisionsAndInteract(double nextX, double nextY, double width, double height, Game game) {
+    public boolean checkObjectCollisionsAndInteract(
+            double nextX, double nextY, double width, double height, Game game) {
+
         Rectangle2D playerRect = new Rectangle2D(nextX, nextY, width, height);
 
         for (int i = 0; i < game.object.length; i++) {
             SuperObject obj = game.object[i];
-            if (obj != null) {
-                double dx = Math.abs(obj.worldX - nextX);
-                double dy = Math.abs(obj.worldY - nextY);
+            if (obj == null) continue;
 
-                if (dx < 128 && dy < 128) {
-                    Rectangle2D objRect = obj.getBoundingBox();
-                    if (playerRect.intersects(objRect)) {
-                        switch (obj.name.toLowerCase()) {
-                            case "key":
-                                game.hasKey++;
-                                game.object[i] = null;
-                                game.playSoundEffects(1);
-                                game.ui.showMessage("You got a key");
-                                break;
-                            case "door":
-                                if (game.hasKey > 0) {
-                                    game.hasKey--;
-                                    game.object[i] = null;
-                                    game.playSoundEffects(3);
-                                    game.ui.showMessage("Door has opened");
-                                } else {
-                                    game.ui.showMessage("You need a key to open");
-                                    return true;
-                                }
-                                break;
-                            case "boots":
-                                speed += 10;
-                                game.object[i] = null;
-                                game.playSoundEffects(2);
-                                game.ui.showMessage("You got speed up +2");
-                                break;
-                            case "ammo":
-                                ammo += 10;
-                                game.object[i] = null;
-                                game.playSoundEffects(1);
-                                game.ui.showMessage("Picked up 10 ammo");
-                                break;
-                            case "life":
-                            case "obj":
-                                if (hp < maxHp) {
-                                    int healAmount = (int)(maxHp * 0.2);
-                                    hp += healAmount;
-                                    if (hp > maxHp) hp = maxHp;
+            // early cull if far away
+            if (Math.abs(obj.worldX - nextX) < 128 &&
+                    Math.abs(obj.worldY - nextY) < 128) {
 
-                                    game.object[i] = null;
-                                    game.playSoundEffects(1);
-                                    game.ui.showMessage("Life restored +" + healAmount + " HP");
-                                } else {
-                                    game.ui.showMessage("Health already full");
-                                }
-                                break;
-                            case "mine":
-                                takeDamage(0.10, System.nanoTime());
-                                game.playSoundEffects(4);
-                                game.ui.showMessage("Stepped on a mine! -10% HP");
-                                game.object[i] = null;
-                                break;
-                            case "boom":
-                                if (obj instanceof Obj_Boom) {
-                                    Obj_Boom boomObj = (Obj_Boom) obj;
-                                    if (boomObj.shouldAppear() && !boomObj.isCollected()) {
-                                        boomObj.collect();
-                                        game.object[i] = null;
-                                        game.playSoundEffects(1);
-                                        game.ui.showMessage("You collected the mysterious boom!");
-                                        game.eventHandler.enableBridgeDestruction();
-                                        game.ui.showMessage("You can now destroy the bridge!");
-                                    } else {
-                                        game.ui.showMessage("This boom seems inactive...");
-                                    }
-                                }
-                                break;
-                            default:
-                                if (obj.collision) return true;
-                                break;
+                Rectangle2D objRect = obj.getBoundingBox();
+                if (!playerRect.intersects(objRect)) continue;
+
+                String name = obj.name.toLowerCase();
+                switch (name) {
+
+                    // --- KEY PICKUP ---
+                    case "key1":
+                        if (!game.hasKey1) {
+                            game.hasKey1 = true;
+                            game.object[i] = null;
+                            game.playSoundEffects(1);
+                            game.ui.showMessage("Picked up Key 1");
                         }
+                        break;
+                    case "key2":
+                        if (!game.hasKey2) {
+                            game.hasKey2 = true;
+                            game.object[i] = null;
+                            game.playSoundEffects(1);
+                            game.ui.showMessage("Picked up Key 2");
+                        }
+                        break;
+                    case "key3":
+                        if (!game.hasKey3) {
+                            game.hasKey3 = true;
+                            game.object[i] = null;
+                            game.playSoundEffects(1);
+                            game.ui.showMessage("Picked up Key 3");
+                        }
+                        break;
+
+
+
+
+                    case "boots":
+                        speed += 10;
+                        game.object[i] = null;
+                        game.playSoundEffects(2);
+                        game.ui.showMessage("You got speed up +2");
+                        break;
+                    case "ammo":
+                        ammo += 10;
+                        game.object[i] = null;
+                        game.playSoundEffects(1);
+                        game.ui.showMessage("Picked up 10 ammo");
+                        break;
+                    case "life":
+                        if (hp < maxHp) {
+                            int heal = (int)(maxHp * 0.2);
+                            hp = Math.min(maxHp, hp + heal);
+                            game.object[i] = null;
+                            game.playSoundEffects(1);
+                            game.ui.showMessage("Life restored +" + heal + " HP");
+                        } else {
+                            game.ui.showMessage("Health already full");
+                        }
+                        break;
+                    case "mine":
+                        takeDamage(0.10, System.nanoTime());
+                        game.playSoundEffects(4);
+                        game.ui.showMessage("Stepped on a mine! -10% HP");
+                        game.object[i] = null;
+                        break;
+                    // ---- grenade pickup ----
+                    case "granade":
+                        game.granadeCounter++;
+                        game.hasLauncher=true;
+                        game.object[i] = null;
+                        game.playSoundEffects(1);
+                        game.ui.showMessage("Picked up a grenade");
+                        break;       // allow movement through
+
+//                    // ---- boom (same as before) ----
+//                    case "boom":
+//                        if (obj instanceof Obj_Boom) {
+//                            Obj_Boom boomObj = (Obj_Boom)obj;
+//                            if (boomObj.shouldAppear() && !boomObj.isCollected()) {
+//                                boomObj.collect();
+//                                game.object[i] = null;
+//                                game.playSoundEffects(1);
+//                                game.ui.showMessage("You collected the mysterious boom!");
+//                                game.eventHandler.enableBridgeDestruction();
+//                                game.ui.showMessage("You can now destroy the bridge!");
+//                            } else {
+//                                game.ui.showMessage("This boom seems inactive...");
+//                            }
+//                        }
+//                        return false;       // boom isn’t blocking
+                    // --- KEY OPENERS now with blocking logic ---
+                    case "key1_opener":
+                        // without Key1, block you from walking through
+                        if (!game.hasKey1) {
+                            game.ui.showMessage("You need Key 1 to open this.");
+                            return true;
+                        }
+                        // with Key1, open & vanish, and do NOT block
+                        if (!game.LeftWallRemoved) {
+                            game.level1.removeLeftWallLayer();
+                            game.LeftWallRemoved = true;
+                            game.object[i] = null;
+                            game.playSoundEffects(2);
+                            game.ui.showMessage("Left wall opened!");
+                        }
+                        return false;
+
+                    case "key2_opener":
+                        if (!game.hasKey2) {
+                            game.ui.showMessage("You need Key 2 to open this.");
+                            return true;
+                        }
+                        if (!game.FenchGateRemoved) {
+                            game.level1.removeFenchGateLayer();
+                            game.FenchGateRemoved = true;
+                            game.object[i] = null;
+                            game.playSoundEffects(2);
+                            game.ui.showMessage("Fench gate opened!");
+                        }
+                        return false;
+
+                    case "key3_opener":
+                        if (!game.hasKey3) {
+                            game.ui.showMessage("You need Key 3 to open this.");
+                            return true;
+                        }
+                        if (!game.RightWallRemoved) {
+                            game.level1.removeRightWallLayer();
+                            game.RightWallRemoved = true;
+                            game.object[i] = null;
+                            game.playSoundEffects(2);
+                            game.ui.showMessage("Right wall opened!");
+                        }
+                        return false;
+                    // ---- launcher pickup (also enables explosion) ----
+
+                    case "bridge_granade": {
+                        // 1) Block until all foes are down
+                        if (!allEnemiesDead(game)) {
+                            game.ui.showMessage("You must kill every enemy before you can pick up the bridge charge!");
+                            return true;   // block movement here
+                        }
+
+                        // 2) If you haven't grabbed it yet, collect it
+                        if (!game.boomCollected) {
+                            game.boomCollected = true;
+                            game.object[i]       = null;  // remove from world
+                            game.playSoundEffects(1);
+                            game.ui.showMessage("Picked up the explosive charge for the bridge");
+                        }
+                        return false;  // allow movement through that tile
                     }
+
+                    case "bridgedestruction": {
+                        // 1) Block until you've picked up the grenade
+                        if (!game.boomCollected) {
+                            game.ui.showMessage("You need the grenade to destroy the bridge!");
+                            return true;   // block movement here
+                        }
+
+                        // 2) If you haven't already blown the bridge…
+                        if (!game.bridgeDestroyed) {
+                            long now = System.nanoTime();
+                           game.eventHandler.enableBridgeDestruction();
+
+                            game.bridgeDestroyed = true;
+                            game.object[i] = null;            // remove the trigger tile
+                            game.ui.showMessage("💥 The bridge has been destroyed!");
+                        }
+
+                        // 3) now that it's gone, let them walk across
+                        return false;
+                    }
+                    case "granade_launcher":
+                        if(!game.hasLauncher){
+                            game.ui.showMessage("You need granade to destroy the gate");
+                            return true;
+                        }
+
+                        if (!game.ContainerGateRemoved && game.granadeCounter>0) {
+                            game.ContainerGateRemoved = true;
+                            game.playSoundEffects(1);
+                            game.hasLauncher=false;
+                            game.object[i] = null;
+                            game.level1.removeContainerGateLayer();
+                            game.ui.showMessage("Gate destroyed");
+                        }
+                        return false;       // allow movement
+
+                    // if it’s collidable but none of the above, block movement
+                    default:
+                        if (obj.collision) {
+                            return true;
+                        }
+                        break;
                 }
             }
         }
 
         return false;
     }
+    /**
+     * Returns true only when every Enemy, Scout, and Soldier is dead
+     */
+    private boolean allEnemiesDead(Game game) {
+        for (Enemy e : game.enemies) {
+            if (e != null && !e.isDead()) return false;
+        }
+        for (Scout s : game.scout) {
+            if (s != null && !s.isDead()) return false;
+        }
+        for (Soldier s : game.soldiers) {
+            if (s != null && !s.isDead()) return false;
+        }
+        return true;
+    }
+
 
     // ✅ NEW: Getter methods for bullets (useful for debugging)
     public List<Bullet> getBullets() {

@@ -16,7 +16,7 @@ import java.util.List;
 
 public class EventHandler {
     private final List<EventRect> mines = new ArrayList<>();
-    private final List<Explosion> activeExplosions = new ArrayList<>();
+    public final List<Explosion> activeExplosions = new ArrayList<>();
     private final Image explosionSpriteSheet;
 
     private final int frameWidth = 32;
@@ -44,10 +44,10 @@ public class EventHandler {
     }
 
     private void initializeBridgeAreas() {
-        double triggerX = 91 * 32;
-        double triggerY = 42 * 32;
+        double triggerX = 89 * 32;
+        double triggerY = 45 * 32;
         double triggerWidth = 32;
-        double triggerHeight = 4 * 32;
+        double triggerHeight = 32;
         bridgeTriggerArea = new Rectangle2D(triggerX, triggerY, triggerWidth, triggerHeight);
 
         double explosionX = 102 * 32;
@@ -166,6 +166,9 @@ public class EventHandler {
             activeExplosions.add(new Explosion(explosionCenterX - 180, explosionCenterY - 60, now + 500_000_000L, 2.0));
 
             game.playSoundEffects(4);
+            game.level1.removeBridgeBackLayer();
+            game.level1.removeBridgeLayer();
+
             game.ui.showMessage("Bridge destroyed!");
 
 
@@ -238,7 +241,7 @@ public class EventHandler {
         // Empty implementation for Game_2
     }
 
-    private static class Explosion {
+    public static class Explosion {
         private final double x, y;
         private final long startTime;
         private final double scaleFactor;

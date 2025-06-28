@@ -11,7 +11,7 @@ public class Obj_ContainerGate extends SuperObject {
 
     public Obj_ContainerGate() {
         name = "container_gate";
-        // Instead of directly using new Image(), use ImageLoader:
+
         image = ImageLoader.load("/image/Gates & Bridges/ContainarGate.png");
         collision = true; // ✅ Enable collision
     }

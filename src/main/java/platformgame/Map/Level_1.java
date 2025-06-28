@@ -20,6 +20,8 @@ public class Level_1 {
     public int mapWidth;
     public int mapHeight;
 
+
+
     private static class Tileset {
         int firstGid;
         int tileWidth;
@@ -127,6 +129,12 @@ public class Level_1 {
                         layerName.contains("army camp objects") ||
                         layerName.contains("army camp 1") ||
                         layerName.contains("fench") ||
+                        layerName.contains("fenchgate") ||
+                        layerName.contains("containergate") ||
+                        layerName.contains("hostagewall02") ||
+                        layerName.contains("hostagewall01") ||
+                        layerName.contains("bridgefront") ||
+                        layerName.contains("bridgeback") ||
                         layerName.contains("khet") ||
                         layerName.contains("river") ||
                         layerName.contains("river paar") ||
@@ -140,25 +148,45 @@ public class Level_1 {
         }
     }
 
-    // Add this method to your Level_1 class:
 
-    // Add this method to your Level_1 class (adapt based on your actual tile system):
-
-    public void removeBridgeTiles(int startX, int startY) {
+    private void removeLayerByName(String targetName) {
         for (Layer layer : layers) {
-            if (layer.name.equalsIgnoreCase("bridge") || layer.isCollision) {
-                for (int x = startX - 2; x <= startX + 2; x++) {
-                    for (int y = startY - 1; y <= startY + 1; y++) {
-                        if (x >= 0 && x < mapWidth && y >= 0 && y < mapHeight) {
-                            layer.data[y][x] = 0; // Set to empty tile ID (0)
-                        }
+            if (layer.name.equalsIgnoreCase(targetName)) {
+                for (int y = 0; y < mapHeight; y++) {
+                    for (int x = 0; x < mapWidth; x++) {
+                        layer.data[y][x] = 0;
                     }
                 }
+                System.out.println("✅ Layer \"" + targetName + "\" cleared.");
+                break;
             }
         }
-
-        System.out.println("✅ Bridge tiles removed from map.");
     }
+
+    /** Public entry‐points for each of your flags: */
+    public void removeBridgeLayer() {
+        removeLayerByName("bridgefront");
+    }
+    public void removeBridgeBackLayer() {
+        removeLayerByName("bridgeback");
+    }
+
+    public void removeContainerGateLayer() {
+        removeLayerByName("containergate");
+    }
+
+    public void removeFenchGateLayer() {
+        removeLayerByName("fenchgate");
+    }
+
+    public void removeLeftWallLayer() {
+        removeLayerByName("hostagegate01");
+    }
+
+    public void removeRightWallLayer() {
+        removeLayerByName("hostagegate02");
+    }
+
 
 
     public boolean isCollisionTile(double x, double y) {

@@ -44,6 +44,25 @@ public class Game extends Pane {
     public Soldier[] soldiers = new Soldier[20];
 
 
+    public boolean hasKey1 = false;
+    public boolean hasKey2 = false;
+    public boolean hasKey3 = false;
+
+    public int granadeCounter=0;
+    // your existing flags:
+    // boolean for gate and bridges
+    // Set to true when your Obj_Boom logic runs
+    public boolean boomCollected = false;
+
+    // Prevents repeated bridge blows
+    public boolean bridgeDestroyed = false;
+
+    private boolean bridgeRemoved=false;
+    public boolean ContainerGateRemoved=false;
+    public boolean FenchGateRemoved=false;
+    public boolean LeftWallRemoved=false;
+    public boolean RightWallRemoved=false;
+
     public final double scale = 1.15;
     public final Player player;
     public Level_1 level1;
@@ -64,6 +83,7 @@ public class Game extends Pane {
     // ✅ Boom spawn logic
     private boolean boomSpawned = false;
     private Obj_Boom boomObject;
+    public boolean hasLauncher  = false;
 
     // ✅ Chat system integration
     private ChatUI chatUI;
@@ -119,6 +139,7 @@ public class Game extends Pane {
             double startX = 27 * tileSize;
             double startY = 5 * tileSize;
             player = new Player(startX, startY, 40, 40, 3, this);
+
         } else {
             player = new Player(500, 350, 40, 40, 3, this);
         }
@@ -405,7 +426,11 @@ public class Game extends Pane {
 
     private void update(long now, long deltaTime) {
         if (GameState == playState) {
+
+
             player.update(keysPressed, level1, this, now, deltaTime);
+            // when player crosses the boat’s X-position (e.g. 27 tiles), clear boat
+
 
             for (Npc n : npc) {
                 if (n != null) {
@@ -432,7 +457,7 @@ public class Game extends Pane {
                 }
             }
 
-            checkAndSpawnBoom();
+
 
             // ✅ NEW: Periodic ammo sync to ensure consistency
             if (now - lastAmmoSyncTime > 5_000_000_000L) { // Every 5 seconds
@@ -450,7 +475,10 @@ public class Game extends Pane {
         }
     }
 
-    private void checkAndSpawnBoom() {
+
+
+
+    public void checkAndSpawnBoom() {
         if (boomSpawned) return;
 
         boolean allEnemiesDead = true;
