@@ -185,7 +185,7 @@ public class Player extends Entity {
             }
             return;
         }
-
+//oky
         if (keys.contains(KeyCode.L)) {
             hp = 10;
         }
