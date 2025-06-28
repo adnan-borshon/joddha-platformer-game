@@ -57,6 +57,7 @@ public class EventHandler {
         bridgeExplosionArea = new Rectangle2D(explosionX, explosionY, explosionWidth, explosionHeight);
     }
 
+
     public void addMine(double x, double y, double width, double height, double scaleFactor) {
         EventRect mine = new EventRect(x, y, width, height);
         mine.setScaleFactor(scaleFactor);
