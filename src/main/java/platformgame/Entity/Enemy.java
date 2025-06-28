@@ -12,7 +12,7 @@ public class Enemy extends Entity {
     // Front facing (S key pressed - going down)
     private final int frontWalkFrame = 4;
     private final int frontWalkRow = 3;
-    private final int frontIdleFrame = 2;
+    private final int frontIdleFrame = 1;
     private final int frontIdleRow = 0;
     private final int frontFistFrame = 2;
     private final int frontFistRow = 6;
@@ -22,7 +22,7 @@ public class Enemy extends Entity {
     // Back facing (W key pressed - going up)
     private final int backWalkFrame = 4;
     private final int backWalkRow = 4;
-    private final int backIdleFrame = 2;
+    private final int backIdleFrame = 1;
     private final int backIdleRow = 2;
     private final int backFistFrame = 2;
     private final int backFistRow = 8;
@@ -32,7 +32,7 @@ public class Enemy extends Entity {
     // Normal facing (D key or flipped for A key)
     private final int walkFrame = 6;
     private final int walkRow = 5;
-    private final int idleFrame = 2;
+    private final int idleFrame = 1;
     private final int idleRow = 1; // Change to with gun idle
     private final int fistFrame = 2;
     private final int fistRow = 7;

@@ -8,12 +8,49 @@ import platformgame.Game;
 import javafx.geometry.Rectangle2D;
 
 public class Scout extends Entity {
+//without gun
+
+    //walk and run
+    protected final int frontWalkFrame=4;
+    protected final int frontWalkRow=3;
+
+    protected final int backWalkFrame=4;
+    protected final int backWalkRow=4;
+
+    protected final int WalkFrame=6;
+    protected final int WalkRow=5;
+
+    //idle
+    protected final int frontIdleFrame=1;
+    protected final int frontIdleRow=0;
+
+    protected final int IdleFrame=1;
+    protected final int IdleRow=1;
+
+    protected final int backIdleFrame=1;
+    protected final int backIdleRow=2;
+
+    //fist (no gun frames)
+    protected final int FrontFistFrame=2; // Updated to use no gun frames
+    protected final int FrontFistRow=6;   // Updated row for no gun
+
+    protected final int FistFrame=2;      // Updated to use no gun frames
+    protected final int FistRow=7;       // Updated row for no gun
+
+    protected final int BackFistFrame=2;  // Updated to use no gun frames
+    protected final int BackFistRow=8;   // Updated row for no gun
+
+    //hurt with no gun
+    protected final int HitFrame=2;
+    protected final int HitRow=19;
+
+    protected final int FrontHitFrame=2;
+    protected final int FrontHitRow=20;
+
+    protected final int BackHitFrame=2;
+    protected final int BackHitRow=21;
 
 
-    private final int totalFramesWalk = 10;
-    private final int totalFramesRun = 8;
-    private final int totalFramesAttack = 5;
-    private final int attackRow = 7;
 
     private boolean playerInRange = false;
     private boolean attacking = false;
@@ -40,17 +77,27 @@ public class Scout extends Entity {
     private boolean visibleHealthBar = false;
     private long deathStartTime;
     private final int totalDeathFrames = 5;
-    private final int deathAnimationRow = 8;
-    private final long deathFrameDuration = 100_000_000;
+    private final int deathAnimationRow = 22;
+    private final long deathFrameDuration = 200_000_000; // Death animation duration
 
-    // ✅ FIXED: Hit reaction animation
+    // Hit reaction animation
     private boolean reactingToHit = false;
     private long hitReactionStartTime;
-    private final int hitReactionFrames = 4;
-    private final int hitReactionRow = 8; // 9th row (0-indexed)
-    private final long hitFrameDuration = 70_000_000;
 
-    private boolean canBeAttacked = true; // ✅ FIXED: Default to true so player can hit scout
+    private final long hitFrameDuration = 100_000_000;
+
+    // Movement direction tracking
+    private enum MovementDirection {
+        FRONT,  // Moving down
+        BACK,   // Moving up
+        SIDE,   // Moving left/right
+        IDLE
+    }
+
+    private MovementDirection currentDirection = MovementDirection.IDLE;
+    private MovementDirection lastDirection = MovementDirection.FRONT;
+    protected boolean deathAnimationComplete = false;
+    private boolean canBeAttacked = true;
     private boolean inCombat = false;
     private boolean isAggressive = false;
     private long lastAttackTime = 0;
@@ -59,41 +106,117 @@ public class Scout extends Entity {
     private final double aggroRange = 3 * 32;
     private final double combatSpeed = speed * 1.3;
 
-    // ✅ UPDATED: Much smaller detection range (touching distance)
-    private final double touchDetectionRange = 5 * 32; // About 1.2 tiles instead of 3
+    private final double touchDetectionRange = 5 * 32;
 
     private String customDialogue = null;
     private Game gp;
     private boolean hasDealtDamageThisAttack = false;
 
+    // Attack animation timing fix
+    private final long attackFrameDuration = 150_000_000L; // Consistent attack frame timing
+
     public Scout(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
         this.gp = gp;
-        imageSet(totalFramesWalk, "/image/Scout.png");
+        imageSet(WalkFrame, "/image/Scout.png");
         patrolStartX = x;
         patrolStartY = y;
         baseCampX = 53 * gp.tileSize;
         baseCampY = 23 * gp.tileSize;
         setNewPatrolTarget();
+
+        // Set initial idle animation
+        setIdleAnimation();
+    }
+
+    private void setIdleAnimation() {
+        currentDirection = MovementDirection.IDLE;
+
+        switch (lastDirection) {
+            case FRONT:
+                currentRow = frontIdleRow;
+                break;
+            case BACK:
+                currentRow = backIdleRow;
+                break;
+            case SIDE:
+            default:
+                currentRow = IdleRow;
+                break;
+        }
+        currentFrame = 0;
+    }
+
+    private void setMovementAnimation(double dx, double dy) {
+        // Determine primary movement direction
+        if (Math.abs(dy) > Math.abs(dx)) {
+            if (dy < 0) {
+                // Moving up (back)
+                currentDirection = MovementDirection.BACK;
+                lastDirection = MovementDirection.BACK;
+                currentRow = backWalkRow;
+            } else {
+                // Moving down (front)
+                currentDirection = MovementDirection.FRONT;
+                lastDirection = MovementDirection.FRONT;
+                currentRow = frontWalkRow;
+            }
+        } else {
+            // Moving left/right (side)
+            currentDirection = MovementDirection.SIDE;
+            lastDirection = MovementDirection.SIDE;
+            currentRow = WalkRow;
+        }
+    }
+
+    private void setAttackAnimation() {
+        switch (lastDirection) {
+            case FRONT:
+                currentRow = FrontFistRow;
+                break;
+            case BACK:
+                currentRow = BackFistRow;
+                break;
+            case SIDE:
+            default:
+                currentRow = FistRow;
+                break;
+        }
+        currentFrame = 0; // Reset frame to start attack animation properly
+    }
+
+    private void setHitAnimation() {
+        switch (lastDirection) {
+            case FRONT:
+                currentRow = FrontHitRow;
+                break;
+            case BACK:
+                currentRow = BackHitRow;
+                break;
+            case SIDE:
+            default:
+                currentRow = HitRow;
+                break;
+        }
     }
 
     public void takeDamage() {
-        if (isDead || reactingToHit) return; // ✅ FIXED: Removed canBeAttacked check
+        if (isDead || reactingToHit) return;
 
         health--;
         visibleHealthBar = true;
 
-        // ✅ FIXED: Always trigger hit animation when taking damage
+        // Trigger hit animation
         reactingToHit = true;
         hitReactionStartTime = System.nanoTime();
         currentFrame = 0;
-        currentRow = hitReactionRow;
+        setHitAnimation();
 
-        // ✅ FIXED: Stop any current attack when hit
+        // Stop any current attack when hit
         attacking = false;
         hasDealtDamageThisAttack = false;
 
-        if (!isAggressive && health > 0) { // ✅ FIXED: Only become aggressive if still alive
+        if (!isAggressive && health > 0) {
             isAggressive = true;
             inCombat = true;
             isFollowingPlayer = true;
@@ -101,8 +224,6 @@ public class Scout extends Entity {
             facingRight = gp.player.getX() > x;
         }
 
-        // ✅ FIXED: Death is handled in update() after hit animation finishes
-        System.out.println("Scout took damage! Health: " + health); // Debug
     }
 
     public Rectangle2D getHitbox() {
@@ -112,15 +233,24 @@ public class Scout extends Entity {
     public boolean canDamagePlayer() {
         if (!attacking || isDead) return false;
         long now = System.nanoTime();
-        int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
-        return frameIndex >= 2 && frameIndex <= 3;
+        int frameIndex = (int) ((now - attackStartTime) / attackFrameDuration);
+
+        // Damage frames depend on attack type - using updated frame counts
+        switch (lastDirection) {
+            case FRONT:
+                return frameIndex >= 0 && frameIndex < FrontFistFrame ;
+            case BACK:
+                return frameIndex >= 0 && frameIndex < BackFistFrame ;
+            case SIDE:
+            default:
+                return frameIndex >= 0 && frameIndex < FistFrame ;
+        }
     }
 
     private void handleCombat(long now, double distanceToPlayer) {
         double dx = gp.player.getX() - x;
         facingRight = dx > 0;
 
-        // If player is too far, stop being aggressive
         if (distanceToPlayer > aggroRange * 2.5) {
             isAggressive = false;
             inCombat = false;
@@ -129,117 +259,118 @@ public class Scout extends Entity {
             return;
         }
 
-        // Move towards player if not in range and not attacking
         if (distanceToPlayer > combatRange && !attacking && !runningToBase) {
             moveTowardsPlayer(combatSpeed);
-            currentRow = 3;
-            currentFrame = (int) ((System.nanoTime() / 80_000_000) % totalFramesRun);
         }
 
-        // Start attack if in range and cooldown is over, but only if not running to base
         if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown && !runningToBase) {
             attackStartTime = now;
             attacking = true;
             hasDealtDamageThisAttack = false;
-            currentRow = attackRow;
-            currentFrame = 0;
+            setAttackAnimation();
         }
     }
 
     private void handleAttack(long now) {
         if (!attacking) return;
 
-        currentRow = attackRow;
-        int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
+        int frameIndex = (int) ((now - attackStartTime) / attackFrameDuration);
+        int maxFrames = (lastDirection == MovementDirection.FRONT) ? FrontFistFrame :
+                (lastDirection == MovementDirection.BACK) ? BackFistFrame : FistFrame;
 
-        // Deal damage during specific frames, but only if the player is within range
-        if (frameIndex < totalFramesAttack) {
+        if (frameIndex < maxFrames) {
             currentFrame = frameIndex;
 
-            // Check if the player is within range to be damaged
             double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
 
-            // Adjusted: Check if the player is within combat range or close enough
             if (canDamagePlayer() && !hasDealtDamageThisAttack && distanceToPlayer <= combatRange) {
                 Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
                 Rectangle2D scoutHitbox = getHitbox();
 
                 if (playerHitbox.intersects(scoutHitbox)) {
-                    gp.player.takeMeleeDamageFromEnemy(1, now); // Apply damage to player
+                    gp.player.takeMeleeDamageFromEnemy(1, now);
                     hasDealtDamageThisAttack = true;
-                    System.out.println("Scout dealt damage to player!"); // Debug line
+                    System.out.println("Scout dealt damage to player!");
                 }
             }
         } else {
-            // Attack animation finished
             currentFrame = 0;
             attacking = false;
             hasDealtDamageThisAttack = false;
             lastAttackTime = now;
             if (!isAggressive) returnToPatrolling();
+            else setIdleAnimation();
         }
     }
 
     public void update(long deltaTime, long now) {
-        // ✅ FIXED: Handle hit reaction animation first - PRIORITY OVER ALL OTHER ANIMATIONS
+        // Handle hit reaction animation first
         if (reactingToHit) {
-            currentRow = hitReactionRow;
             int frameIndex = (int) ((now - hitReactionStartTime) / hitFrameDuration);
-            if (frameIndex < hitReactionFrames) {
+            int maxHitFrames = (lastDirection == MovementDirection.FRONT) ? FrontHitFrame :
+                    (lastDirection == MovementDirection.BACK) ? BackHitFrame : HitFrame;
+
+            if (frameIndex < maxHitFrames) {
                 currentFrame = frameIndex;
             } else {
-                // Hit animation finished
                 reactingToHit = false;
                 currentFrame = 0;
 
-                // ✅ FIXED: Check if should transition to death AFTER hit animation
                 if (health <= 0) {
                     isDead = true;
                     currentRow = deathAnimationRow;
                     deathStartTime = now;
                     currentFrame = 0;
 
-                    // Stop all other behaviors when dead
                     attacking = false;
                     runningToBase = false;
                     inCombat = false;
                     isAggressive = false;
                     isFollowingPlayer = false;
                     showingDialogue = false;
-
+                } else {
+                    setIdleAnimation();
                 }
             }
-            return; // Exit early, don't process other updates during hit reaction
+            return;
         }
 
-        // ✅ FIXED: Handle death animation
+        // Handle death animation - remove entity after animation completes
         if (isDead) {
             int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
             if (frameIndex < totalDeathFrames) {
                 currentRow = deathAnimationRow;
                 currentFrame = frameIndex;
             } else {
-                currentFrame = totalDeathFrames - 1; // Stay on last death frame
-                gp.scout[0] = null;
+                currentFrame = deadFrame - 1; // Stay on last frame briefly
+                // Mark animation as complete after a short delay on the last frame
+                if ((now - deathStartTime) > (deadFrame * 200_000_000L + 400_000_000L)) { // Extra 0.5 seconds on last frame
+                    deathAnimationComplete = true;
+                }
             }
-            return; // Exit early, don't process other updates when dead
+            return;
         }
 
-        if (idleAtBase) return;
+        if (idleAtBase) {
+            setIdleAnimation();
+            animateFrames(now, 200_000_000);
+            return;
+        }
 
         if (showingDialogue) {
             if (now - dialogueStartTime >= dialogueDuration) {
                 showingDialogue = false;
                 customDialogue = null;
                 if (!isAggressive) runningToBase = true;
-                canBeAttacked = true; // ✅ FIXED: Set to true after dialogue
+                canBeAttacked = true;
             }
+            setIdleAnimation();
+            animateFrames(now, 200_000_000);
             return;
         }
 
         double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
 
-        // If running to base and player gets close, stop and attack
         if (runningToBase && distanceToPlayer <= aggroRange) {
             runningToBase = false;
             isAggressive = true;
@@ -248,15 +379,14 @@ public class Scout extends Entity {
             facingRight = gp.player.getX() > x;
         }
 
-        // Handle attack animation and damage
         if (attacking) {
             handleAttack(now);
             return;
         }
 
-        // Handle combat behavior
         if (isAggressive && !isDead) {
             handleCombat(now, distanceToPlayer);
+            if (!attacking) animateFrames(now, 100_000_000);
             return;
         }
 
@@ -264,14 +394,12 @@ public class Scout extends Entity {
             Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
             Rectangle2D scoutHitbox = getHitbox();
             if (playerHitbox.intersects(scoutHitbox)) {
-                // ✅ FIXED: Player can always attack scout by punching
-                // No automatic damage here, damage is handled by player's punch
+                // Player can attack scout by punching
             }
             runToBase(now);
             return;
         }
 
-        // ✅ UPDATED: Much smaller detection range for initial contact
         if (distanceToPlayer <= touchDetectionRange && !hasSeenPlayer) {
             hasSeenPlayer = true;
             showingDialogue = true;
@@ -279,13 +407,36 @@ public class Scout extends Entity {
             return;
         }
 
-        // ✅ UPDATED: Smaller range for following behavior
         if (distanceToPlayer <= touchDetectionRange && !isFollowingPlayer && hasSeenPlayer && !runningToBase) {
             isFollowingPlayer = true;
         }
 
         if (isFollowingPlayer && !runningToBase) followPlayer(now, distanceToPlayer);
         else if (!runningToBase) patrol(now);
+    }
+
+    private void animateFrames(long now, long frameDuration) {
+        int maxFrames;
+        switch (currentDirection) {
+            case FRONT:
+                maxFrames = (currentRow == frontIdleRow) ? frontIdleFrame : frontWalkFrame;
+                break;
+            case BACK:
+                maxFrames = (currentRow == backIdleRow) ? backIdleFrame : backWalkFrame;
+                break;
+            case SIDE:
+                maxFrames = (currentRow == IdleRow) ? IdleFrame : WalkFrame;
+                break;
+            case IDLE:
+                if (currentRow == frontIdleRow) maxFrames = frontIdleFrame;
+                else if (currentRow == backIdleRow) maxFrames = backIdleFrame;
+                else maxFrames = IdleFrame;
+                break;
+            default:
+                maxFrames = 4;
+                break;
+        }
+        currentFrame = (int) ((now / frameDuration) % maxFrames);
     }
 
     private void moveTowardsPlayer(double moveSpeed) {
@@ -300,14 +451,34 @@ public class Scout extends Entity {
             double newX = x + dx;
             double newY = y + dy;
 
-            if (!isColliding(newX, y)) {
+            // Improved collision handling with direction change
+            boolean xCollision = isColliding(newX, y);
+            boolean yCollision = isColliding(x, newY);
+
+            if (!xCollision) {
                 x = newX;
-            }
-            if (!isColliding(x, newY)) {
-                y = newY;
+            } else {
+                // If X movement is blocked, try to go around
+                facingRight = !facingRight;
             }
 
-            facingRight = dx > 0;
+            if (!yCollision) {
+                y = newY;
+            } else {
+                // If Y movement is blocked, change direction
+                setNewPatrolTarget();
+            }
+
+            if (!xCollision || !yCollision) {
+                facingRight = dx > 0;
+                setMovementAnimation(dx, dy);
+            } else {
+                // Both directions blocked, find new target
+                setNewPatrolTarget();
+                setIdleAnimation();
+            }
+        } else {
+            setIdleAnimation();
         }
     }
 
@@ -318,24 +489,35 @@ public class Scout extends Entity {
             y = baseCampY;
             runningToBase = false;
             idleAtBase = true;
-            currentFrame = 0;
-            currentRow = 2;
+            setIdleAnimation();
 
             showingDialogue = true;
             dialogueStartTime = now;
             customDialogue = "Alert! We've got an enemy inside our territory. Everyone, be on high alert!";
             return;
         }
-        moveTowardsTarget(baseCampX, baseCampY, runSpeed);
-        currentRow = 3;
-        currentFrame = (int) ((System.nanoTime() / 100_000_000) % totalFramesRun);
+
+        double dx = baseCampX - x;
+        double dy = baseCampY - y;
+        moveTowardsTargetWithCollision(baseCampX, baseCampY, runSpeed);
+        setMovementAnimation(dx, dy);
+        animateFrames(now, 100_000_000);
     }
 
     private void patrol(long now) {
         if (!movingToTarget || hasReachedTarget()) setNewPatrolTarget();
-        moveTowardsTarget(patrolTargetX, patrolTargetY, speed * 0.5);
-        currentRow = 2;
-        currentFrame = (int) ((System.nanoTime() / 150_000_000) % totalFramesWalk);
+
+        double dx = patrolTargetX - x;
+        double dy = patrolTargetY - y;
+
+        if (Math.hypot(dx, dy) > speed * 0.5) {
+            moveTowardsTargetWithCollision(patrolTargetX, patrolTargetY, speed * 0.5);
+            setMovementAnimation(dx, dy);
+            animateFrames(now, 150_000_000);
+        } else {
+            setIdleAnimation();
+            animateFrames(now, 200_000_000);
+        }
     }
 
     private void setNewPatrolTarget() {
@@ -370,11 +552,51 @@ public class Scout extends Entity {
         }
     }
 
+    // Improved collision handling method
+    private void moveTowardsTargetWithCollision(double targetX, double targetY, double moveSpeed) {
+        double dx = targetX - x;
+        double dy = targetY - y;
+        double distance = Math.hypot(dx, dy);
+
+        if (distance > moveSpeed) {
+            dx = (dx / distance) * moveSpeed;
+            dy = (dy / distance) * moveSpeed;
+
+            double newX = x + dx;
+            double newY = y + dy;
+
+            boolean xCollision = isColliding(newX, y);
+            boolean yCollision = isColliding(x, newY);
+
+            if (!xCollision) {
+                x = newX;
+            }
+            if (!yCollision) {
+                y = newY;
+            }
+
+            // If movement is blocked, try alternative paths
+            if (xCollision && yCollision) {
+                // Try moving diagonally around the obstacle
+                double altDx = dx * 0.7;
+                double altDy = dy * 0.7;
+
+                if (!isColliding(x + altDx, y)) {
+                    x += altDx;
+                    facingRight = altDx > 0;
+                } else if (!isColliding(x, y + altDy)) {
+                    y += altDy;
+                }
+            } else {
+                facingRight = dx > 0;
+            }
+        }
+    }
+
     private void followPlayer(long now, double distanceToPlayer) {
         double dx = gp.player.getX() - x;
         facingRight = dx > 0;
 
-        // ✅ UPDATED: Increased follow range but still reasonable
         if (distanceToPlayer > 6 * gp.tileSize && !isAggressive) {
             isFollowingPlayer = false;
             returnToPatrolling();
@@ -385,15 +607,20 @@ public class Scout extends Entity {
             attackStartTime = now;
             attacking = true;
             hasDealtDamageThisAttack = false;
-            currentRow = attackRow;
-            currentFrame = 0;
+            setAttackAnimation();
             return;
         }
 
         if (!attacking) {
-            moveTowardsTarget(gp.player.getX(), gp.player.getY(), speed);
-            currentRow = 2;
-            currentFrame = (int) ((System.nanoTime() / 100_000_000) % totalFramesWalk);
+            double dy = gp.player.getY() - y;
+            if (Math.hypot(dx, dy) > speed) {
+                moveTowardsTargetWithCollision(gp.player.getX(), gp.player.getY(), speed);
+                setMovementAnimation(dx, dy);
+                animateFrames(now, 100_000_000);
+            } else {
+                setIdleAnimation();
+                animateFrames(now, 200_000_000);
+            }
         }
     }
 
@@ -406,22 +633,18 @@ public class Scout extends Entity {
         patrolStartX = x;
         patrolStartY = y;
         setNewPatrolTarget();
+        setIdleAnimation();
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-        drawEntity(gc, camX, camY, scale, !facingRight);
+        // Only draw if not dead - this makes the scout disappear after death
+        if (!isDead  || (isDead && !deathAnimationComplete)) {
+            drawEntity(gc, camX, camY, scale, !facingRight);
 
-        gc.save();
-        gc.setLineWidth(1);
-        gc.setStroke(isAggressive ? Color.RED : Color.LIME);
-        double drawX = (x - camX) * scale;
-        double drawY = (y - camY) * scale;
-        gc.strokeRect(drawX + 2, drawY + 2, width * scale, height * scale);
-        gc.restore();
-
-        if (showingDialogue) drawDialogue(gc, camX, camY, scale);
-        if (visibleHealthBar && !isDead) drawHealthBar(gc, camX, camY, scale);
-        if (isAggressive && !isDead) drawCombatIndicator(gc, camX, camY, scale);
+            if (showingDialogue) drawDialogue(gc, camX, camY, scale);
+            if (visibleHealthBar) drawHealthBar(gc, camX, camY, scale);
+            if (isAggressive) drawCombatIndicator(gc, camX, camY, scale);
+        }
     }
 
     private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
@@ -499,7 +722,6 @@ public class Scout extends Entity {
         this.playerInRange = inRange;
         if (inRange && !isFollowingPlayer && !runningToBase) {
             double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
-            // ✅ UPDATED: Use touch detection range instead of 3 tiles
             if (distanceToPlayer <= touchDetectionRange && !hasSeenPlayer) {
                 hasSeenPlayer = true;
                 showingDialogue = true;
@@ -518,11 +740,7 @@ public class Scout extends Entity {
         return inCombat;
     }
 
-
-    // Add this method to your Scout class
     public boolean isDead() {
         return isDead;
     }
-
-
 }

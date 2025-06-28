@@ -89,7 +89,7 @@ public class AssetSetter {
 
     public void setScout() {
 
-        gp.scout[0] = new Scout(43 * gp.tileSize, 12 * gp.tileSize, 40, 40, 2, gp);
+        gp.scout[0] = new Scout(43 * gp.tileSize, 12 * gp.tileSize, 40, 80, 2, gp);
 
     }
 
@@ -102,7 +102,7 @@ public class AssetSetter {
 
 
         // ✅ Corrected to match Game.java's enemies[]
-        gp.enemies[0] = new Enemy(43 * gp.tileSize, 2 * gp.tileSize, 50, 50, 0.8, gp);
+        gp.enemies[0] = new Enemy(43 * gp.tileSize, 2 * gp.tileSize, 50, 80, 0.8, gp);
 //        gp.enemies[1] = new Enemy(48 * gp.tileSize, 7 * gp.tileSize, 50, 40, 1, gp);
 //        gp.enemies[2] = new Enemy(55 * gp.tileSize, 53 * gp.tileSize, 50, 40, 1.2, gp);
 //        gp.enemies[3] = new Enemy(81* gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
