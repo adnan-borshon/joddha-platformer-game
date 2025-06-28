@@ -15,97 +15,13 @@ import java.util.List;
 import java.util.Set;
 
 public class Player extends Entity {
-    //without gun
 
-    //walk and run
-    private final int frontWalkFrame=4;
-    private final int frontWalkRow=3;
-
-    private final int backWalkFrame=4;
-    private final int backWalkRow=4;
-
-    private final int WalkFrame=6;
-    private final int WalkRow=5;
-
-    //idle
-    private final int frontIdleFrame=2;
-    private final int frontIdleRow=0;
-
-    private final int IdleFrame=2;
-    private final int IdleRow=1;
-
-    private final int backIdleFrame=2;
-    private final int backIdleRow=2;
-
-
-    //fist
-    private final int FrontFistFrame=2;
-    private final int FrontFistRow=6;
-
-    private final int FistFrame=2;
-    private final int FistRow=7;
-
-    private final int BackFistFrame=2;
-    private final int BackFistRow=8;
-
-    //hurt with no gun
-    private final int HitFrame=2;
-    private final int HitRow=19;
-
-    private final int FrontHitFrame=2;
-    private final int FrontHitRow=20;
-
-    private final int BackHitFrame=2;
-    private final int BackHitRow=21;
-
-    //with gun
-    //shoot
-    private final int FrontShootFrame=2;
-    private final int FrontShootRow=9;
-
-    private final int ShootFrame=2;
-    private final int ShootRow=10;
-    private final int BackShootFrame=2;
-    private final int BackShootRow=11;
-
-
-    //dead
-    private final int deadFrame=3;
-    private final int deadRow=12;
-
-    //walk and run with gun
-    private final int GunFrontWalkFrame=4;
-    private final int GunFrontWalkRow=14;
-
-    private final int GunBackWalkFrame=4;
-    private final int GunBackWalkRow=15;
-
-    private final int GunWalkFrame=6;
-    private final int GunWalkRow=13;
-
-    //idle with gun (NEW: Using gun idle frames)
-    private final int GunFrontIdleFrame=2;
-    private final int GunFrontIdleRow=16; // Assuming gun front idle is row 16
-
-    private final int GunIdleFrame=2;
-    private final int GunIdleRow=17; // Assuming gun idle is row 17
-
-    private final int GunBackIdleFrame=2;
-    private final int GunBackIdleRow=18; // Assuming gun back idle is row 18
-
-    //hurt with gun
-    private final int GunHitFrame=2;
-    private final int GunHitRow=17;
-
-    private final int GunFrontHitFrame=2;
-    private final int GunFrontHitRow=16;
-
-    //animation timer
-    //fist
+    // Animation timer
+    // Fist
     private boolean attackingWithFist = false;
     private long fistAttackStartTime = 0;
     private final long fistFrameDuration = 100_000_000;
-    //shoot
+    // Shoot
     private boolean shooting = false;
     private long shootStartTime = 0;
     private final long shootFrameDuration = 80_000_000;
@@ -129,9 +45,6 @@ public class Player extends Entity {
     private long meleeHitStartTime = 0;
     private final long meleeHitFrameDuration = 100_000_000;
 
-
-    private final int totalFrames_walk = 5;
-
     // ✅ NEW: Movement direction tracking
     private int currentDirection = 0; // 0 = right/left, 1 = front (down), 2 = back (up)
     private boolean lastMovedVertically = false;
@@ -143,16 +56,14 @@ public class Player extends Entity {
     private final int explosionReactionRow = 8;
     private final long explosionFrameDuration = 120_000_000;
 
-
     // ✅ Health & Ammo
     public int hp = 10;
     public int maxHp = 10;
     public int ammo = 30; // Start with some ammo
 
-
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
-        imageSet(totalFrames_walk, "/image/main_character.png");
+        imageSet(GunWalkFrame, "/image/main_character.png");
         bullets = new ArrayList<>();
     }
 
@@ -196,14 +107,14 @@ public class Player extends Entity {
             // ✅ FIXED: Use directional hit animations with proper frame counts
             int maxFrames;
             if (currentDirection == 1) {
-                currentRow = FrontHitRow;
-                maxFrames = FrontHitFrame;
+                currentRow = GunFrontHitRow;
+                maxFrames = GunFrontHitFrame;
             } else if (currentDirection == 2) {
-                currentRow = BackHitRow;
-                maxFrames = BackHitFrame;
+                currentRow = GunBackHitRow;
+                maxFrames = GunBackHitFrame;
             } else {
-                currentRow = HitRow;
-                maxFrames = HitFrame;
+                currentRow = GunHitRow;
+                maxFrames = GunHitFrame;
             }
 
             int frameIndex = (int) ((now - meleeHitStartTime) / meleeHitFrameDuration);
@@ -292,9 +203,29 @@ public class Player extends Entity {
             fistAttackStartTime = now;
             currentFrame = 0;
 
-            Rectangle2D punchBox = facingRight
-                    ? new Rectangle2D(x + width, y, width * 0.6, height)
-                    : new Rectangle2D(x - width * 0.6, y, width * 0.6, height);
+            // Adjust punch box for different directions
+            double punchWidth = width * 0.6;
+            double punchHeight = height; // Start with the full height
+            double offsetX = 0; // Offset X to adjust based on facing direction
+            double offsetY = 0; // Offset Y to adjust based on the direction
+
+            // If attacking upwards (W key)
+            if (currentDirection == 2) {
+                punchHeight = height * 1.2; // Expand hitbox upwards by 20%
+                offsetY = -height * 0.4; // Move the hitbox upwards
+            }
+            // If attacking downwards (S key)
+            else if (currentDirection == 1) {
+                punchHeight = height * 1.2; // Expand hitbox downwards by 20%
+                offsetY = height * 0.4; // Move the hitbox downwards
+            }
+            // If attacking sideways (A or D key)
+            else {
+                offsetX = facingRight ? width * 0.6 : -width * 0.6; // Use facing direction for horizontal attack
+            }
+
+            // Calculate the punch box based on the current attack direction
+            Rectangle2D punchBox = new Rectangle2D(x + offsetX, y + offsetY, punchWidth, punchHeight);
 
             for (Scout scoutEntity : game.scout) {
                 if (scoutEntity != null && punchBox.intersects(scoutEntity.getHitbox())) {
@@ -303,26 +234,14 @@ public class Player extends Entity {
             }
 
             for (Enemy enemyEntity : game.enemies) {
-                if (enemyEntity != null && !enemyEntity.isDead()) {
-                    Rectangle2D enemyHitbox = new Rectangle2D(
-                            enemyEntity.getX(), enemyEntity.getY(),
-                            enemyEntity.getWidth(), enemyEntity.getHeight()
-                    );
-                    if (punchBox.intersects(enemyHitbox)) {
-                        enemyEntity.receiveDamage();
-                    }
+                if (enemyEntity != null && !enemyEntity.isDead() && punchBox.intersects(enemyEntity.getHitbox())) {
+                    enemyEntity.receiveDamage();
                 }
             }
 
             for (Soldier soldierEntity : game.soldiers) {
-                if (soldierEntity != null && !soldierEntity.isDead()) {
-                    Rectangle2D soldierHitbox = new Rectangle2D(
-                            soldierEntity.getX(), soldierEntity.getY(),
-                            soldierEntity.getWidth(), soldierEntity.getHeight()
-                    );
-                    if (punchBox.intersects(soldierHitbox)) {
-                        soldierEntity.receiveDamage();
-                    }
+                if (soldierEntity != null && !soldierEntity.isDead() && punchBox.intersects(soldierEntity.getHitbox())) {
+                    soldierEntity.receiveDamage();
                 }
             }
 
@@ -525,6 +444,7 @@ public class Player extends Entity {
 
         currentFrame = 0;
     }
+
     // ✅ NEW: Update bullets
     private void updateBullets(long deltaTime, long now) {
         Iterator<Bullet> bulletIterator = bullets.iterator();
