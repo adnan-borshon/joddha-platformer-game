@@ -19,20 +19,39 @@ public class AssetSetter {
         this.gp2 = gp2;
     }
 
-    // FIXED: Properly setting up enemy tanks
     public void setTank(){
         // Clear existing enemy tanks
         gp2.enemyTanks.clear();
 
-        // Create one enemy tank at a fixed position
-        Enemy_Tank enemy = new Enemy_Tank(28 * gp2.tileSize, 29 * gp2.tileSize, 128, 128, 200.0, null, gp2);
+        // Create array for 7 enemy tanks
+        gp2.enemyTank = new Enemy_Tank[7];
 
-        // Add to both the array (for backward compatibility) and ArrayList (for proper collision)
-        gp2.enemyTank = new Enemy_Tank[1];
-        gp2.enemyTank[0] = enemy;
-        gp2.enemyTanks.add(enemy);
+        // Tank positions (x, y coordinates in tile units)
+        int[][] tankPositions = {
+                {28, 29}, // Original tank position
+                {30, 35}, // Tank 2 - Left side, middle area
+                {60, 20}, // Tank 3 - Right side, upper area
+                {35, 60}, // Tank 4 - Center, lower area
+                {70, 40}, // Tank 5 - Right side, middle area
+                {10, 15}, // Tank 6 - Left side, upper area
+                {50, 50}  // Tank 7 - Center-right, lower area
+        };
 
-        System.out.println("Enemy tank created at position: " + (28 * gp2.tileSize) + ", " + (29 * gp2.tileSize));
+        // Create and position all enemy tanks
+        for (int i = 0; i < tankPositions.length; i++) {
+            int worldX = tankPositions[i][0] * gp2.tileSize;
+            int worldY = tankPositions[i][1] * gp2.tileSize;
+
+            Enemy_Tank enemy = new Enemy_Tank(worldX, worldY, 128, 128, 200.0, null, gp2);
+
+            // Add to both array and ArrayList
+            gp2.enemyTank[i] = enemy;
+            gp2.enemyTanks.add(enemy);
+
+            System.out.println("Enemy tank " + (i + 1) + " created at position: " + worldX + ", " + worldY);
+        }
+
+        System.out.println("Total enemy tanks created: " + gp2.enemyTanks.size());
     }
 
     public void setObject() {

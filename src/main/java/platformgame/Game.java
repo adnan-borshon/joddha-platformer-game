@@ -98,7 +98,7 @@ public class Game extends Pane {
         uiOverlay.getChildren().add(chatUI.getToggleButton());
 
 // Place the chat container wherever you want (off screen or near the button)
-        chatUI.getChatContainer().setLayoutX(chatButtonX - 230); // or same as button if you want
+        chatUI.getChatContainer().setLayoutX(chatButtonX - 20); // or same as button if you want
         chatUI.getChatContainer().setLayoutY(chatButtonY + 40);  // adjust so it appears below or right of button
         uiOverlay.getChildren().add(chatUI.getChatContainer());
 
