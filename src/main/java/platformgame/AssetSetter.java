@@ -63,8 +63,8 @@ public class AssetSetter {
         // Tank positions (x, y coordinates in tile units)
         int[][] tankPositions = {
                 {52, 39}, // Original tank position
-                {44, 31}, // Tank 2 - Left side, middle area
-                {52, 38}, // Tank 3 - Right side, upper area
+//                {44, 31}, // Tank 2 - Left side, middle area
+//                {52, 38}, // Tank 3 - Right side, upper area
 
         };
 

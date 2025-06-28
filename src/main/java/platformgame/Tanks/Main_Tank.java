@@ -312,4 +312,19 @@ public class Main_Tank extends Tank {
     public double[] getCannonTipPositionPublic() {
         return getCannonTipPosition();
     }
+
+    private String[] dialogueLines;
+    private int currentDialogueIndex = 0;
+
+    public void setDialogue(String[] lines) {
+        this.dialogueLines = lines;
+        this.currentDialogueIndex = 0;
+    }
+
+    public void startDialogue() {
+        if (gp2 != null) {
+            gp2.GameState = gp2.dialogueState;
+        }
+    }
+
 }

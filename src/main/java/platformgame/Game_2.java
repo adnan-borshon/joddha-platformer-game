@@ -451,4 +451,41 @@ public class Game_2 extends Pane {
     // Getters for screen dimensions (useful for tank boundary checks)
     public double getScreenWidth() { return screenWidth; }
     public double getScreenHeight() { return screenHeight; }
+
+    private void checkVictoryCondition() {
+        // Check if all enemy tanks and tank2 are dead
+        boolean allEnemiesDefeated = true;
+
+        for (Enemy_Tank enemy : enemyTanks) {
+            if (enemy != null && enemy.isAlive()) {
+                allEnemiesDefeated = false;
+                break;
+            }
+        }
+
+        for (Tank2 tank2 : Tanks) {
+            if (tank2 != null && tank2.isAlive()) {
+                allEnemiesDefeated = false;
+                break;
+            }
+        }
+
+        if (!allEnemiesDefeated) return;
+
+        // Check if player is at 108,29 tile
+        int playerTileX = (int)(mainTank.getX() / tileSize);
+        int playerTileY = (int)(mainTank.getY() / tileSize);
+
+        if (playerTileX == 108 && playerTileY == 29) {
+            if (GameState != dialogueState) {
+                GameState = dialogueState;
+
+                mainTank.setDialogue(new String[]{
+                        "Congratulations! You have saved the villagers!"
+                });
+                mainTank.startDialogue();
+            }
+        }
+    }
+
 }
