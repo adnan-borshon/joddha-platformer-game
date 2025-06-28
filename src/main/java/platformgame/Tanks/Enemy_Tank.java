@@ -253,7 +253,6 @@ public class Enemy_Tank extends Tank {
 
     @Override
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-        // 1) draw the hull/body
 
         // 2) draw the turret on top
         drawTurret(gc, camX, camY, scale);

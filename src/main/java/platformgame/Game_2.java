@@ -1,6 +1,7 @@
 package platformgame;
 
 import javafx.animation.AnimationTimer;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -16,6 +17,7 @@ import platformgame.Event.EventHandler;
 import platformgame.Map.Level_2;
 import platformgame.Map.Level_2_controller;
 import platformgame.Tanks.Tank;
+import platformgame.Tanks.Vector2D;
 
 import java.net.URL;
 import java.util.HashSet;
@@ -241,35 +243,41 @@ public class Game_2 extends Pane {
 
 
     public void update(long now, long deltaTime) {
-        if (GameState == playState) {
-            if (mainTank != null) {
-                mainTank.update(keysPressed, level2, this, now, deltaTime, 0, 0);
-                updateCamera();
-            }
+        if (GameState != playState) return;
 
-            double deltaSeconds = deltaTime / 1_000_000_000.0;
+        // 1) move player
+        mainTank.update(keysPressed, level2, this, now, deltaTime, 0, 0);
+        updateCamera();
 
-            // Update enemy tanks...
-            for (Enemy_Tank enemy : enemyTank) {
-                if (enemy != null && enemy.isAlive()) {
-                    enemy.updateBehavior(level2, this, deltaSeconds);
-                }
-            }
-
-            for (Enemy_Tank enemy : enemyTanks) {
-                if (enemy != null && enemy.isAlive()) {
-                    enemy.updateBehavior(level2, this, deltaSeconds);
-                }
-            }
-
-
-            updateBullets(deltaTime);
-
-            if (eventHandler != null) {
-                eventHandler.update(mainTank, this, now);
+        // 2) move enemies
+        double dtSec = deltaTime / 1_000_000_000.0;
+        for (Enemy_Tank enemy : enemyTanks) {
+            if (enemy != null && enemy.isAlive()) {
+                enemy.updateBehavior(level2, this, dtSec);
             }
         }
+
+        // ─── tank-to-tank collision ─────────────────────────────────
+        Rectangle2D playerBox = mainTank.getBounds();
+        for (Enemy_Tank enemy : enemyTanks) {
+            if (enemy != null && enemy.isAlive()) {
+                Rectangle2D enemyBox = enemy.getBounds();
+                if (playerBox.intersects(enemyBox)) {
+                    // undo the player's last movement
+                    Vector2D v = mainTank.getVelocity();
+                    mainTank.setX(mainTank.getX() - v.x * dtSec);
+                    mainTank.setY(mainTank.getY() - v.y * dtSec);
+                    mainTank.onCollision();  // optional: prints/logs
+                    break;                   // one resolution is enough
+                }
+            }
+        }
+
+        // 3) bullets, events, etc.
+        updateBullets(deltaTime);
+        if (eventHandler != null) eventHandler.update(mainTank, this, now);
     }
+
     private void updateBullets(long deltaTime) {
         Iterator<Tank_Bullet> iterator = bullets.iterator();
         while (iterator.hasNext()) {
