@@ -6,7 +6,6 @@ import javafx.scene.paint.Color;
 import platformgame.Tanks.Tank;
 import platformgame.Tanks.Main_Tank;
 import platformgame.Tanks.Enemy_Tank;
-import platformgame.Tanks.Tank2;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -57,61 +56,25 @@ public class Tank_Bullet {
         }
     }
 
-    // FIXED: Check for collisions with all tanks (enemies and main tank) - CENTERED COLLISION
+    // Check for collisions with all tanks (enemies and main tank)
     public void checkCollisionWithTanks() {
-        // Check collision with Enemy_Tank ArrayList
-        if (gp2 != null && gp2.getEnemyTanksList() != null) {
-            for (Tank tank : gp2.getEnemyTanksList()) {
-                if (tank != null && tank.isAlive() && tank != shooter && isCollidingWithCentered(tank)) {
-                    System.out.println("Bullet hit Enemy_Tank!");
-                    tank.takeDamage(10);
+        // Check collision with enemy tanks (if bullet was shot by main tank)
+        if (gp2 != null && gp2.getEnemyTanks() != null) {
+            for (Tank tank : gp2.getEnemyTanks()) {
+                if (tank != null && tank.isAlive() && tank != shooter && isCollidingWith(tank)) {
+                    tank.takeDamage(45);  // Deal 10 damage for each bullet hit
                     shouldRemove = true;
                     return;
                 }
             }
         }
 
-        // FIXED: Check collision with Tank2 ArrayList - CENTERED COLLISION
-        if (gp2 != null && gp2.Tanks != null) {
-            for (Tank2 tank2 : gp2.Tanks) {
-                if (tank2 != null && tank2.isAlive() && tank2 != shooter && isCollidingWithCentered(tank2)) {
-                    System.out.println("Bullet hit Tank2!");
-                    tank2.takeDamage(10);
-                    shouldRemove = true;
-                    return;
-                }
-            }
-        }
-
-        // FIXED: Also check the arrays for backward compatibility - CENTERED COLLISION
-        if (gp2 != null && gp2.enemyTank != null) {
-            for (Tank tank : gp2.enemyTank) {
-                if (tank != null && tank.isAlive() && tank != shooter && isCollidingWithCentered(tank)) {
-                    System.out.println("Bullet hit Enemy_Tank (array)!");
-                    tank.takeDamage(10);
-                    shouldRemove = true;
-                    return;
-                }
-            }
-        }
-
-        if (gp2 != null && gp2.Tanks2 != null) {
-            for (Tank2 tank2 : gp2.Tanks2) {
-                if (tank2 != null && tank2.isAlive() && tank2 != shooter && isCollidingWithCentered(tank2)) {
-                    System.out.println("Bullet hit Tank2 (array)!");
-                    tank2.takeDamage(10);
-                    shouldRemove = true;
-                    return;
-                }
-            }
-        }
-
-        // Check collision with main tank - CENTERED COLLISION
+        // Check collision with main tank (if bullet was shot by enemy tank)
         if (gp2 != null && gp2.mainTank != null && gp2.mainTank.isAlive() && gp2.mainTank != shooter) {
-            if (isCollidingWithCentered(gp2.mainTank)) {
-                System.out.println("Bullet hit Main Tank!");
-                gp2.mainTank.takeDamage(10);
+            if (isCollidingWith(gp2.mainTank)) {
+                gp2.mainTank.takeDamage(10);  // Deal 10 damage to main tank
                 shouldRemove = true;
+                return;
             }
         }
     }
@@ -121,59 +84,18 @@ public class Tank_Bullet {
         checkCollisionWithTanks();
     }
 
-    // FIXED: Centered collision detection - uses tank center instead of collision box
-    private boolean isCollidingWithCentered(Tank tank) {
-        // Get tank's center position
-        double tankCenterX = tank.getX() + tank.getTankWidth() / 2;
-        double tankCenterY = tank.getY() + tank.getTankHeight() / 2;
-
-        // Define collision radius for tanks (adjust as needed)
-        double tankCollisionRadius = 40.0; // Half the tank size for circular collision
-
-        // Bullet center point
-        double bulletCenterX = x + width / 2;
-        double bulletCenterY = y + height / 2;
-
-        // Calculate distance between bullet center and tank center
-        double distance = Math.sqrt(
-                Math.pow(bulletCenterX - tankCenterX, 2) +
-                        Math.pow(bulletCenterY - tankCenterY, 2)
-        );
-
-        // Debug output (remove or comment out for production)
-        System.out.println("Centered collision check - Bullet: (" + bulletCenterX + "," + bulletCenterY +
-                ") Tank center: (" + tankCenterX + "," + tankCenterY + ") Distance: " + distance +
-                " Collision radius: " + tankCollisionRadius);
-
-        // Check if distance is less than collision radius
-        boolean colliding = distance <= tankCollisionRadius;
-
-        if (colliding) {
-            System.out.println("CENTERED COLLISION DETECTED between bullet and " + tank.getClass().getSimpleName() + "!");
-        }
-
-        return colliding;
-    }
-
-    // OLD METHOD: Keep for comparison or fallback
+    // Collision check with another tank
     private boolean isCollidingWith(Tank tank) {
-        // Get tank's collision box
-        double tankX = tank.getX() + tank.getCollisionOffsetX();
-        double tankY = tank.getY() + tank.getCollisionOffsetY();
-        double tankWidth = tank.getCollisionWidth();
-        double tankHeight = tank.getCollisionHeight();
+        double tankX = tank.getX();
+        double tankY = tank.getY();
+        double tankWidth = tank.getTankWidth();
+        double tankHeight = tank.getTankHeight();
 
-        // Bullet center point
-        double bulletCenterX = x + width / 2;
-        double bulletCenterY = y + height / 2;
-
-        // Check if bullet center is within tank's collision box
-        boolean colliding = (bulletCenterX >= tankX &&
-                bulletCenterX <= tankX + tankWidth &&
-                bulletCenterY >= tankY &&
-                bulletCenterY <= tankY + tankHeight);
-
-        return colliding;
+        // Basic rectangle collision check
+        return (x < tankX + tankWidth &&
+                x + width > tankX &&
+                y < tankY + tankHeight &&
+                y + height > tankY);
     }
 
     // Draw bullet to the screen
@@ -199,13 +121,6 @@ public class Tank_Bullet {
             // Fallback: draw a simple circle in case of any error
             gc.setFill(Color.YELLOW);
             gc.fillOval(screenX, screenY, size, size);
-        }
-
-        // FIXED: Draw bullet collision box for debugging
-        if (false) { // Set to true to enable debug drawing
-            gc.setStroke(Color.BLUE);
-            gc.setLineWidth(1);
-            gc.strokeRect(screenX, screenY, width * scale, height * scale);
         }
     }
 

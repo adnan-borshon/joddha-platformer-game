@@ -6,7 +6,6 @@ import platformgame.Entity.Scout;
 import platformgame.Entity.Soldier;
 import platformgame.Objects.*;
 import platformgame.Tanks.Enemy_Tank;
-import platformgame.Tanks.Tank2;
 
 public class AssetSetter {
     Game gp;
@@ -24,22 +23,22 @@ public class AssetSetter {
         // Clear existing enemy tanks
         gp2.enemyTanks.clear();
 
-        // Create array for 7 enemy tanks + 1 canon = 8 total
-        gp2.enemyTank = new Enemy_Tank[8];
+        // Create array for 7 enemy tanks
+        gp2.enemyTank = new Enemy_Tank[7];
 
         // Tank positions (x, y coordinates in tile units)
         int[][] tankPositions = {
-                {30, 32}, // Original tank position
-                {38, 68}, // Tank 2 - Left side, middle area
-                {51, 47}, // Tank 3 - Right side, upper area
-                {65, 19}, // Tank 4 - Center, lower area
-                {73, 37}, // Tank 5 - Right side, middle area
-                {89, 21}, // Tank 6 - Left side, upper area
-                {97, 16}, // Tank 7 - Center-right, lower area
+                {28, 29}, // Original tank position
+                {30, 35}, // Tank 2 - Left side, middle area
+                {60, 20}, // Tank 3 - Right side, upper area
+                {35, 60}, // Tank 4 - Center, lower area
+                {70, 40}, // Tank 5 - Right side, middle area
+                {10, 15}, // Tank 6 - Left side, upper area
+                {50, 50}  // Tank 7 - Center-right, lower area
         };
 
-        // Create regular enemy tanks (first 7)
-        for (int i = 0; i < 7; i++) {
+        // Create and position all enemy tanks
+        for (int i = 0; i < tankPositions.length; i++) {
             int worldX = tankPositions[i][0] * gp2.tileSize;
             int worldY = tankPositions[i][1] * gp2.tileSize;
 
@@ -52,138 +51,45 @@ public class AssetSetter {
             System.out.println("Enemy tank " + (i + 1) + " created at position: " + worldX + ", " + worldY);
         }
 
-    }
-    public void setTank2(){
-        // Clear existing enemy tanks
-        gp2.Tanks.clear();
-
-        // Create array for 7 enemy tanks + 1 canon = 8 total
-        gp2.Tanks2 = new Tank2[8];
-
-        // Tank positions (x, y coordinates in tile units)
-        int[][] tankPositions = {
-                {52, 39}, // Original tank position
-//                {44, 31}, // Tank 2 - Left side, middle area
-//                {52, 38}, // Tank 3 - Right side, upper area
-
-        };
-
-        // Create regular enemy tanks (first 7)
-        for (int i = 0; i < 1
-                ; i++) {
-            int worldX = tankPositions[i][0] * gp2.tileSize;
-            int worldY = tankPositions[i][1] * gp2.tileSize;
-
-            Tank2 enemy = new Tank2(worldX, worldY, 128, 128, 200.0, null, gp2);
-
-            // Add to both array and ArrayList
-            gp2.Tanks2[i]=enemy;
-            gp2.Tanks.add(enemy);
-
-            System.out.println("Enemy tank " + (i + 1) + " created at position: " + worldX + ", " + worldY);
-        }
-
-
         System.out.println("Total enemy tanks created: " + gp2.enemyTanks.size());
     }
 
     public void setObject() {
-        gp.object[0] = new Obj_Boots();
-        gp.object[0].worldX = 36 * gp.tileSize;
-        gp.object[0].worldY = 5 * gp.tileSize;
+        gp.object[5] = new Obj_Boots();
+        gp.object[5].worldX = 36 * gp.tileSize;
+        gp.object[5].worldY = 5 * gp.tileSize;
 
-        gp.object[1] = new Obj_booth();
-        gp.object[1].worldX = 54 * gp.tileSize;
-        gp.object[1].worldY = 22 * gp.tileSize;
+        gp.object[7] = new Obj_ammo();
+        gp.object[7].worldX = 38 * gp.tileSize;
+        gp.object[7].worldY = 10 * gp.tileSize;
 
-//key
-        gp.object[2] = new Obj_Key();
-        gp.object[2].worldX = 68 * gp.tileSize;
-        gp.object[2].worldY = 7 * gp.tileSize;
-        gp.object[3] = new Obj_Key();
-        gp.object[3].worldX = 4 * gp.tileSize;
-        gp.object[3].worldY = 60 * gp.tileSize;
-        gp.object[3] = new Obj_Key();
-        gp.object[3].worldX = 81 * gp.tileSize;
-        gp.object[3].worldY = 55 * gp.tileSize;
+        gp.object[8] = new Obj_ammo();
+        gp.object[8].worldX = 60 * gp.tileSize;
+        gp.object[8].worldY = 48 * gp.tileSize;
 
-        //key opener
-        gp.object[4] = new Obj_key_opener();
-        gp.object[4].worldX = 15 * gp.tileSize;
-        gp.object[4].worldY = 62 * gp.tileSize;
+        gp.object[9] = new Obj_booth();
+        gp.object[9].worldX = 54 * gp.tileSize;
+        gp.object[9].worldY = 22 * gp.tileSize;
 
-        gp.object[5] = new Obj_key_opener();
-        gp.object[5].worldX = 67 * gp.tileSize;
-        gp.object[5].worldY = 49 * gp.tileSize;
+        gp.object[0] = new Obj_Life();
+        gp.object[0].name = "obj";
+        gp.object[0].worldX = 58 * gp.tileSize;
+        gp.object[0].worldY = 36 * gp.tileSize;
 
-        gp.object[6] = new Obj_key_opener();
-        gp.object[6].worldX = 80 * gp.tileSize;
-        gp.object[6].worldY = 33 * gp.tileSize;
+        gp.object[1] = new Obj_Life();
+        gp.object[1].name = "obj";
+        gp.object[1].worldX = 24 * gp.tileSize;
+        gp.object[1].worldY = 23 * gp.tileSize;
 
-        //granade
+        gp.object[2] = new Obj_Life();
+        gp.object[2].name = "obj";
+        gp.object[2].worldX = 27 * gp.tileSize;
+        gp.object[2].worldY = 53 * gp.tileSize;
 
-        gp.object[7] = new Obj_granade();
-        gp.object[7].worldX = 44 * gp.tileSize;
-        gp.object[7].worldY = 9 * gp.tileSize;
-
-        gp.object[8] = new Obj_granade();
-        gp.object[8].worldX = 92 * gp.tileSize;
-        gp.object[8].worldY = 9 * gp.tileSize;
-
-        //granade launcher
-
-        gp.object[9] = new Obj_granade_launcher();
-        gp.object[9].worldX = 68 * gp.tileSize;
-        gp.object[9].worldY = 7 * gp.tileSize;
-
-        gp.object[10] = new Obj_granade_launcher();
-        gp.object[10].worldX = 90 * gp.tileSize;
-        gp.object[10].worldY = 45 * gp.tileSize;
-
-// ammonation
-
-        gp.object[11] = new Obj_ammo();
-        gp.object[11].worldX = 37 * gp.tileSize;
-        gp.object[11].worldY = 12 * gp.tileSize;
-
-        gp.object[12] = new Obj_ammo();
-        gp.object[12].worldX = 63 * gp.tileSize;
-        gp.object[12].worldY = 9 * gp.tileSize;
-
-        gp.object[13] = new Obj_ammo();
-        gp.object[13].worldX = 31 * gp.tileSize;
-        gp.object[13].worldY = 50 * gp.tileSize;
-
-        gp.object[14] = new Obj_ammo();
-        gp.object[14].worldX = 11 * gp.tileSize;
-        gp.object[14].worldY = 58 * gp.tileSize;
-
-        gp.object[15] = new Obj_ammo();
-        gp.object[15].worldX = 53 * gp.tileSize;
-        gp.object[15].worldY = 51 * gp.tileSize;
-
-        gp.object[16] = new Obj_ammo();
-        gp.object[16].worldX = 91 * gp.tileSize;
-        gp.object[16].worldY = 19 * gp.tileSize;
-
-        gp.object[17] = new Obj_ammo();
-        gp.object[17].worldX = 77 * gp.tileSize;
-        gp.object[17].worldY = 42 * gp.tileSize;
-
-        //Life
-
-        gp.object[18] = new Obj_Life();
-        gp.object[18].worldX = 38 * gp.tileSize;
-        gp.object[18].worldY = 54 * gp.tileSize;
-
-        gp.object[19] = new Obj_Life();
-        gp.object[19].worldX = 32 * gp.tileSize;
-        gp.object[19].worldY = 25 * gp.tileSize;
-
-        gp.object[20] = new Obj_Life();
-        gp.object[20].worldX = 77 * gp.tileSize;
-        gp.object[20].worldY = 32 * gp.tileSize;
-
+        gp.object[3] = new Obj_Life();
+        gp.object[3].name = "obj";
+        gp.object[3].worldX = 54 * gp.tileSize;
+        gp.object[3].worldY = 63 * gp.tileSize;
     }
 
     public void setNpc() {
@@ -202,8 +108,7 @@ public class AssetSetter {
 
     public void setScout() {
 
-//        gp.scout[0] = new Scout(43 * gp.tileSize, 12 * gp.tileSize, 40, 80, 2, gp);
-        gp.scout[1] = new Scout(59 * gp.tileSize, 45 * gp.tileSize, 40, 80, 2, gp);
+        gp.scout[0] = new Scout(43 * gp.tileSize, 12 * gp.tileSize, 40, 80, 2, gp);
 
     }
 
@@ -213,66 +118,39 @@ public class AssetSetter {
     }
 
     public void setEnemy() {
-        // IMPROVED: Better spacing between enemies to prevent clustering
-        gp.enemies[0] = new Enemy(17 * gp.tileSize, 25 * gp.tileSize, 50, 50, 1.2, gp);
-        gp.enemies[1] = new Enemy(11 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[2] = new Enemy(36 * gp.tileSize, 42 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[3] = new Enemy(25 * gp.tileSize, 57 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[4] = new Enemy(33 * gp.tileSize, 71 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[5] = new Enemy(59 * gp.tileSize, 45 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[6] = new Enemy(58 * gp.tileSize, 28 * gp.tileSize, 50, 40, 1.2, gp);
+
+
+        // ✅ Corrected to match Game.java's enemies[]
+        gp.enemies[0] = new Enemy(43 * gp.tileSize, 2 * gp.tileSize, 50, 80, 0.8, gp);
+//        gp.enemies[1] = new Enemy(48 * gp.tileSize, 7 * gp.tileSize, 50, 40, 1, gp);
+//        gp.enemies[2] = new Enemy(55 * gp.tileSize, 53 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[3] = new Enemy(81* gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[4] = new Enemy(82 * gp.tileSize, 54 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[5] = new Enemy(89* gp.tileSize, 48 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[6] = new Enemy(87 * gp.tileSize, 40 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[7] = new Enemy(88 * gp.tileSize, 12 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[8] = new Enemy(95 * gp.tileSize, 6 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[9] = new Enemy(59 * gp.tileSize, 32 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[10] = new Enemy(94 * gp.tileSize, 26 * gp.tileSize, 50, 40, 1.2, gp);
+
+
+
     }
 
     public void setSoldiers() {
-        // IMPROVED: Better distributed positions and added validation
-        int[][] soldierPositions = {
-                {19, 63}, {22, 68}, {39, 59}, {59, 43}, {80, 54},
-                {68, 18}, {66, 34}, {84, 42}, {66, 58}, {93, 6},
-                {85, 12}, {93, 24}
-        };
 
-        // Create soldiers with validation
-        for (int i = 0; i < soldierPositions.length && i < gp.soldiers.length; i++) {
-            double x = soldierPositions[i][0] * gp.tileSize;
-            double y = soldierPositions[i][1] * gp.tileSize;
+        gp.soldiers[0] = new Soldier(46 * gp.tileSize, 19 * gp.tileSize, 50, 50, 1.2, gp);
+//        gp.soldiers[1] = new Soldier(21 * gp.tileSize, 52 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[2] = new Soldier(32 * gp.tileSize, 45 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[3] = new Soldier(12 * gp.tileSize, 62 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[4] = new Soldier(23 * gp.tileSize, 64 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[5] = new Soldier(16 * gp.tileSize, 73 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[6] = new Soldier(42 * gp.tileSize, 68 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[7] = new Soldier(60 * gp.tileSize, 71 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[8] = new Soldier(62 * gp.tileSize, 59 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[9] = new Soldier(38 * gp.tileSize, 58 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[10] = new Soldier(24 * gp.tileSize, 68 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.soldiers[11] = new Soldier(10 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
 
-            // Add small random offset to prevent exact overlap
-            x += (Math.random() - 0.5) * gp.tileSize * 0.5; // ±25% of tile size
-            y += (Math.random() - 0.5) * gp.tileSize * 0.5;
-
-            gp.soldiers[i] = new Soldier(x, y, 50, 40, 1.2, gp);
-
-            // DEBUG: Print soldier creation
-            System.out.println("Created soldier " + i + " at position: " + x + ", " + y);
-        }
-    }
-
-    // NEW: Method to validate entity placement and fix overlaps
-    public void validateEntityPlacement() {
-        System.out.println("Validating entity placement...");
-
-        // Check soldiers
-        for (int i = 0; i < gp.soldiers.length; i++) {
-            if (gp.soldiers[i] != null) {
-                // Check if this soldier overlaps with others
-                for (int j = i + 1; j < gp.soldiers.length; j++) {
-                    if (gp.soldiers[j] != null) {
-                        double distance = Math.hypot(
-                                gp.soldiers[i].getX() - gp.soldiers[j].getX(),
-                                gp.soldiers[i].getY() - gp.soldiers[j].getY()
-                        );
-
-                        if (distance < gp.tileSize) {
-                            System.out.println("WARNING: Soldiers " + i + " and " + j + " are too close!");
-                            // Slightly move the second soldier
-                            gp.soldiers[j].setPosition(
-                                    gp.soldiers[j].getX() + gp.tileSize,
-                                    gp.soldiers[j].getY()
-                            );
-                        }
-                    }
-                }
-            }
-        }
     }
 }
