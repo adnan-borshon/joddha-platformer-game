@@ -345,7 +345,7 @@ public class Soldier extends Enemy {
         isWalking = false;
         isRunning = false;
         isAttacking = false;
-
+    shootSound();
         // Face the player when shooting (this will be handled by updateDirection())
         if (gp.player.getX() > x) {
             facingRight = true;

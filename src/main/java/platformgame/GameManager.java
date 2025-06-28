@@ -5,14 +5,19 @@ import platformgame.Objects.SuperObject;
 public class GameManager {
     private static GameManager instance;
     private GameState lastState;
-
+    private boolean musicEnabled = true;
     private GameManager() {}
 
     public static GameManager getInstance() {
         if (instance == null) instance = new GameManager();
         return instance;
     }
-
+    public void setMusicEnabled(boolean on) {
+        this.musicEnabled = on;
+    }
+    public boolean isMusicEnabled() {
+        return musicEnabled;
+    }
     public void saveState(Game game) {
         // 1) gather object states
         GameState.SavedObject[] savedObjects = new GameState.SavedObject[game.object.length];

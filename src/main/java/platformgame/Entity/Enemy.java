@@ -121,6 +121,7 @@ public class Enemy extends Entity {
 
         // Handle animations based on current state
         if (isAttacking) {
+
             handleAttackAnimation(now);
         } else if (isShooting) {
             handleShootAnimation(now);
@@ -199,11 +200,13 @@ public class Enemy extends Entity {
 
         if (frameIndex < maxFrames) {
             currentFrame = frameIndex;
+
         } else {
             currentFrame = 0;
             isAttacking = false;
             isWalking = false;
         }
+
     }
 
     private void handleShootAnimation(long now) {
@@ -260,6 +263,7 @@ public class Enemy extends Entity {
         isWalking = false;
         isRunning = false;
         isShooting = false;
+        punchSound();
     }
 
     protected void startShooting(long now) {

@@ -543,11 +543,13 @@ public class Scout extends Entity {
                 Rectangle2D scoutHitbox = getHitbox();
 
                 if (playerHitbox.intersects(scoutHitbox)) {
+                    punchSound();
                     gp.player.takeMeleeDamageFromEnemy(1, now);
                     hasDealtDamageThisAttack = true;
                     System.out.println("Scout dealt damage to player!");
                 }
             }
+
         } else {
             currentFrame = 0;
             attacking = false;

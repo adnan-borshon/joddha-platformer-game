@@ -9,6 +9,7 @@ import platformgame.Game;
 import platformgame.Map.Level_1;
 import platformgame.Objects.Obj_Boom;
 import platformgame.Objects.SuperObject;
+import platformgame.Sound;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -179,6 +180,8 @@ public class Player extends Entity {
             int frameIndex = (int) ((now - fistAttackStartTime) / fistFrameDuration);
             if (frameIndex < maxFrames) {
                 currentFrame = frameIndex;
+
+
             } else {
                 attackingWithFist = false;
                 currentFrame = 0;
@@ -203,7 +206,7 @@ public class Player extends Entity {
             attackingWithFist = true;
             fistAttackStartTime = now;
             currentFrame = 0;
-
+            punchSound();
             // Adjust punch box for different directions
             double punchWidth = width * 0.6;
             double punchHeight = height; // Start with the full height
@@ -441,7 +444,7 @@ public class Player extends Entity {
         lastShotTime = now;
         ammo--;
 
-        gp.playSoundEffects(4);
+       shootSound();
 
         currentFrame = 0;
     }

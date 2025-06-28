@@ -14,11 +14,11 @@ public class Sound {
 
     private Sound() {
         try {
-            loadSound(0, "/sound/BlueBoyAdventure.wav");  // game BGM
+            loadSound(0, "/sounds/BGM(loop).WAV");  // game BGM
             loadSound(6, "/sounds/Menu.wav");             // menu music
-            loadSound(2, "/sound/powerup.wav");
-            loadSound(3, "/sound/unlock.wav");
+            loadSound(3, "/sounds/Punch.WAV");
             loadSound(4, "/sound/bomb.mp3");
+            loadSound(1, "/sounds/GunShot.WAV");
             loadSound(5, "/sounds/click.mp3");
         } catch (Exception e) {
             e.printStackTrace();

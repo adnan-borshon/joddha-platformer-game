@@ -97,9 +97,15 @@ public class Game extends Pane {
         // Create root container for layering
         gameRoot = new StackPane();
         gameRoot.setPrefSize(screenWidth, screenHeight);
-        Sound.getInstance().stopAll();           // clear out menu & other sounds
-        if (Sound.getInstance().isMusicEnabled()) {
-            Sound.getInstance().loop(0);         // only play if enabled
+        boolean shouldPlay = GameManager.getInstance().isMusicEnabled();
+        // 2) sync it into your Sound singleton
+        Sound.getInstance().setMusicEnabled(shouldPlay);
+
+        // 3) then start/stop music based on that
+        Sound.getInstance().stopAll();
+
+        if (shouldPlay) {
+            Sound.getInstance().loop(0);
         }
 
         // Initialize canvas
@@ -303,7 +309,8 @@ public class Game extends Pane {
         aSetter.setSoldiers();
         aSetter.setExplosion();
 //        aSetter.setLauncherAndOpener();
-        playMusic(0);
+
+//        playMusic(0);
         GameState = playState;
 
         // ✅ FIXED: Initialize chat ammo display with proper delay and connection

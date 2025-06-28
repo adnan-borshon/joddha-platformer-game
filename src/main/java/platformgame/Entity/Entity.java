@@ -7,6 +7,7 @@ import javafx.scene.image.WritableImage;
 import platformgame.Game;
 import platformgame.ImageLoader;
 import platformgame.Objects.SuperObject;
+import platformgame.Sound;
 
 public abstract class Entity {
     //without gun
@@ -99,8 +100,11 @@ public abstract class Entity {
 
 
 
+    private long lastPunchSoundTime = 0;
+    private static final long PUNCH_SOUND_COOLDOWN_NS = 100_000_000L;
 
-
+    private long lastShootSoundTime = 0;
+    private static final long SHOOT_SOUND_COOLDOWN_NS = 150_000_000L;
     protected double x, y;
     protected double width, height;
     public double speed;
@@ -269,6 +273,22 @@ public abstract class Entity {
     // General method to check for collisions with the environment
     public boolean isColliding(double x, double y) {
         return checkTileCollision(x, y) || checkObjectCollision(x, y) || checkNpcCollision(x, y);
+    }
+
+    public void punchSound() {
+        long now = System.nanoTime();
+        if (now - lastPunchSoundTime >= PUNCH_SOUND_COOLDOWN_NS) {
+            Sound.getInstance().play(3);
+            lastPunchSoundTime = now;
+        }
+    }
+
+    public void shootSound() {
+        long now = System.nanoTime();
+        if (now - lastShootSoundTime >= SHOOT_SOUND_COOLDOWN_NS) {
+            Sound.getInstance().play(1);
+            lastShootSoundTime = now;
+        }
     }
 
     // Getter methods

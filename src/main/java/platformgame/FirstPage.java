@@ -42,10 +42,14 @@ public class FirstPage {
 
     @FXML
     public void initialize() {
-        Sound.getInstance().stopAll();
+        // 1) pull the last‐saved preference
+        boolean shouldPlay = GameManager.getInstance().isMusicEnabled();
+        // 2) push it into your Sound singleton
+        Sound.getInstance().setMusicEnabled(shouldPlay);
 
-        // only loop menu if user hasn't turned music off
-        if (Sound.getInstance().isMusicEnabled()) {
+        // 3) now stop everything, then loop only if enabled
+        Sound.getInstance().stopAll();
+        if (shouldPlay) {
             Sound.getInstance().loop(MENU_INDEX);
         }
 
@@ -112,7 +116,10 @@ public class FirstPage {
     private void startNewGame() {
         try {
             // stop menu music
-            Sound.getInstance().stopAll();  // kill menu music & effects
+            Sound.getInstance().stopAll();
+            Sound.getInstance().setMusicEnabled(
+                    GameManager.getInstance().isMusicEnabled()
+            ); // kill menu music & effects
             if (Sound.getInstance().isMusicEnabled()) {
                 Sound.getInstance().loop(0); // start game BGM only if enabled
             }

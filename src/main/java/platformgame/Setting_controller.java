@@ -65,7 +65,22 @@ public class Setting_controller {
             }
         });
     }
-
+    @FXML
+    private void toggleMusic() {
+        boolean nowOn = !Sound.getInstance().isMusicEnabled();
+        // update the Sound singleton…
+        Sound.getInstance().setMusicEnabled(nowOn);
+        // **persist** into GameManager
+        GameManager.getInstance().setMusicEnabled(nowOn);
+        // update the icon immediately
+        updateIcon();
+        // play or stop right away
+        if (nowOn) {
+            Sound.getInstance().loop(MENU_INDEX);
+        } else {
+            Sound.getInstance().stopAll();
+        }
+        }
     private void updateIcon() {
         String path = musicOn ? ON_PATH : OFF_PATH;
         musicImage.setImage(new Image(getClass().getResourceAsStream(path)));
