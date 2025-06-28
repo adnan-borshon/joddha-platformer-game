@@ -1,9 +1,7 @@
 package platformgame;
 
-
 import platformgame.Objects.SuperObject;
 
-//for saving all the data
 public class GameManager {
     private static GameManager instance;
     private GameState lastState;
@@ -11,18 +9,16 @@ public class GameManager {
     private GameManager() {}
 
     public static GameManager getInstance() {
-        if (instance == null) {
-            instance = new GameManager();
-        }
+        if (instance == null) instance = new GameManager();
         return instance;
     }
 
     public void saveState(Game game) {
+        // 1) gather object states
         GameState.SavedObject[] savedObjects = new GameState.SavedObject[game.object.length];
-
         for (int i = 0; i < game.object.length; i++) {
-            if (game.object[i] != null) {
-                SuperObject obj = game.object[i];
+            SuperObject obj = game.object[i];
+            if (obj != null) {
                 savedObjects[i] = new GameState.SavedObject(
                         obj.name, obj.worldX, obj.worldY, true
                 );
@@ -31,16 +27,19 @@ public class GameManager {
             }
         }
 
+        // 2) capture whether music is playing (index 0)
         lastState = new GameState(
                 game.player.getX(),
                 game.player.getY(),
-                game.hasKey,
-                game.player.speed,  // ✅ Save speed
-                savedObjects
+                game.hasKey,                    // boolean now
+                game.player.speed,
+                savedObjects,
+                Sound.getInstance().isPlaying(0)
         );
+
+
+
     }
-
-
 
     public GameState getLastState() {
         return lastState;
@@ -54,6 +53,6 @@ public class GameManager {
         lastState = null;
     }
 
-    public void saveState(Game_2 game2) {
-    }
+    // (empty stub for Game_2)
+    public void saveState(Game_2 game2) { }
 }

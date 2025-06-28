@@ -6,81 +6,78 @@ import javafx.scene.media.MediaPlayer;
 import java.net.URL;
 
 public class Sound {
-
     private static Sound instance;
     private final MediaPlayer[] mediaPlayers = new MediaPlayer[30];
 
+    // GLOBAL flag for whether music (menu or game) should play
+    private boolean musicEnabled = true;
+
     private Sound() {
         try {
-            loadSound(0, "/sound/BlueBoyAdventure.wav");
-            loadSound(1, "/sound/coin.wav");
+            loadSound(0, "/sound/BlueBoyAdventure.wav");  // game BGM
+            loadSound(6, "/sounds/Menu.wav");             // menu music
             loadSound(2, "/sound/powerup.wav");
             loadSound(3, "/sound/unlock.wav");
             loadSound(4, "/sound/bomb.mp3");
-            // Add more as needed
+            loadSound(5, "/sounds/click.mp3");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public static Sound getInstance() {
-        if (instance == null) {
-            instance = new Sound();
-        }
+        if (instance == null) instance = new Sound();
         return instance;
     }
 
+    /** Turn music on/off globally */
+    public void setMusicEnabled(boolean on) {
+        musicEnabled = on;
+    }
+    public boolean isMusicEnabled() {
+        return musicEnabled;
+    }
+
     private void loadSound(int index, String resourcePath) {
-        URL resource = getClass().getResource(resourcePath);
-        if (resource != null) {
-            Media media = new Media(resource.toExternalForm());
-            mediaPlayers[index] = new MediaPlayer(media);
+        URL res = getClass().getResource(resourcePath);
+        if (res != null) {
+            mediaPlayers[index] = new MediaPlayer(new Media(res.toExternalForm()));
         } else {
             System.err.println("Sound not found: " + resourcePath);
         }
     }
 
-    // ▶️ Play once
-    public void play(int index) {
-        if (mediaPlayers[index] != null) {
-            mediaPlayers[index].stop();
-            mediaPlayers[index].setCycleCount(1);
-            mediaPlayers[index].play();
+    public void play(int idx) {
+        if (mediaPlayers[idx] != null) {
+            mediaPlayers[idx].stop();
+            mediaPlayers[idx].setCycleCount(1);
+            mediaPlayers[idx].play();
         }
     }
 
-    // 🔁 Loop continuously
-    public void loop(int index) {
-        if (mediaPlayers[index] != null) {
-            if (!isPlaying(index)) {
-                mediaPlayers[index].stop();
-                mediaPlayers[index].setCycleCount(MediaPlayer.INDEFINITE);
-                mediaPlayers[index].play();
-            }
+    public void loop(int idx) {
+        if (!musicEnabled) return;       // respect global flag
+        if (mediaPlayers[idx] != null && !isPlaying(idx)) {
+            mediaPlayers[idx].stop();
+            mediaPlayers[idx].setCycleCount(MediaPlayer.INDEFINITE);
+            mediaPlayers[idx].play();
         }
     }
 
-    // ⏹ Stop
-    public void stop(int index) {
-        if (mediaPlayers[index] != null) {
-            mediaPlayers[index].stop();
+    public void stop(int idx) {
+        if (mediaPlayers[idx] != null) {
+            mediaPlayers[idx].stop();
         }
     }
 
-    // 🔍 Check if a sound is currently playing
-    public boolean isPlaying(int index) {
-        if (mediaPlayers[index] != null) {
-            return mediaPlayers[index].getStatus() == MediaPlayer.Status.PLAYING;
-        }
-        return false;
+    public boolean isPlaying(int idx) {
+        return mediaPlayers[idx] != null
+                && mediaPlayers[idx].getStatus() == MediaPlayer.Status.PLAYING;
     }
 
-    // ⏹ Stop all sounds
     public void stopAll() {
-        for (MediaPlayer player : mediaPlayers) {
-            if (player != null) {
-                player.stop();
-            }
+        for (MediaPlayer mp : mediaPlayers) {
+            if (mp != null) mp.stop();
         }
     }
 }

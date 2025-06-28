@@ -97,6 +97,10 @@ public class Game extends Pane {
         // Create root container for layering
         gameRoot = new StackPane();
         gameRoot.setPrefSize(screenWidth, screenHeight);
+        Sound.getInstance().stopAll();           // clear out menu & other sounds
+        if (Sound.getInstance().isMusicEnabled()) {
+            Sound.getInstance().loop(0);         // only play if enabled
+        }
 
         // Initialize canvas
         canvas = new Canvas(screenWidth, screenHeight);
