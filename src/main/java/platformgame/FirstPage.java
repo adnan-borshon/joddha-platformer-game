@@ -128,7 +128,7 @@ public class FirstPage {
 
             Game game = new Game();
 
-//            Game_2 game = new Game_2();
+//         Game_2 game = new Game_2();
 
             game.startGameLoop();
 

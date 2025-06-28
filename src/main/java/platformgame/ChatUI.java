@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ChatUI {
-    private VBox mainContainer; // New container to hold both button and chat
+    private VBox mainContainer; // Container to hold both button and chat
     private VBox chatContainer;
     private ScrollPane chatScrollPane;
     private VBox chatMessages;
@@ -41,9 +41,9 @@ public class ChatUI {
     // Chat dimensions
     private final double CHAT_WIDTH = 320;
     private final double CHAT_HEIGHT = 500;
-    private final double BUTTON_OFFSET_X = -50; // Offset button to the left
+    private final double BUTTON_OFFSET_X = -50;
 
-    // Player's current ammo count
+    // Player's current ammo count (displayed in UI, real value in Game)
     private int currentAmmo = 0;
 
     public ChatUI(Game game) {
@@ -54,42 +54,32 @@ public class ChatUI {
     }
 
     private void initializeUI() {
-        // Main container that holds both button and chat box
         mainContainer = new VBox(5);
         mainContainer.setAlignment(Pos.TOP_LEFT);
 
-        // Toggle button (always visible) - positioned to the left
         toggleButton = new Button("Chat/Ammo");
         toggleButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
         toggleButton.setPrefSize(80, 30);
 
-        // Create a container for the button with left offset
         HBox buttonContainer = new HBox();
         buttonContainer.setAlignment(Pos.CENTER_LEFT);
-        buttonContainer.setPadding(new Insets(10, 0, 0, Math.abs(BUTTON_OFFSET_X))); // Left padding for offset
+        buttonContainer.setPadding(new Insets(10, 0, 0, Math.abs(BUTTON_OFFSET_X)));
         buttonContainer.getChildren().add(toggleButton);
 
-        // Main chat container
         chatContainer = new VBox(5);
         chatContainer.setPrefSize(CHAT_WIDTH, CHAT_HEIGHT);
         chatContainer.setMaxSize(CHAT_WIDTH, CHAT_HEIGHT);
         chatContainer.setStyle("-fx-background-color: rgba(0, 0, 0, 0.9); -fx-background-radius: 10;");
         chatContainer.setPadding(new Insets(10));
-        chatContainer.setVisible(false); // Initially hidden
+        chatContainer.setVisible(false);
 
-        // Position chat container slightly to the left to align with button
         HBox chatContainerWrapper = new HBox();
         chatContainerWrapper.setAlignment(Pos.CENTER_LEFT);
-        chatContainerWrapper.setPadding(new Insets(0, 0, 0, Math.abs(BUTTON_OFFSET_X))); // Same left padding as button
+        chatContainerWrapper.setPadding(new Insets(0, 0, 0, Math.abs(BUTTON_OFFSET_X)));
         chatContainerWrapper.getChildren().add(chatContainer);
 
-        // Header with connection status
         HBox header = createHeader();
-
-        // Ammo system panel
         ammoPanel = createAmmoPanel();
-
-        // Chat messages area
         chatMessages = new VBox(3);
         chatMessages.setPadding(new Insets(5));
 
@@ -100,16 +90,11 @@ public class ChatUI {
         chatScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         chatScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
-        // Message input area
         HBox inputArea = createInputArea();
 
-        // Add components to chat container
         chatContainer.getChildren().addAll(header, ammoPanel, new Separator(), chatScrollPane, inputArea);
-
-        // Add button and chat to main container
         mainContainer.getChildren().addAll(buttonContainer, chatContainerWrapper);
 
-        // Event handlers
         setupEventHandlers();
     }
 
@@ -134,7 +119,6 @@ public class ChatUI {
         panel.setStyle("-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 5;");
         panel.setPadding(new Insets(8));
 
-        // Current ammo display
         HBox ammoDisplay = new HBox(10);
         ammoDisplay.setAlignment(Pos.CENTER_LEFT);
         Label ammoLabel = new Label("Current Ammo:");
@@ -147,7 +131,6 @@ public class ChatUI {
 
         ammoDisplay.getChildren().addAll(ammoLabel, ammoCountLabel);
 
-        // Ammo request section
         Label requestLabel = new Label("Request Ammo:");
         requestLabel.setTextFill(Color.WHITE);
         requestLabel.setFont(Font.font("Arial", FontWeight.BOLD, 11));
@@ -169,7 +152,6 @@ public class ChatUI {
 
         requestRow1.getChildren().addAll(ammoRequestField, ammoRequestMessageField, requestAmmoButton);
 
-        // Send ammo section
         Label sendLabel = new Label("Send Ammo:");
         sendLabel.setTextFill(Color.WHITE);
         sendLabel.setFont(Font.font("Arial", FontWeight.BOLD, 11));
@@ -233,25 +215,15 @@ public class ChatUI {
     }
 
     private void setupEventHandlers() {
-        // Toggle chat visibility
         toggleButton.setOnAction(e -> toggleChatVisibility());
-
-        // Send message on button click
         sendButton.setOnAction(e -> sendMessage());
-
-        // Send message on Enter key
         messageInput.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) {
-                sendMessage();
-            }
+            if (e.getCode() == KeyCode.ENTER) sendMessage();
         });
-
-        // Ammo system event handlers
         requestAmmoButton.setOnAction(e -> requestAmmo());
         sendAmmoButton.setOnAction(e -> sendAmmo());
         refreshPlayersButton.setOnAction(e -> refreshPlayerList());
 
-        // Enter key handlers for ammo fields
         ammoRequestField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) requestAmmo();
         });
@@ -261,19 +233,14 @@ public class ChatUI {
     }
 
     private void initializeChatClient() {
-        // Get username from game or generate one
         String username = "Player" + (int)(Math.random() * 1000);
         chatClient = new ChatClient("192.168.0.110", 8080, username);
 
-
-
-        // Set up chat client callbacks
         chatClient.setMessageCallback(new ChatClient.ChatMessageCallback() {
             @Override
             public void onMessageReceived(String message) {
                 Platform.runLater(() -> addMessage(message, false));
             }
-
             @Override
             public void onConnectionStatusChanged(boolean connected) {
                 Platform.runLater(() -> {
@@ -281,7 +248,6 @@ public class ChatUI {
                         connectionStatus.setText("Connected");
                         connectionStatus.setTextFill(Color.GREEN);
                         addMessage("Connected to chat server", true);
-                        // Send initial ammo update
                         updateAmmoOnServer();
                         refreshPlayerList();
                     } else {
@@ -291,7 +257,6 @@ public class ChatUI {
                     }
                 });
             }
-
             @Override
             public void onError(String error) {
                 Platform.runLater(() -> {
@@ -302,21 +267,42 @@ public class ChatUI {
             }
         });
 
-        // Set up ammo system callbacks
+        // --- Ammo system callbacks integration ---
         chatClient.setAmmoCallback(new ChatClient.AmmoSystemCallback() {
             @Override
             public void onAmmoRequest(String requester, int amount, String message) {
                 Platform.runLater(() -> {
+                    // Build a friendly request message
                     String requestMsg = requester + " requests " + amount + " ammo";
                     if (!message.isEmpty()) {
-                        requestMsg += " (" + message + ")";
+                        requestMsg += " (“" + message + "”)";
                     }
-                    addMessage("🔫 " + requestMsg, false);
 
-                    // Show notification-style message
-                    Label notification = new Label("💬 Ammo Request: " + requestMsg);
-                    notification.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black; -fx-padding: 5; -fx-background-radius: 3;");
-                    chatMessages.getChildren().add(notification);
+                    // Create label + grant button
+                    Label reqLabel = new Label("🔫 " + requestMsg);
+                    reqLabel.setWrapText(true);
+                    reqLabel.setStyle("-fx-text-fill: white;");
+
+                    Button grantButton = new Button("Grant");
+                    grantButton.setStyle(
+                            "-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 10;"
+                    );
+                    // When clicked, send ammo and disable the button
+                    grantButton.setOnAction(evt -> {
+                        try {
+                            chatClient.sendAmmo(requester, amount);
+                            grantButton.setText("Granted");
+                            grantButton.setDisable(true);
+                        } catch (Exception e) {
+                            addMessage("❌ Failed to grant ammo: " + e.getMessage(), true);
+                        }
+                    });
+
+                    HBox requestRow = new HBox(8, reqLabel, grantButton);
+                    requestRow.setAlignment(Pos.CENTER_LEFT);
+                    requestRow.setPadding(new Insets(4, 0, 4, 0));
+
+                    chatMessages.getChildren().add(requestRow);
                     scrollToBottom();
                 });
             }
@@ -326,15 +312,18 @@ public class ChatUI {
                 Platform.runLater(() -> {
                     if (sent) {
                         addMessage("✅ You sent " + amount + " ammo to " + otherPlayer, true);
-                        currentAmmo -= amount;
+                        // Use your existing method:
+                        game.onAmmoUsed(amount);
+                        updateAmmo(game.getPlayerAmmo());
                     } else {
                         addMessage("🎁 You received " + amount + " ammo from " + otherPlayer, true);
-                        currentAmmo += amount;
+                        game.onAmmoCollected(amount);
+                        updateAmmo(game.getPlayerAmmo());
                     }
-                    updateAmmoDisplay();
                     updateAmmoOnServer();
                 });
             }
+
 
             @Override
             public void onPlayerListUpdate(String playerListData) {
@@ -347,11 +336,10 @@ public class ChatUI {
             }
         });
 
-        // Auto-connect when initialized
         connectToChat();
     }
 
-    // Ammo system methods
+    // --- Ammo System UI logic ---
     private void requestAmmo() {
         String amountText = ammoRequestField.getText().trim();
         String message = ammoRequestMessageField.getText().trim();
@@ -388,7 +376,6 @@ public class ChatUI {
             addMessage("Please select a player", true);
             return;
         }
-
         if (amountText.isEmpty()) {
             addMessage("Please enter ammo amount to send", true);
             return;
@@ -400,24 +387,20 @@ public class ChatUI {
                 addMessage("Ammo amount must be positive", true);
                 return;
             }
-
-            if (amount > currentAmmo) {
-                addMessage("You don't have enough ammo (Current: " + currentAmmo + ")", true);
+            if (amount > game.getPlayerAmmo()) {
+                addMessage("You don't have enough ammo (Current: " + game.getPlayerAmmo() + ")", true);
                 return;
             }
-
-            String recipient = selectedPlayer.split(" ")[0]; // fix: only username
+            String recipient = selectedPlayer.split(" ")[0];
             chatClient.sendAmmo(recipient, amount);
             ammoSendField.clear();
             addMessage("📤 Sending " + amount + " ammo to " + recipient + "...", true);
-
         } catch (NumberFormatException e) {
             addMessage("Invalid ammo amount", true);
         } catch (Exception e) {
             addMessage("Failed to send ammo: " + e.getMessage(), true);
         }
     }
-
 
     private void refreshPlayerList() {
         try {
@@ -442,12 +425,11 @@ public class ChatUI {
                             int ammo = Integer.parseInt(parts[1]);
                             onlinePlayers.put(playerName, ammo);
 
-                            // Don't add self to the selector
                             if (!playerName.equals(chatClient.getUsername())) {
                                 playerSelector.getItems().add(playerName + " (" + ammo + " ammo)");
                             }
                         } catch (NumberFormatException e) {
-                            // Skip invalid entries
+                            // skip invalid entry
                         }
                     }
                 }
@@ -455,7 +437,7 @@ public class ChatUI {
         }
     }
 
-    // Public method to update ammo from game
+    // Called from Game to update chat UI ammo display (after pickup, used, sent, received)
     public void updateAmmo(int newAmmoCount) {
         currentAmmo = newAmmoCount;
         Platform.runLater(() -> {
@@ -478,7 +460,6 @@ public class ChatUI {
         }
     }
 
-    // Rest of the existing methods...
     public void connectToChat() {
         if (!chatClient.isConnected()) {
             try {
@@ -520,16 +501,13 @@ public class ChatUI {
         chatMessages.getChildren().add(messageLabel);
         scrollToBottom();
 
-        // Limit message history (keep last 50 messages)
         if (chatMessages.getChildren().size() > 50) {
             chatMessages.getChildren().remove(0);
         }
     }
 
     private void scrollToBottom() {
-        Platform.runLater(() -> {
-            chatScrollPane.setVvalue(1.0);
-        });
+        Platform.runLater(() -> chatScrollPane.setVvalue(1.0));
     }
 
     private void toggleChatVisibility() {
@@ -539,29 +517,24 @@ public class ChatUI {
         if (isVisible) {
             toggleButton.setText("Hide");
             messageInput.requestFocus();
-            refreshPlayerList(); // Refresh when opening
+            refreshPlayerList();
         } else {
             toggleButton.setText("Chat/Ammo");
-            // Return focus to game
             game.requestFocus();
         }
     }
 
-    // Method to handle key events when chat is visible
     public boolean handleKeyEvent(KeyCode key) {
         if (isVisible) {
-            // If chat is visible, don't let game handle certain keys
             return key == KeyCode.ENTER || key == KeyCode.TAB || key == KeyCode.ESCAPE;
         }
         return false;
     }
 
-    // Updated getters for adding to game scene
     public VBox getMainContainer() {
-        return mainContainer; // Return the main container instead of just chat container
+        return mainContainer;
     }
 
-    // Keep this for backward compatibility
     public VBox getChatContainer() {
         return chatContainer;
     }
@@ -578,14 +551,12 @@ public class ChatUI {
         return currentAmmo;
     }
 
-    // Cleanup method
     public void disconnect() {
         if (chatClient != null && chatClient.isConnected()) {
             chatClient.disconnect();
         }
     }
 
-    // Method to send custom game events (like player joins/leaves)
     public void sendGameEvent(String event) {
         if (chatClient != null && chatClient.isConnected()) {
             try {

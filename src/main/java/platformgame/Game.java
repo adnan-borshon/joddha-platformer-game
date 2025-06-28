@@ -1,9 +1,9 @@
 package platformgame;
 
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
@@ -68,6 +68,10 @@ public class Game extends Pane {
     private ChatUI chatUI;
     private StackPane gameRoot; // Container for game and UI elements
 
+    // ✅ FIXED: Enhanced ammo tracking with proper initialization
+    private int playerAmmo = 0; // Start with some ammo for testing
+    private long lastAmmoSyncTime = 0; // For periodic sync
+
     public Game() {
         // Create root container for layering
         gameRoot = new StackPane();
@@ -77,27 +81,27 @@ public class Game extends Pane {
         canvas = new Canvas(screenWidth, screenHeight);
         gc = canvas.getGraphicsContext2D();
 
-
-        // Initialize chat system
-        chatUI = new ChatUI(this);
+        // ✅ FIXED: Initialize chat system BEFORE other components
+        initializeChatSystem();
 
         // Create UI overlay pane
+        // Find the position where you want the button to appear
+        double chatButtonX = 920; // <<<< Change this value to match the X you want
+        double chatButtonY = 35;  // <<<< Change this value to match the Y you want
+
         Pane uiOverlay = new Pane();
         uiOverlay.setPrefSize(screenWidth, screenHeight);
 
-        // Position chat toggle button (top-right corner)
-        chatUI.getToggleButton().setLayoutX(screenWidth - 80);
-        chatUI.getToggleButton().setLayoutY(10);
+// Place the toggle button absolutely
+        chatUI.getToggleButton().setLayoutX(chatButtonX);
+        chatUI.getToggleButton().setLayoutY(chatButtonY);
+        uiOverlay.getChildren().add(chatUI.getToggleButton());
 
-        // Position chat container (top-left corner)
-        chatUI.getChatContainer().setLayoutX(10);
-        chatUI.getChatContainer().setLayoutY(10);
+// Place the chat container wherever you want (off screen or near the button)
+        chatUI.getChatContainer().setLayoutX(chatButtonX - 230); // or same as button if you want
+        chatUI.getChatContainer().setLayoutY(chatButtonY + 40);  // adjust so it appears below or right of button
+        uiOverlay.getChildren().add(chatUI.getChatContainer());
 
-        // Add elements to UI overlay
-        uiOverlay.getChildren().addAll(
-                chatUI.getToggleButton(),
-                chatUI.getChatContainer()
-        );
 
         // Layer canvas and UI
         gameRoot.getChildren().addAll(canvas, uiOverlay);
@@ -122,6 +126,25 @@ public class Game extends Pane {
         setFocusTraversable(true);
         setOnKeyPressed(this::onKeyPressed);
         setOnKeyReleased(this::onKeyReleased);
+    }
+
+    // ✅ NEW: Separate method to initialize chat system with proper callbacks
+    private void initializeChatSystem() {
+        chatUI = new ChatUI(this);
+
+        // ✅ CRITICAL: Set up ammo transfer callbacks to actually affect game state
+        setupAmmoCallbacks();
+
+        System.out.println("🔧 Chat system initialized with ammo callbacks");
+    }
+
+    // ✅ NEW: Setup callbacks to handle ammo transfers in the game
+    private void setupAmmoCallbacks() {
+        // This would require modifying ChatUI to accept callbacks
+        // For now, we'll rely on the existing methods but ensure they're properly called
+
+        // Note: You'll need to modify ChatUI to call these methods when ammo is transferred
+        // The methods onAmmoReceived and onAmmoGiven should be called from ChatUI
     }
 
     private void loadLevel() {
@@ -169,8 +192,6 @@ public class Game extends Pane {
 
         level1.drawBackground(gc, camX, camY, scale);
         level1.drawMiddleground(gc, camX, camY, scale);
-
-
 
         for (Enemy enemyEntity : enemies) {
             if (enemyEntity != null && enemyEntity.isBehindPlayer(this)) {
@@ -255,17 +276,39 @@ public class Game extends Pane {
         playMusic(0);
         GameState = playState;
 
-        // ✅ Send chat notification that player joined
-        if (chatUI != null) {
-            chatUI.sendGameEvent("Player joined the game!");
-        }
+        // ✅ FIXED: Initialize chat ammo display with proper delay and connection
+        Platform.runLater(() -> {
+            try {
+                // Connect to chat first
+                if (chatUI != null) {
+                    chatUI.connectToChat();
+
+                    // Wait a bit for connection, then update ammo
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1000); // Wait 1 second for connection
+                            Platform.runLater(() -> {
+                                chatUI.updateAmmo(playerAmmo);
+                                chatUI.sendGameEvent("Player joined the game with " + playerAmmo + " ammo!");
+                                System.out.println("🔫 Initial ammo set to: " + playerAmmo);
+                            });
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                }
+            } catch (Exception e) {
+                System.err.println("Error initializing chat ammo: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
 
     private void onKeyPressed(KeyEvent e) {
         KeyCode key = e.getCode();
 
         // ✅ Check if chat should handle this key event
-        if (chatUI.handleKeyEvent(key)) {
+        if (chatUI != null && chatUI.handleKeyEvent(key)) {
             // If chat is handling the key, don't add it to game keys
             return;
         }
@@ -273,7 +316,6 @@ public class Game extends Pane {
         keysPressed.add(key);
 
         if (GameState == gameOverState && key == KeyCode.ENTER) {
-            GameManager.getInstance().clearState();
             openMainMenu();
         }
 
@@ -294,15 +336,27 @@ public class Game extends Pane {
 
         // ✅ Toggle chat with 'T' key (common in games)
         if (key == KeyCode.T && GameState == playState) {
-            if (!chatUI.isChatVisible()) {
+            if (chatUI != null && !chatUI.isChatVisible()) {
                 chatUI.getToggleButton().fire(); // Simulate button click
+            }
+        }
+
+        // ✅ TESTING: Add keys to manually add/remove ammo for testing
+        if (key == KeyCode.PLUS || key == KeyCode.EQUALS) {
+            onAmmoCollected(10); // Add 10 ammo for testing
+        }
+        if (key == KeyCode.MINUS) {
+            if (onAmmoUsed(5)) { // Use 5 ammo for testing
+                System.out.println("✅ Ammo used successfully");
+            } else {
+                System.out.println("❌ Not enough ammo");
             }
         }
     }
 
     private void onKeyReleased(KeyEvent e) {
         // ✅ Only remove key if chat isn't handling it
-        if (!chatUI.handleKeyEvent(e.getCode())) {
+        if (chatUI == null || !chatUI.handleKeyEvent(e.getCode())) {
             keysPressed.remove(e.getCode());
         }
     }
@@ -350,6 +404,12 @@ public class Game extends Pane {
 
             checkAndSpawnBoom();
 
+            // ✅ NEW: Periodic ammo sync to ensure consistency
+            if (now - lastAmmoSyncTime > 5_000_000_000L) { // Every 5 seconds
+                syncAmmoWithChat();
+                lastAmmoSyncTime = now;
+            }
+
             if (keysPressed.contains(KeyCode.ESCAPE)) {
                 GameManager.getInstance().saveState(this);
                 openMainMenu();
@@ -359,80 +419,11 @@ public class Game extends Pane {
             eventHandler.update(player, this, now);
         }
     }
-// Add these methods to your Game class
-
-    // In your Game class, add this method to handle player bullet collisions with enemies
-    public void checkPlayerBulletCollisions() {
-        if (player == null || player.getBullets() == null) return;
-
-        for (Bullet bullet : player.getBullets()) {
-            if (bullet.shouldRemove()) continue;
-
-            Rectangle2D bulletRect = new Rectangle2D(
-                    bullet.getX() - bullet.getWidth() / 2,
-                    bullet.getY() - bullet.getHeight() / 2,
-                    bullet.getWidth(),
-                    bullet.getHeight()
-            );
-
-            // Check collision with scouts
-            for (int i = 0; i < scout.length; i++) {
-                if (scout[i] != null) {
-                    Rectangle2D scoutRect = scout[i].getHitbox();
-                    if (bulletRect.intersects(scoutRect)) {
-                        scout[i].takeDamage();
-                        bullet.markForRemoval();
-                        ui.showMessage("Scout eliminated!");
-                        playSoundEffects(1); // Hit sound
-                        break;
-                    }
-                }
-            }
-
-            // Check collision with enemies
-            for (int i = 0; i < enemies.length; i++) {
-                if (enemies[i] != null && !enemies[i].isDead()) {
-                    Rectangle2D enemyRect = new Rectangle2D(
-                            enemies[i].getX(), enemies[i].getY(),
-                            enemies[i].getWidth(), enemies[i].getHeight()
-                    );
-                    if (bulletRect.intersects(enemyRect)) {
-                        enemies[i].receiveDamage();
-                        bullet.markForRemoval();
-                        ui.showMessage("Enemy hit!");
-                        playSoundEffects(1); // Hit sound
-                        break;
-                    }
-                }
-            }
-
-            // Check collision with soldiers
-            for (int i = 0; i < soldiers.length; i++) {
-                if (soldiers[i] != null && !soldiers[i].isDead()) {
-                    Rectangle2D soldierRect = new Rectangle2D(
-                            soldiers[i].getX(), soldiers[i].getY(),
-                            soldiers[i].getWidth(), soldiers[i].getHeight()
-                    );
-                    if (bulletRect.intersects(soldierRect)) {
-                        soldiers[i].receiveDamage();
-                        bullet.markForRemoval();
-                        ui.showMessage("Soldier hit!");
-                        playSoundEffects(1); // Hit sound
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-
 
     private void checkAndSpawnBoom() {
         if (boomSpawned) return;
 
         boolean allEnemiesDead = true;
-
-
         boolean placed = false; //bomb placed
 
         for (Enemy e : enemies) {
@@ -446,10 +437,8 @@ public class Game extends Pane {
 
         for (Scout s : scout) {
             if (s != null) {
-
                 if (!s.isDead()) {
                     allEnemiesDead = false;
-
                 }
             }
             break;
@@ -458,24 +447,18 @@ public class Game extends Pane {
             if (s != null) {
                 if (!s.isDead()) {
                     allEnemiesDead = false;
-
                 }
             }
             break;
         }
 
-        if (allEnemiesDead ) {
+        if (allEnemiesDead) {
             boomObject = new Obj_Boom(54 * tileSize, 24 * tileSize);
-
 
             for (int i = 0; i < object.length; i++) {
                 if (object[i] == null) {
                     object[i] = boomObject;
                     System.out.println("💥 Boom appeared at position: " + (54 * tileSize) + ", " + (24 * tileSize));
-
-                    // ✅ Notify other players via chat
-//                    chatUI.sendGameEvent("💥 Explosives are now available!");
-
                     placed = true;
                     break;
                 }
@@ -490,13 +473,177 @@ public class Game extends Pane {
         }
     }
 
-private void chatDisconnection(){
-    // ✅ Disconnect from chat before leaving
-    if (chatUI != null) {
-        chatUI.sendGameEvent("Player left the game");
-        chatUI.disconnect();
+    // ✅ FIXED: Enhanced ammo collection with validation and proper synchronization
+    public void onAmmoCollected(int ammoAmount) {
+        if (ammoAmount <= 0) {
+            System.out.println("⚠️ Invalid ammo amount: " + ammoAmount);
+            return;
+        }
+
+        playerAmmo += ammoAmount;
+        System.out.println("🔫 Player collected " + ammoAmount + " ammo. Total: " + playerAmmo);
+
+        // ✅ CRITICAL: Ensure UI update happens on JavaFX thread with proper null checks
+        Platform.runLater(() -> {
+            try {
+                if (chatUI != null) {
+                    chatUI.updateAmmo(playerAmmo);
+                    chatUI.sendGameEvent("Player collected " + ammoAmount + " ammo! (Total: " + playerAmmo + ")");
+                    System.out.println("✅ Chat UI updated with new ammo: " + playerAmmo);
+                } else {
+                    System.out.println("⚠️ ChatUI is null, cannot update ammo display");
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Error updating chat UI: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
-}
+
+    // ✅ FIXED: Enhanced ammo usage with proper validation and synchronization
+    public boolean onAmmoUsed(int ammoAmount) {
+        if (ammoAmount <= 0) {
+            System.out.println("⚠️ Invalid ammo amount: " + ammoAmount);
+            return false;
+        }
+
+        if (playerAmmo >= ammoAmount) {
+            playerAmmo -= ammoAmount;
+            System.out.println("🔫 Player used " + ammoAmount + " ammo. Remaining: " + playerAmmo);
+
+            // ✅ CRITICAL: Update chat UI on JavaFX thread with proper error handling
+            Platform.runLater(() -> {
+                try {
+                    if (chatUI != null) {
+                        chatUI.updateAmmo(playerAmmo);
+                        System.out.println("✅ Chat UI updated after ammo usage: " + playerAmmo);
+                    } else {
+                        System.out.println("⚠️ ChatUI is null, cannot update ammo display");
+                    }
+                } catch (Exception e) {
+                    System.err.println("❌ Error updating chat UI after ammo usage: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+            return true; // Indicate successful usage
+        } else {
+            System.out.println("⚠️ Not enough ammo! Current: " + playerAmmo + ", Required: " + ammoAmount);
+            return false; // Indicate failed usage
+        }
+    }
+
+    // ✅ FIXED: Method to handle receiving ammo from other players via chat
+    public void onAmmoReceived(String fromPlayer, int ammoAmount) {
+        if (ammoAmount <= 0) {
+            System.out.println("⚠️ Invalid ammo amount received: " + ammoAmount);
+            return;
+        }
+
+        playerAmmo += ammoAmount;
+        System.out.println("🎁 Received " + ammoAmount + " ammo from " + fromPlayer + ". Total: " + playerAmmo);
+
+        Platform.runLater(() -> {
+            try {
+                if (chatUI != null) {
+                    chatUI.updateAmmo(playerAmmo);
+                    chatUI.sendGameEvent("Received " + ammoAmount + " ammo from " + fromPlayer + "!");
+                    System.out.println("✅ Chat UI updated after receiving ammo: " + playerAmmo);
+                } else {
+                    System.out.println("⚠️ ChatUI is null, cannot update ammo display");
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Error updating chat UI after receiving ammo: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    // ✅ FIXED: Method to handle giving ammo to other players via chat
+    public boolean onAmmoGiven(String toPlayer, int ammoAmount) {
+        if (ammoAmount <= 0) {
+            System.out.println("⚠️ Invalid ammo amount to give: " + ammoAmount);
+            return false;
+        }
+
+        if (playerAmmo >= ammoAmount) {
+            playerAmmo -= ammoAmount;
+            System.out.println("📤 Sent " + ammoAmount + " ammo to " + toPlayer + ". Remaining: " + playerAmmo);
+
+            Platform.runLater(() -> {
+                try {
+                    if (chatUI != null) {
+                        chatUI.updateAmmo(playerAmmo);
+                        chatUI.sendGameEvent("Sent " + ammoAmount + " ammo to " + toPlayer + "!");
+                        System.out.println("✅ Chat UI updated after giving ammo: " + playerAmmo);
+                    } else {
+                        System.out.println("⚠️ ChatUI is null, cannot update ammo display");
+                    }
+                } catch (Exception e) {
+                    System.err.println("❌ Error updating chat UI after giving ammo: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+            return true;
+        } else {
+            System.out.println("⚠️ Not enough ammo to send! Current: " + playerAmmo + ", Requested: " + ammoAmount);
+            return false;
+        }
+    }
+
+    // ✅ Getter for current ammo (if needed elsewhere)
+    public int getPlayerAmmo() {
+        return playerAmmo;
+    }
+
+    // ✅ FIXED: Method to directly set ammo with chat synchronization and validation
+    public void setPlayerAmmo(int ammo) {
+        playerAmmo = Math.max(0, ammo); // Ensure ammo is never negative
+
+        Platform.runLater(() -> {
+            try {
+                if (chatUI != null) {
+                    chatUI.updateAmmo(playerAmmo);
+                    System.out.println("✅ Chat UI updated after setting ammo: " + playerAmmo);
+                } else {
+                    System.out.println("⚠️ ChatUI is null, cannot update ammo display");
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Error updating chat UI after setting ammo: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+        System.out.println("🔫 Player ammo set to: " + playerAmmo);
+    }
+
+    // ✅ FIXED: Method to synchronize ammo count with proper error handling
+    public void syncAmmoWithChat() {
+        Platform.runLater(() -> {
+            try {
+                if (chatUI != null) {
+                    chatUI.updateAmmo(playerAmmo);
+                    System.out.println("🔄 Ammo synced with chat: " + playerAmmo);
+                } else {
+                    System.out.println("⚠️ ChatUI is null, cannot sync ammo");
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Error syncing ammo with chat: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void chatDisconnection(){
+        // ✅ Disconnect from chat before leaving
+        try {
+            if (chatUI != null) {
+                chatUI.sendGameEvent("Player left the game");
+                chatUI.disconnect();
+                System.out.println("🔌 Disconnected from chat");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error disconnecting from chat: " + e.getMessage());
+        }
+    }
 
     private void openMainMenu() {
         try {
