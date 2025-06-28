@@ -51,7 +51,7 @@ public class Soldier extends Enemy {
 
     private final int GunBackHitFrame=2;
     private final int GunBackHitRow=18;
-private int totalFramesShoot=0;
+    private int totalFramesShoot=0;
 
     // Direction tracking for animation
     private String currentDirection = "right"; // "front", "back", "right", "left"

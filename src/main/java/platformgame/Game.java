@@ -278,7 +278,7 @@ public class Game extends Pane {
 //        aSetter.setNpc();
         aSetter.setScout();
         aSetter.setEnemy();
-//        aSetter.setSoldiers();
+        aSetter.setSoldiers();
         aSetter.setExplosion();
 //        aSetter.setLauncherAndOpener();
         playMusic(0);
