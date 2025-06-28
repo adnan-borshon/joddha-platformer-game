@@ -32,6 +32,15 @@ public class Enemy_Tank extends Tank {
     private double alertLevel = 0.0; // 0.0 to 1.0 for visual alert state
     private final double alertFadeSpeed = 2.0;
 
+    // Health bar properties
+    private int maxHealth = 100;
+    private boolean showHealthBar = true;
+    private double healthBarWidth = 60.0;
+    private double healthBarHeight = 8.0;
+    private double healthBarOffsetY = -20.0; // How far above the tank to show the health bar
+    private double damageFeedbackTimer = 0.0;
+    private final double damageFeedbackDuration = 0.5; // Flash duration when taking damage
+
     public Enemy_Tank(double x, double y, double width, double height, double speed, Game gp, Game_2 gp2) {
         super(x, y, width, height, speed, gp, gp2);
         setCollisionBox(100, 100, -28, -28);
@@ -43,6 +52,9 @@ public class Enemy_Tank extends Tank {
         // Set velocity to zero since tank is static
         velocity.x = 0;
         velocity.y = 0;
+
+        // Initialize max health to current health
+        this.maxHealth = this.health;
     }
 
     @Override
@@ -62,12 +74,19 @@ public class Enemy_Tank extends Tank {
 
         // Update timers
         updateGunTimer(deltaTime);
+        updateHealthBarTimers(deltaTime);
 
         // Update visual states
         updateVisualStates(deltaTime);
 
         // Check collision with player tank
         checkPlayerCollision(gp2);
+    }
+
+    private void updateHealthBarTimers(double deltaTime) {
+        if (damageFeedbackTimer > 0) {
+            damageFeedbackTimer -= deltaTime;
+        }
     }
 
     private void enforceFixedPosition() {
@@ -253,9 +272,18 @@ public class Enemy_Tank extends Tank {
 
     @Override
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
+        // Only draw if tank is alive
+        if (!alive) return;
 
-        // 2) draw the turret on top
+        // Draw the tank body (assuming parent class handles this)
+
+        // Draw the turret on top
         drawTurret(gc, camX, camY, scale);
+
+        // Draw health bar if enabled and tank is alive
+        if (showHealthBar && alive) {
+            drawHealthBar(gc, camX, camY, scale);
+        }
     }
 
     private void drawTurret(GraphicsContext gc, double camX, double camY, double scale) {
@@ -287,6 +315,59 @@ public class Enemy_Tank extends Tank {
         gc.restore();
     }
 
+    private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
+        if (health <= 0) return; // Don't draw health bar if tank is dead
+
+        // Calculate health bar position (above the tank)
+        double tankCenterX = (x - camX) * scale + (width * scale) / 2;
+        double healthBarY = (y - camY) * scale + healthBarOffsetY;
+        double healthBarX = tankCenterX - (healthBarWidth * scale) / 2;
+
+        // Scale the health bar size
+        double scaledWidth = healthBarWidth * scale;
+        double scaledHeight = healthBarHeight * scale;
+
+        // Calculate health percentage
+        double healthPercentage = Math.max(0, (double) health / maxHealth);
+
+        // Background (gray bar)
+        gc.setFill(Color.DARKGRAY);
+        gc.fillRect(healthBarX, healthBarY, scaledWidth, scaledHeight);
+
+        // Health bar outline
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        gc.strokeRect(healthBarX, healthBarY, scaledWidth, scaledHeight);
+
+        // Health fill (changes color based on health level)
+        Color healthColor;
+        if (healthPercentage > 0.6) {
+            healthColor = Color.GREEN;
+        } else if (healthPercentage > 0.3) {
+            healthColor = Color.YELLOW;
+        } else {
+            healthColor = Color.RED;
+        }
+
+        // Add flashing effect when taking damage
+        if (damageFeedbackTimer > 0) {
+            // Flash between health color and white
+            double flashIntensity = Math.sin(damageFeedbackTimer * 20) * 0.5 + 0.5;
+            healthColor = healthColor.interpolate(Color.WHITE, flashIntensity);
+        }
+
+        gc.setFill(healthColor);
+        gc.fillRect(healthBarX, healthBarY, scaledWidth * healthPercentage, scaledHeight);
+
+        // Optional: Display health numbers
+        if (scale > 0.5) { // Only show numbers when zoomed in enough
+            gc.setFill(Color.WHITE);
+            gc.setFont(javafx.scene.text.Font.font(10 * scale));
+            String healthText = health + "/" + maxHealth;
+            gc.fillText(healthText, tankCenterX - 15 * scale, healthBarY - 3);
+        }
+    }
+
     public void debugDraw(GraphicsContext gc, double camX, double camY, double scale) {
         // Draw a colored rectangle around this tank to identify it
         double drawW = width * scale;
@@ -304,12 +385,13 @@ public class Enemy_Tank extends Tank {
         gc.fillText("Tank:" + this.hashCode(), drawX, drawY - 5);
     }
 
-
-
     @Override
     protected void onDamageTaken(int damage) {
         super.onDamageTaken(damage);
         System.out.println("Enemy tank took " + damage + " damage! Health: " + health);
+
+        // Trigger damage feedback effect
+        damageFeedbackTimer = damageFeedbackDuration;
 
         // Become instantly alert when damaged
         alertLevel = 1.0;
@@ -321,6 +403,8 @@ public class Enemy_Tank extends Tank {
     protected void onDestroyed() {
         super.onDestroyed();
         System.out.println("Enemy tank destroyed!");
+        // Hide health bar when tank is destroyed
+        showHealthBar = false;
         // Add explosion effects, score points, drop items, etc.
     }
 
@@ -331,6 +415,7 @@ public class Enemy_Tank extends Tank {
         this.bulletSpeed = 250.0;
         this.turretRotationSpeed = 3.0;
         this.health = 50;
+        this.maxHealth = 50;
         this.gunCooldown = 1.0;
     }
 
@@ -340,6 +425,7 @@ public class Enemy_Tank extends Tank {
         this.bulletSpeed = 400.0;
         this.turretRotationSpeed = 1.5;
         this.health = 150;
+        this.maxHealth = 150;
         this.gunCooldown = 2.5;
     }
 
@@ -349,8 +435,23 @@ public class Enemy_Tank extends Tank {
         this.bulletSpeed = 500.0;
         this.turretRotationSpeed = 1.0;
         this.health = 75;
+        this.maxHealth = 75;
         this.gunCooldown = 3.0;
         this.aimTolerance = 0.1; // More precise aiming required
+    }
+
+    // Health bar configuration methods
+    public void setHealthBarVisible(boolean visible) {
+        this.showHealthBar = visible;
+    }
+
+    public void setHealthBarSize(double width, double height) {
+        this.healthBarWidth = width;
+        this.healthBarHeight = height;
+    }
+
+    public void setHealthBarOffset(double offsetY) {
+        this.healthBarOffsetY = offsetY;
     }
 
     // Getters and setters
@@ -365,4 +466,7 @@ public class Enemy_Tank extends Tank {
 
     public boolean isPlayerDetected() { return playerDetected; }
     public double getAlertLevel() { return alertLevel; }
+
+    public int getMaxHealth() { return maxHealth; }
+    public double getHealthPercentage() { return (double) health / maxHealth; }
 }
