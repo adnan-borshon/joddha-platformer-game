@@ -3,6 +3,7 @@ package platformgame;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
@@ -14,6 +15,7 @@ import platformgame.Tanks.Main_Tank;
 import platformgame.Event.EventHandler;
 import platformgame.Map.Level_2;
 import platformgame.Map.Level_2_controller;
+import platformgame.Tanks.Tank;
 
 import java.net.URL;
 import java.util.HashSet;
@@ -32,6 +34,10 @@ public class Game_2 extends Pane {
     public final int playState = 1;
     public final int pauseState = 2;
     public final int dialogueState = 3;
+
+    private Image healthIconImg;
+    private Image healthLineImg;
+    private Image healthBarImg;
 
     public Level_2 level2;
     public int tileSize = 32;
@@ -69,6 +75,10 @@ public class Game_2 extends Pane {
 
         // Initialize enemy tanks - REMOVED from constructor
         // initializeEnemyTanks(); // This was causing issues
+
+        healthIconImg = new Image(getClass().getResourceAsStream("/image/Object/Health-Icon.png"));
+        healthLineImg = new Image(getClass().getResourceAsStream("/image/Object/Health-line.png"));
+        healthBarImg  = new Image(getClass().getResourceAsStream("/image/object/Health-Bar.png"));
 
         loadLevel();
 
@@ -131,12 +141,12 @@ public class Game_2 extends Pane {
     }
 
     private void draw() {
-        // Clear canvas
+        // 1) Clear the world
         gc.setFill(Color.DARKGREEN);
         gc.fillRect(0, 0, screenWidth, screenHeight);
 
+        // 2) Draw the tilemap layers
         if (level2 == null) {
-            // Draw without level for testing
             gc.setFill(Color.RED);
             gc.fillText("Level2 not loaded", 10, 20);
         } else {
@@ -144,39 +154,77 @@ public class Game_2 extends Pane {
             level2.drawMiddleground(gc, camX, camY, 1.15);
         }
 
-        // Always draw tank (even if level2 is null)
+        // 3) Draw the main tank
         if (mainTank != null) {
             mainTank.draw(gc, camX, camY, 1);
-        } else {
-            System.err.println("mainTank is null!");
         }
 
-        // UPDATED: Draw enemy tanks using both methods for compatibility
-        // Draw from array (backward compatibility)
+        // 4) Draw all enemy tanks
         for (int i = 0; i < enemyTank.length; i++) {
             if (enemyTank[i] != null) {
                 enemyTank[i].draw(gc, camX, camY, 1);
             }
         }
-
-        // Draw from ArrayList (new method)
         for (Enemy_Tank enemy : enemyTanks) {
             if (enemy != null && enemy.isAlive()) {
                 enemy.draw(gc, camX, camY, 1);
             }
         }
 
-        // Draw all bullets
+        // 5) Draw all bullets
         for (Tank_Bullet bullet : bullets) {
             if (bullet != null) {
                 bullet.draw(gc, camX, camY, 1);
             }
         }
 
+        // 6) Draw the foreground
         if (level2 != null) {
             level2.drawForeground(gc, camX, camY, 1.15);
         }
 
+        // ─── HEALTH BAR OVERLAY ────────────────────────────────────
+        // Scale factors for health bar elements
+        double iconScale = 0.4; // Make icon 40% of original size
+        double barScale = 0.6;  // Keep bar at 60% of original size
+
+        // fixed icon at (10,10)
+        double iconX = 10, iconY = 10;
+        double iconW = healthIconImg.getWidth() * iconScale;
+        double iconH = healthIconImg.getHeight() * iconScale;
+
+        // bar immediately right of icon, vertically centered with icon
+        double barX = iconX + iconW + 5;
+        double barW = healthBarImg.getWidth() * barScale;
+        double barH = healthBarImg.getHeight() * barScale;
+        double barY = iconY + (iconH - barH) / 2; // Center bar vertically with icon
+
+        // percent full (0.0–1.0)
+        double pct = (double) mainTank.getHealth() / mainTank.getMaxHealth();
+
+        // width of the track (outline) image scaled
+        double trackW = healthLineImg.getWidth() * barScale;
+        double trackH = healthLineImg.getHeight() * barScale;
+
+        // compute how many pixels of the line to draw
+        double currW = trackW * pct;
+
+        // a) draw the **bar** (fill) first, full width
+        gc.drawImage(healthBarImg, barX, barY, barW, barH);
+
+        // b) draw the **line** (track/outline) on top, clipped to currW
+        gc.drawImage(
+                healthLineImg,
+                0, 0,                      // srcX, srcY
+                currW / barScale, healthLineImg.getHeight(),  // srcW, srcH (adjust source width for scaling)
+                barX, barY,                // destX, destY
+                currW, trackH              // destW, destH
+        );
+
+        // c) draw the **icon** with scaling
+        gc.drawImage(healthIconImg, iconX, iconY, iconW, iconH);
+
+        // ─── GAME OVER SCREEN ──────────────────────────────────────
         if (GameState == gameOverState) {
             gc.setFill(Color.color(0, 0, 0, 0.6));
             gc.fillRect(0, 0, screenWidth, screenHeight);
@@ -191,6 +239,7 @@ public class Game_2 extends Pane {
         }
     }
 
+
     public void update(long now, long deltaTime) {
         if (GameState == playState) {
             if (mainTank != null) {
@@ -198,23 +247,21 @@ public class Game_2 extends Pane {
                 updateCamera();
             }
 
-            // Convert deltaTime from nanoseconds to seconds for enemy tanks
             double deltaSeconds = deltaTime / 1_000_000_000.0;
 
-            // UPDATED: Update all enemy tanks from both sources
-            // Update from array
+            // Update enemy tanks...
             for (Enemy_Tank enemy : enemyTank) {
                 if (enemy != null && enemy.isAlive()) {
                     enemy.updateBehavior(level2, this, deltaSeconds);
                 }
             }
 
-            // Update from ArrayList
             for (Enemy_Tank enemy : enemyTanks) {
                 if (enemy != null && enemy.isAlive()) {
                     enemy.updateBehavior(level2, this, deltaSeconds);
                 }
             }
+
 
             updateBullets(deltaTime);
 
@@ -223,7 +270,6 @@ public class Game_2 extends Pane {
             }
         }
     }
-
     private void updateBullets(long deltaTime) {
         Iterator<Tank_Bullet> iterator = bullets.iterator();
         while (iterator.hasNext()) {
@@ -293,6 +339,27 @@ public class Game_2 extends Pane {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+
+
+    private boolean checkTankToTankCollision(Tank tank1, Tank tank2) {
+        // Get tank centers
+        double tank1CenterX = tank1.getX() + tank1.getTankWidth() / 2;
+        double tank1CenterY = tank1.getY() + tank1.getTankHeight() / 2;
+        double tank2CenterX = tank2.getX() + tank2.getTankWidth() / 2;
+        double tank2CenterY = tank2.getY() + tank2.getTankHeight() / 2;
+
+        // Calculate distance between centers
+        double dx = tank1CenterX - tank2CenterX;
+        double dy = tank1CenterY - tank2CenterY;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Define collision radius (adjust as needed)
+        double collisionRadius = 80.0;
+
+        return distance < collisionRadius;
     }
 
     public void playMusic(int i) {

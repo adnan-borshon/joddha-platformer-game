@@ -10,13 +10,27 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 public class Enemy_Tank extends Tank {
-    private double attackRange = 250.0;     // Distance at which the enemy tank will attack
+    // Combat properties
+    private double attackRange = 250.0;
+    private double detectionRange = 300.0;  // Larger range for detection vs attack
     protected double bulletSpeed = 300.0;
-    private double turretRotationSpeed = 2.0; // Speed at which turret rotates to track player
+    private double turretRotationSpeed = 2.0;
+    private double aimTolerance = 0.2;      // How precise aiming needs to be to shoot
 
-    // Fixed position for the tank (it won't move from this position)
+    // Position properties
     private final double fixedX;
     private final double fixedY;
+
+    // AI state management
+    private boolean playerDetected = false;
+    private double lastPlayerX = 0;
+    private double lastPlayerY = 0;
+    private double lostPlayerTimer = 0;
+    private final double lostPlayerTimeout = 3.0; // Time to keep tracking after losing sight
+
+    // Visual feedback
+    private double alertLevel = 0.0; // 0.0 to 1.0 for visual alert state
+    private final double alertFadeSpeed = 2.0;
 
     public Enemy_Tank(double x, double y, double width, double height, double speed, Game gp, Game_2 gp2) {
         super(x, y, width, height, speed, gp, gp2);
@@ -33,112 +47,184 @@ public class Enemy_Tank extends Tank {
 
     @Override
     protected void loadTankSprite() {
-        loadSprite("/image/Tank_Enemy.png");  // Load a specific sprite for the enemy tank
+        loadSprite("/image/Tank_Enemy.png");
     }
 
     @Override
     public void updateBehavior(Level_2 level2, Game_2 gp2, double deltaTime) {
         if (!alive) return;
 
-        // Always keep the tank at its fixed position
-        this.x = fixedX;
-        this.y = fixedY;
-        velocity.x = 0;
-        velocity.y = 0;
+        // Always maintain fixed position
+        enforceFixedPosition();
 
-        // Calculate the distance to the player's tank
-        double distanceToPlayer = Math.sqrt(Math.pow(x - gp2.mainTank.getTankX(), 2) + Math.pow(y - gp2.mainTank.getTankY(), 2));
+        // Update AI behavior
+        updateAI(gp2, deltaTime);
 
-        // Only track and shoot if player is within attack range
-        if (distanceToPlayer <= attackRange) {
-            // Calculate angle to player
-            double dx = gp2.mainTank.getTankX() - x;
-            double dy = gp2.mainTank.getTankY() - y;
-            double targetRotation = Math.atan2(dy, dx);
-
-            // Smoothly rotate turret toward player
-            double angleDifference = targetRotation - turretRotation;
-
-            // Normalize angle difference to [-π, π]
-            while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
-            while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
-
-            // Rotate turret smoothly toward target
-            if (Math.abs(angleDifference) > 0.1) { // Small threshold to prevent jittering
-                turretRotation += Math.signum(angleDifference) * turretRotationSpeed * deltaTime;
-            } else {
-                turretRotation = targetRotation; // Snap to target when close enough
-            }
-
-            // Shoot at player when turret is approximately aimed
-            if (Math.abs(angleDifference) < 0.2) { // Allow some tolerance for shooting
-                shoot();
-            }
-        }
-
-        // Update gun timer
+        // Update timers
         updateGunTimer(deltaTime);
+
+        // Update visual states
+        updateVisualStates(deltaTime);
 
         // Check collision with player tank
         checkPlayerCollision(gp2);
     }
 
-    // Method to check collision with player tank
+    private void enforceFixedPosition() {
+        this.x = fixedX;
+        this.y = fixedY;
+        velocity.x = 0;
+        velocity.y = 0;
+    }
+
+    private void updateAI(Game_2 gp2, double deltaTime) {
+        if (gp2.mainTank == null || !gp2.mainTank.alive) {
+            // No valid target
+            playerDetected = false;
+            alertLevel = Math.max(0, alertLevel - alertFadeSpeed * deltaTime);
+            return;
+        }
+
+        double distanceToPlayer = calculateDistanceToPlayer(gp2);
+
+        if (distanceToPlayer <= detectionRange && hasLineOfSight(gp2, gp2.mainTank)) {
+            // Player detected
+            playerDetected = true;
+            lastPlayerX = gp2.mainTank.getTankX();
+            lastPlayerY = gp2.mainTank.getTankY();
+            lostPlayerTimer = 0;
+            alertLevel = Math.min(1.0, alertLevel + alertFadeSpeed * deltaTime);
+
+            if (distanceToPlayer <= attackRange) {
+                trackAndEngagePlayer(gp2, deltaTime);
+            } else {
+                // Just track, don't shoot
+                trackPlayer(gp2.mainTank.getTankX(), gp2.mainTank.getTankY(), deltaTime);
+            }
+        } else if (playerDetected) {
+            // Lost sight of player, but remember last position for a while
+            lostPlayerTimer += deltaTime;
+            alertLevel = Math.max(0, alertLevel - alertFadeSpeed * deltaTime);
+
+            if (lostPlayerTimer < lostPlayerTimeout) {
+                // Continue tracking last known position
+                trackPlayer(lastPlayerX, lastPlayerY, deltaTime);
+            } else {
+                // Give up tracking
+                playerDetected = false;
+            }
+        } else {
+            // No player detected, reduce alert level
+            alertLevel = Math.max(0, alertLevel - alertFadeSpeed * deltaTime);
+        }
+    }
+
+    private double calculateDistanceToPlayer(Game_2 gp2) {
+        return Math.sqrt(Math.pow(x - gp2.mainTank.getTankX(), 2) +
+                Math.pow(y - gp2.mainTank.getTankY(), 2));
+    }
+
+    private boolean hasLineOfSight(Game_2 gp2, Tank target) {
+        // Simple line of sight check - you might want to implement raycasting here
+        // For now, just return true, but this could check for walls between tank and target
+        return true;
+    }
+
+    private void trackAndEngagePlayer(Game_2 gp2, double deltaTime) {
+        double targetX = gp2.mainTank.getTankX();
+        double targetY = gp2.mainTank.getTankY();
+
+        double angleDifference = trackPlayer(targetX, targetY, deltaTime);
+
+        // Shoot if aimed well enough
+        if (Math.abs(angleDifference) < aimTolerance) {
+            shoot();
+        }
+    }
+
+    private double trackPlayer(double targetX, double targetY, double deltaTime) {
+        // Calculate angle to target
+        double dx = targetX - x;
+        double dy = targetY - y;
+        double targetRotation = Math.atan2(dy, dx);
+
+        // Calculate angle difference
+        double angleDifference = targetRotation - turretRotation;
+
+        // Normalize angle difference to [-π, π]
+        while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
+        while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
+
+        // Rotate turret smoothly toward target
+        if (Math.abs(angleDifference) > 0.05) { // Smaller threshold for smoother tracking
+            double rotationAmount = Math.signum(angleDifference) * turretRotationSpeed * deltaTime;
+            // Don't overshoot the target
+            if (Math.abs(rotationAmount) > Math.abs(angleDifference)) {
+                turretRotation = targetRotation;
+            } else {
+                turretRotation += rotationAmount;
+            }
+        } else {
+            turretRotation = targetRotation;
+        }
+
+        return angleDifference;
+    }
+
+    private void updateVisualStates(double deltaTime) {
+        // Update any visual state changes here
+        // alertLevel is already updated in updateAI
+    }
+
     private void checkPlayerCollision(Game_2 gp2) {
         if (gp2.mainTank != null && gp2.mainTank.alive && this.alive) {
-            // Calculate distance between tanks
             double dx = x - gp2.mainTank.getX();
             double dy = y - gp2.mainTank.getY();
             double distance = Math.sqrt(dx * dx + dy * dy);
 
-            // Simple circular collision detection
-            double collisionDistance = 80.0; // Adjust this value as needed
+            double collisionDistance = 80.0;
 
             if (distance < collisionDistance) {
-                // Handle collision - just log for now to avoid damage loops
                 System.out.println("Tank collision detected! Distance: " + distance);
-
-                // Optional: Apply small damage over time
-                //takeDamage(1);
-
-                //gp2.mainTank.takeDamage(1);
+                // Optional: Apply damage or push effects
+                // handleCollisionEffects(gp2.mainTank);
             }
         }
     }
 
     @Override
     public void shoot() {
-        if (canShoot && alive) {
+        if (canShoot && alive && playerDetected) {
             canShoot = false;
             gunTimer = gunCooldown;
 
-            // Get muzzle position for bullet creation
             Vector2D muzzlePos = getMuzzlePosition();
-
-            // Calculate bullet velocity based on turret rotation
             double velocityX = bulletSpeed * Math.cos(turretRotation);
             double velocityY = bulletSpeed * Math.sin(turretRotation);
 
-            // Create bullet and add it to the game - this bullet should damage the player
-            Tank_Bullet bullet = new Tank_Bullet(muzzlePos.x, muzzlePos.y, velocityX, velocityY, null, gp2);
+            Tank_Bullet bullet = new Tank_Bullet(muzzlePos.x, muzzlePos.y, velocityX, velocityY, null, gp2, this);
 
-            // Add bullet to the game's bullet list
             if (gp2 != null) {
                 gp2.addBullet(bullet);
             }
+
+            // Visual/audio feedback for shooting
+            onShoot();
         }
+    }
+
+    protected void onShoot() {
+        // Override this for muzzle flash, sound effects, etc.
+        System.out.println("Enemy tank fired!");
     }
 
     @Override
     protected void createBullet(double x, double y) {
-        // Calculate velocity based on turret rotation
         double velocityX = bulletSpeed * Math.cos(turretRotation);
         double velocityY = bulletSpeed * Math.sin(turretRotation);
 
-        // Create bullet and add it to the game
-        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2);
+        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2, this);
 
-        // Add bullet to the game's bullet list
         if (gp2 != null) {
             gp2.addBullet(bullet);
         }
@@ -148,78 +234,136 @@ public class Enemy_Tank extends Tank {
     public void createBullet(double x, double y, double velocityX, double velocityY) {
         Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2, this);
 
-        // Add bullet to the game's bullet list
         if (gp2 != null) {
             gp2.addBullet(bullet);
         }
     }
 
-    // Override physics process to prevent movement but keep collision checking
     @Override
     protected void physicsProcess(Level_2 level2, double deltaTime) {
-        // Keep the tank at fixed position
-        this.x = fixedX;
-        this.y = fixedY;
-        velocity.x = 0;
-        velocity.y = 0;
+        enforceFixedPosition();
 
-        // Still check for map collisions (in case something tries to move the tank)
-        if (level2 != null) {
-            // Check collision with map objects at current position
-            if (level2.checkCollisionWithRectangle(x + collisionOffsetX, y + collisionOffsetY,
-                    collisionWidth, collisionHeight)) {
-                // If the fixed position collides with map, you might want to log this
-                System.out.println("Warning: Enemy tank placed at colliding position!");
-            }
+        // Check for map collisions at fixed position
+        if (level2 != null && level2.checkCollisionWithRectangle(
+                x + collisionOffsetX, y + collisionOffsetY,
+                collisionWidth, collisionHeight)) {
+            System.out.println("Warning: Enemy tank placed at colliding position!");
         }
     }
 
     @Override
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-        super.draw(gc, camX, camY, scale);
+        // 1) draw the hull/body
 
-        // Draw enemy-specific visuals
-        if (alive) {
-            gc.setFill(Color.RED);
-            gc.fillText("Enemy Tank", (x - camX) * scale, (y - camY) * scale - 10);
-
-            // Optional: Draw attack range circle for debugging
-            if (showCollisionDebug) {
-                gc.setStroke(Color.RED);
-                gc.setGlobalAlpha(0.3);
-                gc.strokeOval((x - attackRange - camX) * scale, (y - attackRange - camY) * scale,
-                        attackRange * 2 * scale, attackRange * 2 * scale);
-                gc.setGlobalAlpha(1.0);
-            }
-        }
+        // 2) draw the turret on top
+        drawTurret(gc, camX, camY, scale);
     }
 
-    // Override onDamageTaken to add enemy-specific behavior
+    private void drawTurret(GraphicsContext gc, double camX, double camY, double scale) {
+        if (spriteSheet == null) return;
+
+        // ▶ change these to exactly the rectangle of just your turret graphic ◀
+        int turretCol = 2;
+        int turretRow = 1;
+        int srcX       = turretCol * frameWidth;
+        int srcY       = turretRow * frameHeight;
+        int srcW       = frameWidth;
+        int srcH       = frameHeight;
+
+        double drawW = width * scale;
+        double drawH = height * scale;
+        double cx    = (x - camX) * scale + drawW/2;
+        double cy    = (y - camY) * scale + drawH/2;
+
+        gc.save();
+        gc.translate(cx, cy);
+        gc.rotate(Math.toDegrees(turretRotation));
+        // only the turret pixels, not the whole frame!
+        gc.drawImage(
+                spriteSheet,
+                srcX, srcY, srcW, srcH,
+                -drawW/2, -drawH/2,
+                drawW, drawH
+        );
+        gc.restore();
+    }
+
+    public void debugDraw(GraphicsContext gc, double camX, double camY, double scale) {
+        // Draw a colored rectangle around this tank to identify it
+        double drawW = width * scale;
+        double drawH = height * scale;
+        double drawX = (x - camX) * scale;
+        double drawY = (y - camY) * scale;
+
+        // Set a unique color for debugging (you can change this)
+        gc.setStroke(Color.YELLOW);
+        gc.setLineWidth(2);
+        gc.strokeRect(drawX, drawY, drawW, drawH);
+
+        // Draw tank ID or hash code to identify duplicates
+        gc.setFill(Color.WHITE);
+        gc.fillText("Tank:" + this.hashCode(), drawX, drawY - 5);
+    }
+
+
+
     @Override
     protected void onDamageTaken(int damage) {
         super.onDamageTaken(damage);
         System.out.println("Enemy tank took " + damage + " damage! Health: " + health);
+
+        // Become instantly alert when damaged
+        alertLevel = 1.0;
+        playerDetected = true;
+        lostPlayerTimer = 0;
     }
 
-    // Override onDestroyed to add enemy-specific behavior
     @Override
     protected void onDestroyed() {
         super.onDestroyed();
         System.out.println("Enemy tank destroyed!");
-        // You could add explosion effects, score points, etc.
+        // Add explosion effects, score points, drop items, etc.
     }
 
-    // Getter for attack range (useful for game balancing)
-    public double getAttackRange() {
-        return attackRange;
+    // Configuration methods for different enemy types
+    public void configureAsLightTank() {
+        this.attackRange = 200.0;
+        this.detectionRange = 250.0;
+        this.bulletSpeed = 250.0;
+        this.turretRotationSpeed = 3.0;
+        this.health = 50;
+        this.gunCooldown = 1.0;
     }
 
-    // Setter for attack range (useful for different enemy types)
-    public void setAttackRange(double range) {
-        this.attackRange = range;
+    public void configureAsHeavyTank() {
+        this.attackRange = 300.0;
+        this.detectionRange = 350.0;
+        this.bulletSpeed = 400.0;
+        this.turretRotationSpeed = 1.5;
+        this.health = 150;
+        this.gunCooldown = 2.5;
     }
 
-    // Get fixed position
+    public void configureAsSniperTank() {
+        this.attackRange = 400.0;
+        this.detectionRange = 450.0;
+        this.bulletSpeed = 500.0;
+        this.turretRotationSpeed = 1.0;
+        this.health = 75;
+        this.gunCooldown = 3.0;
+        this.aimTolerance = 0.1; // More precise aiming required
+    }
+
+    // Getters and setters
+    public double getAttackRange() { return attackRange; }
+    public void setAttackRange(double range) { this.attackRange = range; }
+
+    public double getDetectionRange() { return detectionRange; }
+    public void setDetectionRange(double range) { this.detectionRange = range; }
+
     public double getFixedX() { return fixedX; }
     public double getFixedY() { return fixedY; }
+
+    public boolean isPlayerDetected() { return playerDetected; }
+    public double getAlertLevel() { return alertLevel; }
 }

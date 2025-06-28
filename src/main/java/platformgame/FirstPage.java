@@ -126,9 +126,9 @@ public class FirstPage {
         try {
             // Add debug log
 
-            Game game = new Game();
+//            Game game = new Game();
 
-//         Game_2 game = new Game_2();
+         Game_2 game = new Game_2();
 
             game.startGameLoop();
 
