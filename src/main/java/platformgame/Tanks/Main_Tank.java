@@ -17,6 +17,9 @@ public class Main_Tank extends Tank {
 
     double bulletSpeed = 400; // Increased bullet speed for better visibility
 
+    // Cannon offset from tank center - adjusted for proper alignment
+    private static final double CANNON_LENGTH = 45; // Distance from center to cannon tip
+
     // Track current movement direction for bullet firing
     private double currentMoveDirection = 0; // 0 = right, PI/2 = down, PI = left, 3*PI/2 = up
     private boolean hasMovementDirection = false;
@@ -73,6 +76,83 @@ public class Main_Tank extends Tank {
         // Empty as we handle directional behavior in the `update` method
     }
 
+    // Calculate cannon tip position based on tank rotation with proper alignment
+    private double[] getCannonTipPosition() {
+        // Tank center position
+        double centerX = x + width / 2;
+        double centerY = y + height / 2;
+
+        // Direction-specific cannon positioning for better alignment
+        double cannonTipX, cannonTipY;
+
+        // Normalize the angle to 0-2π range for consistent calculations
+        double normalizedAngle = ((currentMoveDirection % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+
+        // Calculate cannon tip based on direction with fine-tuned offsets
+        if (Math.abs(normalizedAngle - 0) < 0.1) {
+            // Right direction (0 radians)
+            cannonTipX = centerX + CANNON_LENGTH;
+            cannonTipY = centerY;
+        } else if (Math.abs(normalizedAngle - Math.PI/2) < 0.1) {
+            // Down direction (π/2 radians)
+            cannonTipX = centerX;
+            cannonTipY = centerY + CANNON_LENGTH;
+        } else if (Math.abs(normalizedAngle - Math.PI) < 0.1) {
+            // Left direction (π radians)
+            cannonTipX = centerX - CANNON_LENGTH;
+            cannonTipY = centerY;
+        } else if (Math.abs(normalizedAngle - 3*Math.PI/2) < 0.1) {
+            // Up direction (3π/2 radians)
+            cannonTipX = centerX;
+            cannonTipY = centerY - CANNON_LENGTH;
+        } else {
+            // Diagonal directions - use trigonometric calculation
+            cannonTipX = centerX + CANNON_LENGTH * Math.cos(currentMoveDirection);
+            cannonTipY = centerY + CANNON_LENGTH * Math.sin(currentMoveDirection);
+        }
+
+        return new double[]{cannonTipX, cannonTipY};
+    }
+
+    // Alternative method with more precise positioning if the above doesn't work perfectly
+    private double[] getCannonTipPositionPrecise() {
+        // Tank center position
+        double centerX = x + width / 2;
+        double centerY = y + height / 2;
+
+        // Get the actual visual cannon offset based on your tank sprite
+        // You may need to adjust these values based on your specific tank image
+        double cannonOffsetX = 0;
+        double cannonOffsetY = 0;
+
+        // Direction-specific fine-tuning
+        double directionDegrees = Math.toDegrees(currentMoveDirection);
+        directionDegrees = ((directionDegrees % 360) + 360) % 360; // Normalize to 0-360
+
+        if (directionDegrees >= 315 || directionDegrees < 45) {
+            // Right (0°)
+            cannonOffsetX = CANNON_LENGTH;
+            cannonOffsetY = 0;
+        } else if (directionDegrees >= 45 && directionDegrees < 135) {
+            // Down (90°)
+            cannonOffsetX = 0;
+            cannonOffsetY = CANNON_LENGTH;
+        } else if (directionDegrees >= 135 && directionDegrees < 225) {
+            // Left (180°)
+            cannonOffsetX = -CANNON_LENGTH;
+            cannonOffsetY = 0;
+        } else if (directionDegrees >= 225 && directionDegrees < 315) {
+            // Up (270°)
+            cannonOffsetX = 0;
+            cannonOffsetY = -CANNON_LENGTH;
+        }
+
+        double cannonTipX = centerX + cannonOffsetX;
+        double cannonTipY = centerY + cannonOffsetY;
+
+        return new double[]{cannonTipX, cannonTipY};
+    }
+
     // Shoot a bullet in the current movement direction
     @Override
     public void shoot() {
@@ -82,9 +162,10 @@ public class Main_Tank extends Tank {
 
             System.out.println("Main tank shooting in direction: " + Math.toDegrees(currentMoveDirection)); // Debug output
 
-            // Get center position for bullet creation
-            double bulletX = x + width / 2;
-            double bulletY = y + height / 2;
+            // Get cannon tip position for bullet creation
+            double[] cannonTip = getCannonTipPosition();
+            double bulletX = cannonTip[0];
+            double bulletY = cannonTip[1];
 
             // Calculate bullet velocity based on current movement direction
             double velocityX = bulletSpeed * Math.cos(currentMoveDirection);
@@ -103,12 +184,17 @@ public class Main_Tank extends Tank {
     // This method creates bullet locally (used by parent class if needed)
     @Override
     protected void createBullet(double x, double y) {
+        // Use cannon tip position instead of provided x, y
+        double[] cannonTip = getCannonTipPosition();
+        double bulletX = cannonTip[0];
+        double bulletY = cannonTip[1];
+
         // Calculate velocity based on current movement direction
         double velocityX = bulletSpeed * Math.cos(currentMoveDirection);
         double velocityY = bulletSpeed * Math.sin(currentMoveDirection);
 
         // Create bullet and set the shooter
-        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2, this);
+        Tank_Bullet bullet = new Tank_Bullet(bulletX, bulletY, velocityX, velocityY, null, gp2, this);
 
         // Add bullet to the game's bullet list instead of local list
         if (gp2 != null) {
@@ -119,7 +205,9 @@ public class Main_Tank extends Tank {
     // Override the createBullet method with velocity parameters
     @Override
     public void createBullet(double x, double y, double velocityX, double velocityY) {
-        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2);
+        // Use cannon tip position for consistency
+        double[] cannonTip = getCannonTipPosition();
+        Tank_Bullet bullet = new Tank_Bullet(cannonTip[0], cannonTip[1], velocityX, velocityY, null, gp2);
 
         // Add bullet to the game's bullet list
         if (gp2 != null) {
@@ -218,6 +306,25 @@ public class Main_Tank extends Tank {
     // Getter for current movement direction (for debugging or other purposes)
     public double getCurrentMoveDirection() {
         return currentMoveDirection;
+    }
+
+    // Getter for cannon tip position (useful for debugging)
+    public double[] getCannonTipPositionPublic() {
+        return getCannonTipPosition();
+    }
+
+    private String[] dialogueLines;
+    private int currentDialogueIndex = 0;
+
+    public void setDialogue(String[] lines) {
+        this.dialogueLines = lines;
+        this.currentDialogueIndex = 0;
+    }
+
+    public void startDialogue() {
+        if (gp2 != null) {
+            gp2.GameState = gp2.dialogueState;
+        }
     }
 
 }

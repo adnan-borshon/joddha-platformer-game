@@ -14,8 +14,8 @@ public class Enemy_Tank extends Tank {
     private double attackRange = 250.0;
     private double detectionRange = 300.0;  // Larger range for detection vs attack
     protected double bulletSpeed = 300.0;
-    private double turretRotationSpeed = 2.0;
-    private double aimTolerance = 0.2;      // How precise aiming needs to be to shoot
+    double turretRotationSpeed = 2.0;
+    double aimTolerance = 0.2;      // How precise aiming needs to be to shoot
 
     // Position properties
     private final double fixedX;
@@ -34,7 +34,7 @@ public class Enemy_Tank extends Tank {
 
     // Health bar properties
     private int maxHealth = 100;
-    private boolean showHealthBar = true;
+    boolean showHealthBar = true;
     private double healthBarWidth = 60.0;
     private double healthBarHeight = 8.0;
     private double healthBarOffsetY = -20.0; // How far above the tank to show the health bar
@@ -89,7 +89,7 @@ public class Enemy_Tank extends Tank {
         }
     }
 
-    private void enforceFixedPosition() {
+    void enforceFixedPosition() {
         this.x = fixedX;
         this.y = fixedY;
         velocity.x = 0;
@@ -315,7 +315,7 @@ public class Enemy_Tank extends Tank {
         gc.restore();
     }
 
-    private void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
+    void drawHealthBar(GraphicsContext gc, double camX, double camY, double scale) {
         if (health <= 0) return; // Don't draw health bar if tank is dead
 
         // Calculate health bar position (above the tank)

@@ -7,6 +7,7 @@ import platformgame.Entity.Scout;
 import platformgame.Entity.Soldier;
 import platformgame.Objects.*;
 import platformgame.Tanks.Enemy_Tank;
+import platformgame.Tanks.Tank2;
 
 public class AssetSetter {
     Game gp;
@@ -188,6 +189,39 @@ public class AssetSetter {
         gp.eventHandler.addMine(24 * gp.tileSize, 16 * gp.tileSize, 32, 32, 2);
     }
 
+    public void setTank2(){
+        // Clear existing enemy tanks
+        gp2.Tanks.clear();
+
+        // Create array for 7 enemy tanks + 1 canon = 8 total
+        gp2.Tanks2 = new Tank2[8];
+
+        // Tank positions (x, y coordinates in tile units)
+        int[][] tankPositions = {
+                {52, 39}, // Original tank position
+//                {44, 31}, // Tank 2 - Left side, middle area
+//                {52, 38}, // Tank 3 - Right side, upper area
+
+        };
+
+        // Create regular enemy tanks (first 7)
+        for (int i = 0; i < 1
+                ; i++) {
+            int worldX = tankPositions[i][0] * gp2.tileSize;
+            int worldY = tankPositions[i][1] * gp2.tileSize;
+
+            Tank2 enemy = new Tank2(worldX, worldY, 128, 128, 200.0, null, gp2);
+
+            // Add to both array and ArrayList
+            gp2.Tanks2[i]=enemy;
+            gp2.Tanks.add(enemy);
+
+            System.out.println("Enemy tank " + (i + 1) + " created at position: " + worldX + ", " + worldY);
+        }
+
+
+        System.out.println("Total enemy tanks created: " + gp2.enemyTanks.size());
+    }
     public void setEnemy() {
         // IMPROVED: Better spacing between enemies to prevent clustering
         gp.enemies[0] = new Enemy(17 * gp.tileSize, 25 * gp.tileSize, 50, 50, 1.2, gp);

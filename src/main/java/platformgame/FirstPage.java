@@ -124,6 +124,7 @@ public class FirstPage {
                 Sound.getInstance().loop(0); // start game BGM only if enabled
             }
             Game game = new Game();
+//            Game_2 game = new Game_2();
             game.startGameLoop();
             Scene scene = rootPane.getScene();
             scene.setRoot(game);

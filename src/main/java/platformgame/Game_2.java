@@ -11,13 +11,10 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import platformgame.Tanks.Enemy_Tank;
-import platformgame.Tanks.Main_Tank;
+import platformgame.Tanks.*;
 import platformgame.Event.EventHandler;
 import platformgame.Map.Level_2;
 import platformgame.Map.Level_2_controller;
-import platformgame.Tanks.Tank;
-import platformgame.Tanks.Vector2D;
 
 import java.net.URL;
 import java.util.HashSet;
@@ -51,9 +48,11 @@ public class Game_2 extends Pane {
 
     // FIXED: Use ArrayList instead of array for better management
     public ArrayList<Enemy_Tank> enemyTanks = new ArrayList<>();
+    public ArrayList<Tank2> Tanks = new ArrayList<>();
 
     // Keep the array for backward compatibility but don't use it for collision
     Enemy_Tank[] enemyTank = new Enemy_Tank[10];
+    Tank2[] Tanks2 = new Tank2[10];
 
     // List to store all bullets
     private ArrayList<Tank_Bullet> bullets = new ArrayList<>();
@@ -99,6 +98,7 @@ public class Game_2 extends Pane {
 
     private void setUpObject() {
         assetSetter.setTank();
+        assetSetter.setTank2();
     }
 
     // Method to return all enemy tanks - UPDATED
@@ -167,9 +167,33 @@ public class Game_2 extends Pane {
                 enemyTank[i].draw(gc, camX, camY, 1);
             }
         }
+
+
+
+
+        //array list
         for (Enemy_Tank enemy : enemyTanks) {
             if (enemy != null && enemy.isAlive()) {
                 enemy.draw(gc, camX, camY, 1);
+            }
+        }
+
+
+
+
+        for (int i = 0; i < Tanks2.length; i++) {
+            if (Tanks2[i] != null) {
+                Tanks2[i].draw(gc, camX, camY, 1);
+            }
+        }
+
+
+
+
+        //array list
+        for (Tank2 tank2 : Tanks) {
+            if (tank2 != null && tank2.isAlive()) {
+                tank2.draw(gc, camX, camY, 1);
             }
         }
 
@@ -187,8 +211,8 @@ public class Game_2 extends Pane {
 
         // ─── HEALTH BAR OVERLAY ────────────────────────────────────
         // Scale factors for health bar elements
-        double iconScale = 0.4; // Make icon 40% of original size
-        double barScale = 0.6;  // Keep bar at 60% of original size
+        double iconScale = 0.3; // Make icon 40% of original size
+        double barScale = 0.45;  // Keep bar at 60% of original size
 
         // fixed icon at (10,10)
         double iconX = 10, iconY = 10;
@@ -196,7 +220,7 @@ public class Game_2 extends Pane {
         double iconH = healthIconImg.getHeight() * iconScale;
 
         // bar immediately right of icon, vertically centered with icon
-        double barX = iconX + iconW + 5;
+        double barX = iconX + iconW + 2;
         double barW = healthBarImg.getWidth() * barScale;
         double barH = healthBarImg.getHeight() * barScale;
         double barY = iconY + (iconH - barH) / 2; // Center bar vertically with icon
@@ -249,7 +273,7 @@ public class Game_2 extends Pane {
         mainTank.update(keysPressed, level2, this, now, deltaTime, 0, 0);
         updateCamera();
 
-        // 2) move enemies
+        // 2) move Enemy_Tank enemies
         double dtSec = deltaTime / 1_000_000_000.0;
         for (Enemy_Tank enemy : enemyTanks) {
             if (enemy != null && enemy.isAlive()) {
@@ -257,8 +281,30 @@ public class Game_2 extends Pane {
             }
         }
 
+        // FIXED: Also update Tank2 enemies
+        for (Tank2 tank2 : Tanks) {
+            if (tank2 != null && tank2.isAlive()) {
+                tank2.updateBehavior(level2, this, dtSec);
+            }
+        }
+
+        // FIXED: Also update array-based tanks for backward compatibility
+        for (int i = 0; i < enemyTank.length; i++) {
+            if (enemyTank[i] != null && enemyTank[i].isAlive()) {
+                enemyTank[i].updateBehavior(level2, this, dtSec);
+            }
+        }
+
+        for (int i = 0; i < Tanks2.length; i++) {
+            if (Tanks2[i] != null && Tanks2[i].isAlive()) {
+                Tanks2[i].updateBehavior(level2, this, dtSec);
+            }
+        }
+
         // ─── tank-to-tank collision ─────────────────────────────────
         Rectangle2D playerBox = mainTank.getBounds();
+
+        // Check collision with Enemy_Tank ArrayList
         for (Enemy_Tank enemy : enemyTanks) {
             if (enemy != null && enemy.isAlive()) {
                 Rectangle2D enemyBox = enemy.getBounds();
@@ -267,8 +313,23 @@ public class Game_2 extends Pane {
                     Vector2D v = mainTank.getVelocity();
                     mainTank.setX(mainTank.getX() - v.x * dtSec);
                     mainTank.setY(mainTank.getY() - v.y * dtSec);
-                    mainTank.onCollision();  // optional: prints/logs
-                    break;                   // one resolution is enough
+                    mainTank.onCollision();
+                    break;
+                }
+            }
+        }
+
+        // FIXED: Check collision with Tank2 ArrayList
+        for (Tank2 tank2 : Tanks) {
+            if (tank2 != null && tank2.isAlive()) {
+                Rectangle2D tank2Box = tank2.getBounds();
+                if (playerBox.intersects(tank2Box)) {
+                    // undo the player's last movement
+                    Vector2D v = mainTank.getVelocity();
+                    mainTank.setX(mainTank.getX() - v.x * dtSec);
+                    mainTank.setY(mainTank.getY() - v.y * dtSec);
+                    mainTank.onCollision();
+                    break;
                 }
             }
         }
@@ -283,10 +344,11 @@ public class Game_2 extends Pane {
         while (iterator.hasNext()) {
             Tank_Bullet bullet = iterator.next();
             bullet.update(deltaTime);
-            bullet.checkCollisionWithEnemies();
+            bullet.checkCollisionWithTanks(); // Use the fixed method
 
             if (bullet.shouldRemove()) {
                 iterator.remove();
+                System.out.println("Bullet removed. Remaining bullets: " + bullets.size());
             }
         }
     }
@@ -300,12 +362,16 @@ public class Game_2 extends Pane {
         camX += (targetCamX - camX) * 0.1;
         camY += (targetCamY - camY) * 0.1;
 
-        // Clamp camera to level boundaries if level2 exists
-        if (level2 != null) {
-            camX = Math.max(0, Math.min(camX, level2.mapWidth * tileSize - screenWidth));
-            camY = Math.max(0, Math.min(camY, level2.mapHeight * tileSize - screenHeight));
-        }
+        // Clamp camera to level boundaries
+        camX = Math.max(0, Math.min(camX, level2.mapWidth * tileSize - screenWidth));
+        camY = Math.max(0, Math.min(camY, level2.mapHeight * tileSize - screenHeight));
+
+        // ← Insert snapping here to eliminate sub‐pixel jitter:
+        camX = Math.floor(camX);
+        camY = Math.floor(camY);
     }
+
+
 
     private void onKeyPressed(KeyEvent e) {
         KeyCode key = e.getCode();
@@ -385,4 +451,41 @@ public class Game_2 extends Pane {
     // Getters for screen dimensions (useful for tank boundary checks)
     public double getScreenWidth() { return screenWidth; }
     public double getScreenHeight() { return screenHeight; }
+
+    private void checkVictoryCondition() {
+        // Check if all enemy tanks and tank2 are dead
+        boolean allEnemiesDefeated = true;
+
+        for (Enemy_Tank enemy : enemyTanks) {
+            if (enemy != null && enemy.isAlive()) {
+                allEnemiesDefeated = false;
+                break;
+            }
+        }
+
+        for (Tank2 tank2 : Tanks) {
+            if (tank2 != null && tank2.isAlive()) {
+                allEnemiesDefeated = false;
+                break;
+            }
+        }
+
+        if (!allEnemiesDefeated) return;
+
+        // Check if player is at 108,29 tile
+        int playerTileX = (int)(mainTank.getX() / tileSize);
+        int playerTileY = (int)(mainTank.getY() / tileSize);
+
+        if (playerTileX == 108 && playerTileY == 29) {
+            if (GameState != dialogueState) {
+                GameState = dialogueState;
+
+                mainTank.setDialogue(new String[]{
+                        "Congratulations! You have saved the villagers!"
+                });
+                mainTank.startDialogue();
+            }
+        }
+    }
+
 }

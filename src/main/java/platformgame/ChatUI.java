@@ -61,10 +61,13 @@ public class ChatUI {
         toggleButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
         toggleButton.setPrefSize(80, 30);
 
+        // NEW toggle button container (top-right)
         HBox buttonContainer = new HBox();
-        buttonContainer.setAlignment(Pos.CENTER_LEFT);
-        buttonContainer.setPadding(new Insets(10, 0, 0, Math.abs(BUTTON_OFFSET_X)));
+        buttonContainer.setAlignment(Pos.TOP_RIGHT);
+// 10px padding from top and right edges:
+        buttonContainer.setPadding(new Insets(40, 10, 0, 0));
         buttonContainer.getChildren().add(toggleButton);
+
 
         chatContainer = new VBox(5);
         chatContainer.setPrefSize(CHAT_WIDTH, CHAT_HEIGHT);
