@@ -9,6 +9,98 @@ import platformgame.ImageLoader;
 import platformgame.Objects.SuperObject;
 
 public abstract class Entity {
+    //without gun
+
+    //walk and run
+    protected final int frontWalkFrame=4;
+    protected final int frontWalkRow=3;
+
+    protected final int backWalkFrame=4;
+    protected final int backWalkRow=4;
+
+    protected final int WalkFrame=6;
+    protected final int WalkRow=5;
+
+    //idle
+    protected final int frontIdleFrame=2;
+    protected final int frontIdleRow=0;
+
+    protected final int IdleFrame=2;
+    protected final int IdleRow=1;
+
+    protected final int backIdleFrame=2;
+    protected final int backIdleRow=2;
+
+
+    //fist
+    protected final int FrontFistFrame=2;
+    protected final int FrontFistRow=6;
+
+    protected final int FistFrame=2;
+    protected final int FistRow=7;
+
+    protected final int BackFistFrame=2;
+    protected final int BackFistRow=8;
+
+    //hurt with no gun
+    protected final int HitFrame=2;
+    protected final int HitRow=19;
+
+    protected final int FrontHitFrame=2;
+    protected final int FrontHitRow=20;
+
+    protected final int BackHitFrame=2;
+    protected final int BackHitRow=21;
+
+    //with gun
+    //shoot
+    protected final int FrontShootFrame=2;
+    protected final int FrontShootRow=9;
+
+    protected final int ShootFrame=2;
+    protected final int ShootRow=10;
+    protected final int BackShootFrame=2;
+    protected final int BackShootRow=11;
+
+
+    //dead
+    protected final int deadFrame=3;
+    protected final int deadRow=12;
+
+    //walk and run with gun
+    protected final int GunFrontWalkFrame=4;
+    protected final int GunFrontWalkRow=14;
+
+    protected final int GunBackWalkFrame=4;
+    protected final int GunBackWalkRow=15;
+
+    protected final int GunWalkFrame=6;
+    protected final int GunWalkRow=13;
+
+    //idle with gun (NEW: Using gun idle frames)
+    protected final int GunFrontIdleFrame=2;
+    protected final int GunFrontIdleRow=16; // Assuming gun front idle is row 16
+
+    protected final int GunIdleFrame=2;
+    protected final int GunIdleRow=17; // Assuming gun idle is row 17
+
+    protected final int GunBackIdleFrame=1;
+    protected final int GunBackIdleRow=11; // Assuming gun back idle is row 18
+
+    //hurt with gun
+    protected final int GunHitFrame=2;
+    protected final int GunHitRow=17;
+
+    protected final int GunFrontHitFrame=2;
+    protected final int GunFrontHitRow=16;
+
+    protected final int GunBackHitFrame=2;
+    protected final int GunBackHitRow=18;
+
+
+
+
+
     protected double x, y;
     protected double width, height;
     public double speed;

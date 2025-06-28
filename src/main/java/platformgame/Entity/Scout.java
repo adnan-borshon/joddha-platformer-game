@@ -9,6 +9,7 @@ import javafx.geometry.Rectangle2D;
 
 public class Scout extends Entity {
 
+
     private final int totalFramesWalk = 10;
     private final int totalFramesRun = 8;
     private final int totalFramesAttack = 5;
@@ -47,7 +48,7 @@ public class Scout extends Entity {
     private long hitReactionStartTime;
     private final int hitReactionFrames = 4;
     private final int hitReactionRow = 8; // 9th row (0-indexed)
-    private final long hitFrameDuration = 90_000_000;
+    private final long hitFrameDuration = 70_000_000;
 
     private boolean canBeAttacked = true; // ✅ FIXED: Default to true so player can hit scout
     private boolean inCombat = false;
@@ -55,11 +56,11 @@ public class Scout extends Entity {
     private long lastAttackTime = 0;
     private final long attackCooldown = 1_500_000_000L;
     private final double combatRange = 2 * 32;
-    private final double aggroRange = 4 * 32;
+    private final double aggroRange = 3 * 32;
     private final double combatSpeed = speed * 1.3;
 
     // ✅ UPDATED: Much smaller detection range (touching distance)
-    private final double touchDetectionRange = 3 * 32; // About 1.2 tiles instead of 3
+    private final double touchDetectionRange = 5 * 32; // About 1.2 tiles instead of 3
 
     private String customDialogue = null;
     private Game gp;
@@ -105,7 +106,7 @@ public class Scout extends Entity {
     }
 
     public Rectangle2D getHitbox() {
-        return new Rectangle2D(x - 3, y + 3, width, height);
+        return new Rectangle2D(x - 10, y + 4, width+25, height);
     }
 
     public boolean canDamagePlayer() {
@@ -129,14 +130,14 @@ public class Scout extends Entity {
         }
 
         // Move towards player if not in range and not attacking
-        if (distanceToPlayer > combatRange && !attacking) {
+        if (distanceToPlayer > combatRange && !attacking && !runningToBase) {
             moveTowardsPlayer(combatSpeed);
             currentRow = 3;
             currentFrame = (int) ((System.nanoTime() / 80_000_000) % totalFramesRun);
         }
 
-        // Start attack if in range and cooldown is over
-        if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown) {
+        // Start attack if in range and cooldown is over, but only if not running to base
+        if (distanceToPlayer <= combatRange && !attacking && (now - lastAttackTime) >= attackCooldown && !runningToBase) {
             attackStartTime = now;
             attacking = true;
             hasDealtDamageThisAttack = false;
@@ -151,15 +152,20 @@ public class Scout extends Entity {
         currentRow = attackRow;
         int frameIndex = (int) ((now - attackStartTime) / 100_000_000);
 
+        // Deal damage during specific frames, but only if the player is within range
         if (frameIndex < totalFramesAttack) {
             currentFrame = frameIndex;
 
-            // Deal damage during specific frames
-            if (canDamagePlayer() && !hasDealtDamageThisAttack) {
+            // Check if the player is within range to be damaged
+            double distanceToPlayer = Math.hypot(x - gp.player.getX(), y - gp.player.getY());
+
+            // Adjusted: Check if the player is within combat range or close enough
+            if (canDamagePlayer() && !hasDealtDamageThisAttack && distanceToPlayer <= combatRange) {
                 Rectangle2D playerHitbox = new Rectangle2D(gp.player.getX(), gp.player.getY(), gp.player.getWidth(), gp.player.getHeight());
                 Rectangle2D scoutHitbox = getHitbox();
+
                 if (playerHitbox.intersects(scoutHitbox)) {
-                    gp.player.takeMeleeDamageFromEnemy(1, now);
+                    gp.player.takeMeleeDamageFromEnemy(1, now); // Apply damage to player
                     hasDealtDamageThisAttack = true;
                     System.out.println("Scout dealt damage to player!"); // Debug line
                 }
@@ -201,7 +207,6 @@ public class Scout extends Entity {
                     isFollowingPlayer = false;
                     showingDialogue = false;
 
-                    System.out.println("Scout died!"); // Debug
                 }
             }
             return; // Exit early, don't process other updates during hit reaction

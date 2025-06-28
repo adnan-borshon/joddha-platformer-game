@@ -149,6 +149,7 @@ public class FirstPage {
 
         try {
             Game game = new Game();
+
             GameState state = GameManager.getInstance().getLastState();
 
             game.player.setPosition(state.playerX, state.playerY);
