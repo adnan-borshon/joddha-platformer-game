@@ -187,7 +187,33 @@ public class EventHandler {
             }
         }
     }
+    public void triggerContainerGateExplosion(Game game, long now) {
+        // Container gate position: (64*tileSize, 24*tileSize) to (73*tileSize, 24*tileSize)
+        int tileSize = 32; // Assuming your tile size is 32
+        double gateStartX = 64 * tileSize;
+        double gateEndX = 73 * tileSize;
+        double gateY = 24 * tileSize;
 
+        // Create multiple explosions across the gate width
+        double explosionSpacing = 32; // Space between explosions
+
+        for (double x = gateStartX; x <= gateEndX; x += explosionSpacing) {
+            // Main explosion at gate level
+            activeExplosions.add(new Explosion(x, gateY, now, 2.5));
+
+            // Additional explosions slightly offset for better effect
+            activeExplosions.add(new Explosion(x, gateY - 16, now + 100_000_000L, 2.0));
+            activeExplosions.add(new Explosion(x, gateY + 16, now + 200_000_000L, 2.0));
+        }
+
+        // Add some extra explosions for dramatic effect
+        double centerX = (gateStartX + gateEndX) / 2;
+        activeExplosions.add(new Explosion(centerX, gateY, now + 300_000_000L, 3.0));
+        activeExplosions.add(new Explosion(centerX - 48, gateY, now + 150_000_000L, 2.0));
+        activeExplosions.add(new Explosion(centerX + 48, gateY, now + 250_000_000L, 2.0));
+
+        game.playSoundEffects(4); // Play explosion sound
+    }
     private void completeMission(long now, Game game) {
         if (!missionCompleted) {
             missionCompleted = true;

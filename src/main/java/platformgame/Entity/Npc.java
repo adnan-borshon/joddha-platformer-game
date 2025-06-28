@@ -2,6 +2,7 @@ package platformgame.Entity;
 
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import platformgame.Game;
 
 public class Npc extends Entity {
@@ -10,7 +11,7 @@ public class Npc extends Entity {
     public boolean playerIsTouching = false;
 
     // Constructor with custom dialogue
-    public Npc(double x, double y, double width, double height, double speed, Game gp, String[] customDialogue) {
+    public Npc(double x, double y, double width, double height, double speed, Game gp, Image[] customDialogue) {
         super(x, y, width, height, speed, gp);
         imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
         setDialogue(customDialogue);
@@ -20,7 +21,7 @@ public class Npc extends Entity {
     public Npc(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
         imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
-        setDialogue();
+//        setDialogue();
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
@@ -59,19 +60,19 @@ public class Npc extends Entity {
     }
 
     // Method to set custom dialogue
-    public void setDialogue(String[] customDialogue) {
+    public void setDialogue(Image[] customDialogue) {
         for (int i = 0; i < customDialogue.length && i < dialogues.length; i++) {
             dialogues[i] = customDialogue[i];
         }
     }
 
     // Default dialogue method
-    public void setDialogue() {
-        dialogues[0] = "Rohan please be careful. There are many soldiers with weapons and there are hostages please save them.";
-        dialogues[1] = "Stay alert and watch your back.";
-        dialogues[2] = "The enemies are heavily armed.";
-        dialogues[3] = "Save the hostages at all costs.";
-    }
+//    public void setDialogue() {
+//        dialogues[0] = "Rohan please be careful. There are many soldiers with weapons and there are hostages please save them.";
+//        dialogues[1] = "Stay alert and watch your back.";
+//        dialogues[2] = "The enemies are heavily armed.";
+//        dialogues[3] = "Save the hostages at all costs.";
+//    }
 
     public void speak() {
         if (dialogues[dialogueIndex] == null) {
@@ -81,7 +82,8 @@ public class Npc extends Entity {
             return;
         }
 
-        gp.ui.dialogue = dialogues[dialogueIndex];
+        // ✅ Set image-based dialogue
+        gp.ui.setImageDialogue(dialogues[dialogueIndex]);
         gp.GameState = gp.dialogueState;
         dialogueIndex++;
     }

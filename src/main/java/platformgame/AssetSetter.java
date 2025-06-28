@@ -1,5 +1,6 @@
 package platformgame;
 
+import javafx.scene.image.Image;
 import platformgame.Entity.Enemy;
 import platformgame.Entity.Npc;
 import platformgame.Entity.Scout;
@@ -168,16 +169,14 @@ public class AssetSetter {
 
     public void setNpc() {
         // First NPC with default dialogue (this will use the setDialogue() method)
-        gp.npc[0] = new Npc(30 * gp.tileSize, 10 * gp.tileSize, 40, 40, 1, gp);
-
-        // Second NPC with custom dialogue
-        String[] npc2Dialogue = {
-                "Welcome to the safe zone, soldier!",
-                "You can rest here and resupply.",
-                "Check your ammo before moving forward.",
-                "Good luck on your mission!"
+        Image[] npcDialogue = {
+                ImageLoader.load("/Popups/Narration-01.png")  , ImageLoader.load("/Popups/Narration-02.png")
         };
-        gp.npc[1] = new Npc(38 * gp.tileSize, 20 * gp.tileSize, 40, 40, 1, gp, npc2Dialogue);
+        gp.npc[0] = new Npc(30 * gp.tileSize, 10 * gp.tileSize, 40, 40, 1, gp, npcDialogue);
+
+
+
+//        gp.npc[1] = new Npc(38 * gp.tileSize, 20 * gp.tileSize, 40, 40, 1, gp, npc2Dialogue);
     }
 
     public void setScout() {

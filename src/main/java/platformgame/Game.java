@@ -236,19 +236,7 @@ public class Game extends Pane {
             }
         }
 
-//        //for granade launcher
-//        for (SuperObject obj : Launcher) {
-//            if (obj != null && obj.isBehindPlayer(this)) {
-//                obj.draw(gc, this);
-//            }
-//        }
-//
-//        //for key opener
-//        for (SuperObject obj : Opener) {
-//            if (obj != null && obj.isBehindPlayer(this)) {
-//                obj.draw(gc, this);
-//            }
-//        }
+
 
         for (Scout scoutEntity : scout) {
             if (scoutEntity != null && scoutEntity.isBehindPlayer(this)) {
@@ -288,18 +276,6 @@ public class Game extends Pane {
                 obj.draw(gc, this);
             }
         }
-//        //for granade launcher
-//        for (SuperObject obj : Launcher) {
-//            if (obj != null && !obj.isBehindPlayer(this)) {
-//                obj.draw(gc, this);
-//            }
-//        }
-//        //for key opener
-//        for (SuperObject obj : Opener) {
-//            if (obj != null && !obj.isBehindPlayer(this)) {
-//                obj.draw(gc, this);
-//            }
-//        }
 
         eventHandler.draw(gc, camX, camY, scale);
         level1.drawForeground(gc, camX, camY, scale);
@@ -321,7 +297,7 @@ public class Game extends Pane {
 
     public void setUpObject() {
         aSetter.setObject();
-//        aSetter.setNpc();
+        aSetter.setNpc();
         aSetter.setScout();
         aSetter.setEnemy();
         aSetter.setSoldiers();
@@ -735,5 +711,9 @@ public class Game extends Pane {
     // ✅ Getter for chat UI (if needed elsewhere)
     public ChatUI getChatUI() {
         return chatUI;
+    }
+
+    public void triggerExplosionGate() {
+
     }
 }

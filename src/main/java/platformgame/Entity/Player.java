@@ -707,8 +707,6 @@ public class Player extends Entity {
                         break;
 
 
-
-
                     case "boots":
                         speed += 10;
                         game.object[i] = null;
@@ -747,23 +745,7 @@ public class Player extends Entity {
                         game.ui.showMessage("Picked up a grenade");
                         break;       // allow movement through
 
-//                    // ---- boom (same as before) ----
-//                    case "boom":
-//                        if (obj instanceof Obj_Boom) {
-//                            Obj_Boom boomObj = (Obj_Boom)obj;
-//                            if (boomObj.shouldAppear() && !boomObj.isCollected()) {
-//                                boomObj.collect();
-//                                game.object[i] = null;
-//                                game.playSoundEffects(1);
-//                                game.ui.showMessage("You collected the mysterious boom!");
-//                                game.eventHandler.enableBridgeDestruction();
-//                                game.ui.showMessage("You can now destroy the bridge!");
-//                            } else {
-//                                game.ui.showMessage("This boom seems inactive...");
-//                            }
-//                        }
-//                        return false;       // boom isn’t blocking
-                    // --- KEY OPENERS now with blocking logic ---
+                           // --- KEY OPENERS now with blocking logic ---
                     case "key1_opener":
                         // without Key1, block you from walking through
                         if (!game.hasKey1) {
@@ -852,13 +834,22 @@ public class Player extends Entity {
                             return true;
                         }
 
-                        if (!game.ContainerGateRemoved && game.granadeCounter>0) {
+                        if (!game.ContainerGateRemoved && game.granadeCounter > 0) {
                             game.ContainerGateRemoved = true;
                             game.playSoundEffects(1);
-                            game.hasLauncher=false;
+                            game.hasLauncher = false;
+                            game.granadeCounter--; // Decrease grenade count
                             game.object[i] = null;
+
+                            // ✅ NEW: Trigger container gate explosion BEFORE removing the gate
+                            long now = System.nanoTime();
+                            game.eventHandler.triggerContainerGateExplosion(game, now);
+
+                            // Small delay before removing the gate layer (optional, for better visual effect)
+                            // You might want to move this to a delayed action, but for simplicity:
                             game.level1.removeContainerGateLayer();
-                            game.ui.showMessage("Gate destroyed");
+
+                            game.ui.showMessage("Gate destroyed with explosions!");
                         }
                         return false;       // allow movement
 

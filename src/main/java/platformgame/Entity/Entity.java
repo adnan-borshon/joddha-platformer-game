@@ -123,7 +123,7 @@ public abstract class Entity {
 
     protected int actionCounter = 0; // movement of Entity subclasses
 
-    String dialogues[] = new String[10];
+    Image dialogues[] = new Image[20];
 
     // Constructor for initializing common entity attributes
     public Entity(double x, double y, double width, double height, double speed, Game gp) {
