@@ -28,13 +28,13 @@ public class AssetSetter {
 
         // Tank positions (x, y coordinates in tile units)
         int[][] tankPositions = {
-                {28, 29}, // Original tank position
-                {30, 35}, // Tank 2 - Left side, middle area
-                {60, 20}, // Tank 3 - Right side, upper area
-                {35, 60}, // Tank 4 - Center, lower area
-                {70, 40}, // Tank 5 - Right side, middle area
-                {10, 15}, // Tank 6 - Left side, upper area
-                {50, 50}  // Tank 7 - Center-right, lower area
+                {30, 32}, // Original tank position
+                {38, 68}, // Tank 2 - Left side, middle area
+                {51, 47}, // Tank 3 - Right side, upper area
+                {65, 19}, // Tank 4 - Center, lower area
+                {73, 37}, // Tank 5 - Right side, middle area
+                {89, 21}, // Tank 6 - Left side, upper area
+                {97, 16}  // Tank 7 - Center-right, lower area
         };
 
         // Create and position all enemy tanks

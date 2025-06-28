@@ -62,7 +62,7 @@ public class Tank_Bullet {
         if (gp2 != null && gp2.getEnemyTanks() != null) {
             for (Tank tank : gp2.getEnemyTanks()) {
                 if (tank != null && tank.isAlive() && tank != shooter && isCollidingWith(tank)) {
-                    tank.takeDamage(45);  // Deal 10 damage for each bullet hit
+                    tank.takeDamage(90);  // Deal 10 damage for each bullet hit
                     shouldRemove = true;
                     return;
                 }
