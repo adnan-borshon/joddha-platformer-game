@@ -1,22 +1,37 @@
 package platformgame.Tanks;
 
 import javafx.scene.input.KeyCode;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import platformgame.Bullet;
 import platformgame.Game;
 import platformgame.Game_2;
 import platformgame.Map.Level_2;
+import platformgame.Tank_Bullet;
 
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main_Tank extends Tank {
 
+    double bulletSpeed = 400; // Increased bullet speed for better visibility
+
+    // Track current movement direction for bullet firing
+    private double currentMoveDirection = 0; // 0 = right, PI/2 = down, PI = left, 3*PI/2 = up
+    private boolean hasMovementDirection = false;
 
     public Main_Tank(double x, double y, double width, double height, double speed, Game gp, Game_2 gp2) {
         super(x, y, width, height, speed, gp, gp2);
+
         // Set collision box specific to main tank
         setCollisionBox(100, 100, -28, -28);
         // Enable collision debug by default for main tank (optional)
         showCollisionDebug = false;
+
+        // IMPORTANT: Set default movement direction so tank can fire even before moving
+        currentMoveDirection = 0; // Default to firing right
+        hasMovementDirection = true; // Allow firing immediately
     }
 
     @Override
@@ -31,7 +46,7 @@ public class Main_Tank extends Tank {
         double deltaSeconds = deltaTime / 1_000_000_000.0; // Convert to seconds
 
         // Player-specific control method
-        controlWithMouse(keysPressed, mouseX, mouseY, deltaSeconds);
+        controlWithDirectionalMovement(keysPressed, deltaSeconds);
 
         // Use parent's physics processing
         physicsProcess(level2, deltaSeconds);
@@ -46,55 +61,128 @@ public class Main_Tank extends Tank {
         if (keysPressed.contains(KeyCode.F1)) {
             toggleCollisionDebug();
         }
+
+        // Handle shooting with the space bar
+        if (keysPressed.contains(KeyCode.SPACE)) {
+            shoot();  // Fire a bullet when spacebar is pressed
+        }
     }
 
     @Override
     protected void updateBehavior(Level_2 level2, Game_2 game, double deltaTime) {
-        // This method is called by parent's update, but for Main_Tank we use the mouse-controlled version above
-        // So this can be empty or used for additional main tank specific behavior
+        // Empty as we handle directional behavior in the `update` method
     }
 
-    // Player-specific control method with mouse control for turret
-    private void controlWithMouse(Set<KeyCode> keysPressed, double mouseX, double mouseY, double deltaTime) {
-        // Turret follows mouse (equivalent to $Turret.look_at(get_global_mouse_position()))
-        double dx = mouseX - (x + width/2);
-        double dy = mouseY - (y + height/2);
-        turretRotation = Math.atan2(dy, dx);
+    // Shoot a bullet in the current movement direction
+    @Override
+    public void shoot() {
+        if (canShoot && alive) {
+            canShoot = false;
+            gunTimer = gunCooldown;
 
-        // Tank rotation input
-        int rotationDirection = 0;
-        if (keysPressed.contains(KeyCode.A)) {
-            rotationDirection -= 1;
+            System.out.println("Main tank shooting in direction: " + Math.toDegrees(currentMoveDirection)); // Debug output
+
+            // Get center position for bullet creation
+            double bulletX = x + width / 2;
+            double bulletY = y + height / 2;
+
+            // Calculate bullet velocity based on current movement direction
+            double velocityX = bulletSpeed * Math.cos(currentMoveDirection);
+            double velocityY = bulletSpeed * Math.sin(currentMoveDirection);
+
+            // Create bullet and set the shooter to this tank
+            Tank_Bullet bullet = new Tank_Bullet(bulletX, bulletY, velocityX, velocityY, null, gp2, this);
+
+            // Add bullet to the game's bullet list
+            if (gp2 != null) {
+                gp2.addBullet(bullet);
+            }
         }
-        if (keysPressed.contains(KeyCode.D)) {
-            rotationDirection += 1;
+    }
+
+    // This method creates bullet locally (used by parent class if needed)
+    @Override
+    protected void createBullet(double x, double y) {
+        // Calculate velocity based on current movement direction
+        double velocityX = bulletSpeed * Math.cos(currentMoveDirection);
+        double velocityY = bulletSpeed * Math.sin(currentMoveDirection);
+
+        // Create bullet and set the shooter
+        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2, this);
+
+        // Add bullet to the game's bullet list instead of local list
+        if (gp2 != null) {
+            gp2.addBullet(bullet);
         }
+    }
 
-        // Apply rotation
-        tankRotation += rotationSpeed * rotationDirection * deltaTime;
+    // Override the createBullet method with velocity parameters
+    @Override
+    public void createBullet(double x, double y, double velocityX, double velocityY) {
+        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2);
 
-        // Tank movement input
+        // Add bullet to the game's bullet list
+        if (gp2 != null) {
+            gp2.addBullet(bullet);
+        }
+    }
+
+    private void controlWithDirectionalMovement(Set<KeyCode> keysPressed, double deltaTime) {
+        // Reset movement state
         velocity.set(0, 0);
         isMoving = false;
+        hasMovementDirection = false;
 
-        if (keysPressed.contains(KeyCode.W)) {
-            // Forward movement
-            velocity.x = speed * Math.cos(tankRotation);
-            velocity.y = speed * Math.sin(tankRotation);
+        // Handle 8-directional movement and track direction for bullet firing
+        boolean up = keysPressed.contains(KeyCode.W);
+        boolean down = keysPressed.contains(KeyCode.S);
+        boolean left = keysPressed.contains(KeyCode.A);
+        boolean right = keysPressed.contains(KeyCode.D);
+
+        double moveX = 0;
+        double moveY = 0;
+
+        // Calculate movement vector
+        if (up) moveY -= 1;
+        if (down) moveY += 1;
+        if (left) moveX -= 1;
+        if (right) moveX += 1;
+
+        // If there's movement, calculate direction and velocity
+        if (moveX != 0 || moveY != 0) {
             isMoving = true;
-        } else if (keysPressed.contains(KeyCode.S)) {
-            // Backward movement (half speed)
-            velocity.x = -(speed/2) * Math.cos(tankRotation);
-            velocity.y = -(speed/2) * Math.sin(tankRotation);
-            isMoving = true;
+            hasMovementDirection = true;
+
+            // Calculate movement direction
+            currentMoveDirection = Math.atan2(moveY, moveX);
+
+            // Normalize diagonal movement to maintain consistent speed
+            double length = Math.sqrt(moveX * moveX + moveY * moveY);
+            if (length > 0) {
+                moveX /= length;
+                moveY /= length;
+            }
+
+            // Set velocity
+            velocity.x = speed * moveX;
+            velocity.y = speed * moveY;
+
+            // Update tank rotation to match movement direction
+            tankRotation = currentMoveDirection;
         }
+
+        // If no movement keys are pressed but we had a previous direction, keep that direction
+        // This allows firing in the last moved direction even when stationary
     }
 
     @Override
-    protected void createBullet(double x, double y) {
-        // Create player bullet
-//        Bullet bullet = new Bullet(x, y, bulletSpeed);
-        // You might want to add the bullet to a bullet manager or list here
+    protected void updateGunTimer(double deltaTime) {
+        if (gunTimer > 0) {
+            gunTimer -= deltaTime;
+            if (gunTimer <= 0) {
+                canShoot = true;
+            }
+        }
     }
 
     @Override
@@ -118,20 +206,18 @@ public class Main_Tank extends Tank {
         System.out.println("Main Tank engine roaring...");
     }
 
-    // Additional player-specific methods can be added here
-    public void upgradeSpeed(double multiplier) {
-        speed *= multiplier;
-        System.out.println("Tank speed upgraded! New speed: " + speed);
+    // Getter methods for position (x and y)
+    public double getTankX() {
+        return x; // Return the x-coordinate of the tank
     }
 
-    public void upgradeFireRate(double multiplier) {
-        gunCooldown *= multiplier;
-        System.out.println("Tank fire rate upgraded! New cooldown: " + gunCooldown);
+    public double getTankY() {
+        return y; // Return the y-coordinate of the tank
     }
 
-    public void upgradeHealth(int additionalHealth) {
-        setMaxHealth(maxHealth + additionalHealth);
-        heal(additionalHealth);
-        System.out.println("Tank health upgraded! New max health: " + maxHealth);
+    // Getter for current movement direction (for debugging or other purposes)
+    public double getCurrentMoveDirection() {
+        return currentMoveDirection;
     }
+
 }

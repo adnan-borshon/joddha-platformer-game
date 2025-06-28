@@ -77,6 +77,7 @@ public class Game extends Pane {
         canvas = new Canvas(screenWidth, screenHeight);
         gc = canvas.getGraphicsContext2D();
 
+
         // Initialize chat system
         chatUI = new ChatUI(this);
 

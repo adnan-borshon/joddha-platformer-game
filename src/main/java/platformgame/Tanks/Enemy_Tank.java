@@ -1,238 +1,225 @@
 package platformgame.Tanks;
 
-import platformgame.Bullet;
 import platformgame.Game;
 import platformgame.Game_2;
 import platformgame.Map.Level_2;
-import platformgame.Tanks.Tank;
-import platformgame.Tanks.Vector2D;
+import platformgame.Tank_Bullet;
+
+import javafx.scene.image.Image;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 
 public class Enemy_Tank extends Tank {
-    // Enemy-specific properties
-    private double detectionRange = 300.0;
-    private double attackRange = 250.0;
-    private double patrolSpeed = 50.0;
-    private double chaseSpeed = 80.0;
+    private double attackRange = 250.0;     // Distance at which the enemy tank will attack
+    protected double bulletSpeed = 300.0;
+    private double turretRotationSpeed = 2.0; // Speed at which turret rotates to track player
 
-    // AI state
-    private EnemyState currentState = EnemyState.PATROL;
-    private Vector2D patrolTarget;
-    private Vector2D patrolStartPoint;
-    private double patrolRadius = 150.0;
-    private double lastPlayerSightTime = 0;
-    private double losePlayerDelay = 3.0; // seconds before giving up chase
-
-    // Target tracking
-    private Tank targetTank = null;
-
-    public enum EnemyState {
-        PATROL,
-        CHASE,
-        ATTACK,
-        SEARCH
-    }
+    // Fixed position for the tank (it won't move from this position)
+    private final double fixedX;
+    private final double fixedY;
 
     public Enemy_Tank(double x, double y, double width, double height, double speed, Game gp, Game_2 gp2) {
         super(x, y, width, height, speed, gp, gp2);
+        setCollisionBox(100, 100, -28, -28);
 
-        // Enemy tank has different stats
-        this.maxHealth = 80;
-        this.health = maxHealth;
-        this.rotationSpeed = 2.0; // Slower rotation than player
-        this.gunCooldown = 1.0; // Slower fire rate than player
+        // Store the fixed position
+        this.fixedX = x;
+        this.fixedY = y;
 
-        // Set collision box for enemy tank
-        setCollisionBox(90, 90, -25, -25);
-
-        // Initialize patrol behavior
-        patrolStartPoint = new Vector2D(x, y);
-        generatePatrolTarget();
+        // Set velocity to zero since tank is static
+        velocity.x = 0;
+        velocity.y = 0;
     }
 
     @Override
     protected void loadTankSprite() {
-        // Load enemy tank sprite (you'd have a different sprite for enemies)
-        loadSprite("/image/Enemy_Tank.png");
-        // If you don't have a separate enemy sprite, you could use the same one
-        // loadSprite("/image/Tank.png");
+        loadSprite("/image/Tank_Enemy.png");  // Load a specific sprite for the enemy tank
     }
 
     @Override
-    protected void updateBehavior(Level_2 level2, Game_2 game, double deltaTime) {
-        // Find player tank
-        findTargetTank(game);
+    public void updateBehavior(Level_2 level2, Game_2 gp2, double deltaTime) {
+        if (!alive) return;
 
-        // Update AI based on current state
-        switch (currentState) {
-            case PATROL:
-                updatePatrolBehavior(deltaTime);
-                checkForPlayer(deltaTime);
-                break;
-            case CHASE:
-                updateChaseBehavior(deltaTime);
-                checkPlayerDistance();
-                break;
-            case ATTACK:
-                updateAttackBehavior(deltaTime);
-                checkPlayerDistance();
-                break;
-            case SEARCH:
-                updateSearchBehavior(deltaTime);
-                break;
+        // Always keep the tank at its fixed position
+        this.x = fixedX;
+        this.y = fixedY;
+        velocity.x = 0;
+        velocity.y = 0;
+
+        // Calculate the distance to the player's tank
+        double distanceToPlayer = Math.sqrt(Math.pow(x - gp2.mainTank.getTankX(), 2) + Math.pow(y - gp2.mainTank.getTankY(), 2));
+
+        // Only track and shoot if player is within attack range
+        if (distanceToPlayer <= attackRange) {
+            // Calculate angle to player
+            double dx = gp2.mainTank.getTankX() - x;
+            double dy = gp2.mainTank.getTankY() - y;
+            double targetRotation = Math.atan2(dy, dx);
+
+            // Smoothly rotate turret toward player
+            double angleDifference = targetRotation - turretRotation;
+
+            // Normalize angle difference to [-π, π]
+            while (angleDifference > Math.PI) angleDifference -= 2 * Math.PI;
+            while (angleDifference < -Math.PI) angleDifference += 2 * Math.PI;
+
+            // Rotate turret smoothly toward target
+            if (Math.abs(angleDifference) > 0.1) { // Small threshold to prevent jittering
+                turretRotation += Math.signum(angleDifference) * turretRotationSpeed * deltaTime;
+            } else {
+                turretRotation = targetRotation; // Snap to target when close enough
+            }
+
+            // Shoot at player when turret is approximately aimed
+            if (Math.abs(angleDifference) < 0.2) { // Allow some tolerance for shooting
+                shoot();
+            }
         }
 
-        // Update turret to face movement direction or target
-        updateTurretRotation(deltaTime);
+        // Update gun timer
+        updateGunTimer(deltaTime);
+
+        // Check collision with player tank
+        checkPlayerCollision(gp2);
+    }
+
+    // Method to check collision with player tank
+    private void checkPlayerCollision(Game_2 gp2) {
+        if (gp2.mainTank != null && gp2.mainTank.alive && this.alive) {
+            // Calculate distance between tanks
+            double dx = x - gp2.mainTank.getX();
+            double dy = y - gp2.mainTank.getY();
+            double distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Simple circular collision detection
+            double collisionDistance = 80.0; // Adjust this value as needed
+
+            if (distance < collisionDistance) {
+                // Handle collision - just log for now to avoid damage loops
+                System.out.println("Tank collision detected! Distance: " + distance);
+
+                // Optional: Apply small damage over time
+                //takeDamage(1);
+
+                //gp2.mainTank.takeDamage(1);
+            }
+        }
+    }
+
+    @Override
+    public void shoot() {
+        if (canShoot && alive) {
+            canShoot = false;
+            gunTimer = gunCooldown;
+
+            // Get muzzle position for bullet creation
+            Vector2D muzzlePos = getMuzzlePosition();
+
+            // Calculate bullet velocity based on turret rotation
+            double velocityX = bulletSpeed * Math.cos(turretRotation);
+            double velocityY = bulletSpeed * Math.sin(turretRotation);
+
+            // Create bullet and add it to the game - this bullet should damage the player
+            Tank_Bullet bullet = new Tank_Bullet(muzzlePos.x, muzzlePos.y, velocityX, velocityY, null, gp2);
+
+            // Add bullet to the game's bullet list
+            if (gp2 != null) {
+                gp2.addBullet(bullet);
+            }
+        }
     }
 
     @Override
     protected void createBullet(double x, double y) {
+        // Calculate velocity based on turret rotation
+        double velocityX = bulletSpeed * Math.cos(turretRotation);
+        double velocityY = bulletSpeed * Math.sin(turretRotation);
 
+        // Create bullet and add it to the game
+        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2);
+
+        // Add bullet to the game's bullet list
+        if (gp2 != null) {
+            gp2.addBullet(bullet);
+        }
     }
 
-    private void findTargetTank(Game_2 game) {
-        // In a real implementation, you'd get the player tank from the game
-        // For now, this is a placeholder
-        // targetTank = game.getMainTank();
+    @Override
+    public void createBullet(double x, double y, double velocityX, double velocityY) {
+        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2, this);
+
+        // Add bullet to the game's bullet list
+        if (gp2 != null) {
+            gp2.addBullet(bullet);
+        }
     }
 
-    private void updatePatrolBehavior(double deltaTime) {
-        // Move towards patrol target
-        if (patrolTarget != null) {
-            double dx = patrolTarget.x - (x + width/2);
-            double dy = patrolTarget.y - (y + height/2);
-            double distance = Math.sqrt(dx*dx + dy*dy);
+    // Override physics process to prevent movement but keep collision checking
+    @Override
+    protected void physicsProcess(Level_2 level2, double deltaTime) {
+        // Keep the tank at fixed position
+        this.x = fixedX;
+        this.y = fixedY;
+        velocity.x = 0;
+        velocity.y = 0;
 
-            if (distance < 30) {
-                // Reached patrol target, generate new one
-                generatePatrolTarget();
-            } else {
-                // Move towards patrol target
-                double angle = Math.atan2(dy, dx);
-                tankRotation = angle;
-
-                velocity.x = patrolSpeed * Math.cos(angle);
-                velocity.y = patrolSpeed * Math.sin(angle);
-                isMoving = true;
+        // Still check for map collisions (in case something tries to move the tank)
+        if (level2 != null) {
+            // Check collision with map objects at current position
+            if (level2.checkCollisionWithRectangle(x + collisionOffsetX, y + collisionOffsetY,
+                    collisionWidth, collisionHeight)) {
+                // If the fixed position collides with map, you might want to log this
+                System.out.println("Warning: Enemy tank placed at colliding position!");
             }
         }
     }
 
-    private void updateChaseBehavior(double deltaTime) {
-        if (targetTank != null && targetTank.isAlive()) {
-            double dx = targetTank.getTankX() - x;
-            double dy = targetTank.getTankY() - y;
-            double distance = Math.sqrt(dx*dx + dy*dy);
+    @Override
+    public void draw(GraphicsContext gc, double camX, double camY, double scale) {
+        super.draw(gc, camX, camY, scale);
 
-            if (distance <= attackRange) {
-                currentState = EnemyState.ATTACK;
-            } else {
-                // Chase the player
-                double angle = Math.atan2(dy, dx);
-                tankRotation = angle;
+        // Draw enemy-specific visuals
+        if (alive) {
+            gc.setFill(Color.RED);
+            gc.fillText("Enemy Tank", (x - camX) * scale, (y - camY) * scale - 10);
 
-                velocity.x = chaseSpeed * Math.cos(angle);
-                velocity.y = chaseSpeed * Math.sin(angle);
-                isMoving = true;
-            }
-        } else {
-            // Lost target, go to search mode
-            currentState = EnemyState.SEARCH;
-        }
-    }
-
-    private void updateAttackBehavior(double deltaTime) {
-        if (targetTank != null && targetTank.isAlive()) {
-            double dx = targetTank.getTankX() - x;
-            double dy = targetTank.getTankY() - y;
-            double distance = Math.sqrt(dx*dx + dy*dy);
-
-            if (distance > attackRange * 1.2) {
-                // Player moved away, chase again
-                currentState = EnemyState.CHASE;
-            } else {
-                // Stop moving and attack
-                velocity.set(0, 0);
-                isMoving = false;
-
-                // Aim at player
-                turretRotation = Math.atan2(dy, dx);
-
-                // Shoot at player
-                if (canShoot) {
-                    shoot();
-                }
-            }
-        } else {
-            currentState = EnemyState.SEARCH;
-        }
-    }
-
-    private void updateSearchBehavior(double deltaTime) {
-        // Search behavior: rotate and occasionally move
-        lastPlayerSightTime += deltaTime;
-
-        if (lastPlayerSightTime > losePlayerDelay) {
-            // Give up search, return to patrol
-            currentState = EnemyState.PATROL;
-            lastPlayerSightTime = 0;
-        } else {
-            // Rotate to search
-            tankRotation += rotationSpeed * deltaTime;
-        }
-    }
-
-    private void checkForPlayer(double deltaTime) {
-        if (targetTank != null && targetTank.isAlive()) {
-            double dx = targetTank.getTankX() - x;
-            double dy = targetTank.getTankY() - y;
-            double distance = Math.sqrt(dx*dx + dy*dy);
-
-            if (distance <= detectionRange) {
-                currentState = EnemyState.CHASE;
-                lastPlayerSightTime = 0;
+            // Optional: Draw attack range circle for debugging
+            if (showCollisionDebug) {
+                gc.setStroke(Color.RED);
+                gc.setGlobalAlpha(0.3);
+                gc.strokeOval((x - attackRange - camX) * scale, (y - attackRange - camY) * scale,
+                        attackRange * 2 * scale, attackRange * 2 * scale);
+                gc.setGlobalAlpha(1.0);
             }
         }
     }
 
-    private void checkPlayerDistance() {
-        if (targetTank != null && targetTank.isAlive()) {
-            double dx = targetTank.getTankX() - x;
-            double dy = targetTank.getTankY() - y;
-            double distance = Math.sqrt(dx*dx + dy*dy);
-
-            if (distance > detectionRange * 1.5) {
-                // Player is too far, start searching
-                currentState = EnemyState.SEARCH;
-                lastPlayerSightTime = 0;
-            }
-        }
+    // Override onDamageTaken to add enemy-specific behavior
+    @Override
+    protected void onDamageTaken(int damage) {
+        super.onDamageTaken(damage);
+        System.out.println("Enemy tank took " + damage + " damage! Health: " + health);
     }
 
-    private void updateTurretRotation(double deltaTime) {
-        double targetRotation = tankRotation;
-
-        if (currentState == EnemyState.ATTACK && targetTank != null) {
-            // Aim turret at player
-            double dx = targetTank.getTankX() - x;
-            double dy = targetTank.getTankY() - y;
-            targetRotation = Math.atan2(dy, dx);
-        }
-
-        // Smooth turret rotation
-        double rotationDiff = targetRotation - turretRotation;
-        while (rotationDiff > Math.PI) rotationDiff -= 2 * Math.PI;
-        while (rotationDiff < -Math.PI) rotationDiff += 2 * Math.PI;
-
-        double maxRotationStep = rotationSpeed * deltaTime;
-        if (Math.abs(rotationDiff) <= maxRotationStep) {
-            turretRotation = targetRotation;
-        } else {
-            turretRotation += Math.signum(rotationDiff) * maxRotationStep;
-        }
+    // Override onDestroyed to add enemy-specific behavior
+    @Override
+    protected void onDestroyed() {
+        super.onDestroyed();
+        System.out.println("Enemy tank destroyed!");
+        // You could add explosion effects, score points, etc.
     }
 
-    private void generatePatrolTarget() {
-        // Generate a random point within patrol radius
-        double angle = Math.random() * 2 * Math.PI;}
+    // Getter for attack range (useful for game balancing)
+    public double getAttackRange() {
+        return attackRange;
     }
+
+    // Setter for attack range (useful for different enemy types)
+    public void setAttackRange(double range) {
+        this.attackRange = range;
+    }
+
+    // Get fixed position
+    public double getFixedX() { return fixedX; }
+    public double getFixedY() { return fixedY; }
+}

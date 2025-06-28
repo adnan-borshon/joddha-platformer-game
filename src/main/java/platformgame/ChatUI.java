@@ -263,7 +263,9 @@ public class ChatUI {
     private void initializeChatClient() {
         // Get username from game or generate one
         String username = "Player" + (int)(Math.random() * 1000);
-        chatClient = new ChatClient(username);
+        chatClient = new ChatClient("192.168.0.110", 8080, username);
+
+
 
         // Set up chat client callbacks
         chatClient.setMessageCallback(new ChatClient.ChatMessageCallback() {
@@ -404,9 +406,10 @@ public class ChatUI {
                 return;
             }
 
-            chatClient.sendAmmo(selectedPlayer, amount);
+            String recipient = selectedPlayer.split(" ")[0]; // fix: only username
+            chatClient.sendAmmo(recipient, amount);
             ammoSendField.clear();
-            addMessage("📤 Sending " + amount + " ammo to " + selectedPlayer + "...", true);
+            addMessage("📤 Sending " + amount + " ammo to " + recipient + "...", true);
 
         } catch (NumberFormatException e) {
             addMessage("Invalid ammo amount", true);
@@ -414,6 +417,7 @@ public class ChatUI {
             addMessage("Failed to send ammo: " + e.getMessage(), true);
         }
     }
+
 
     private void refreshPlayerList() {
         try {
