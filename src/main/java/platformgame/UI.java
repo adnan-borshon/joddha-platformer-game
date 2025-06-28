@@ -182,7 +182,8 @@ public class UI {
             // ✅ Draw Ammo
             if (ammoIcon != null) {
                 gc.drawImage(ammoIcon, 110, 20, 32, 32);
-                gc.fillText("x " + game.player.ammo, 150, 45);
+                gc.fillText("x " + game.getPlayerAmmo(), 150, 45);
+
             }
 
             drawHealthBar(gc, game.player.hp, game.player.maxHp);
