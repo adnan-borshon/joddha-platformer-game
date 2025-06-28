@@ -219,4 +219,5 @@ public class Main_Tank extends Tank {
     public double getCurrentMoveDirection() {
         return currentMoveDirection;
     }
+
 }

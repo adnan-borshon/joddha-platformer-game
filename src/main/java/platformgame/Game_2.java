@@ -41,8 +41,11 @@ public class Game_2 extends Pane {
     Sound music = Sound.getInstance();
     Sound sound = Sound.getInstance();
 
-    // Array of enemy tanks
-    Enemy_Tank[] enemyTank = new Enemy_Tank[15];
+    // FIXED: Use ArrayList instead of array for better management
+    public ArrayList<Enemy_Tank> enemyTanks = new ArrayList<>();
+
+    // Keep the array for backward compatibility but don't use it for collision
+    Enemy_Tank[] enemyTank = new Enemy_Tank[10];
 
     // List to store all bullets
     private ArrayList<Tank_Bullet> bullets = new ArrayList<>();
@@ -64,8 +67,8 @@ public class Game_2 extends Pane {
         double tankStartY = 35 * tileSize;
         mainTank = new Main_Tank(tankStartX, tankStartY, 128, 128, 200.0, null, this);
 
-        // Initialize enemy tanks
-        initializeEnemyTanks();
+        // Initialize enemy tanks - REMOVED from constructor
+        // initializeEnemyTanks(); // This was causing issues
 
         loadLevel();
 
@@ -73,29 +76,27 @@ public class Game_2 extends Pane {
         setOnKeyPressed(this::onKeyPressed);
         setOnKeyReleased(this::onKeyReleased);
 
-        setUpObject();
+        setUpObject(); // This will properly set up the enemy tanks
 
         // Request focus immediately
         requestFocus();
     }
 
-    private void initializeEnemyTanks() {
-        // Initialize the enemy tank array with instances of Enemy_Tank
-        for (int i = 0; i < enemyTank.length; i++) {
-            // Example: Set initial positions for enemy tanks
-            double x = 100 + (i * 100);  // Simple positioning for demo
-            double y = 100 + (i * 50);
-            enemyTank[i] = new Enemy_Tank(x, y, 128, 128, 150.0, null, this); // Adjust speed as needed
-        }
-    }
+    // REMOVED: This method was creating dummy enemy tanks
+    // private void initializeEnemyTanks() { ... }
 
     private void setUpObject() {
         assetSetter.setTank();
     }
 
-    // Method to return all enemy tanks
+    // Method to return all enemy tanks - UPDATED
     public Enemy_Tank[] getEnemyTanks() {
-        return enemyTank;  // Return the enemy tank array
+        return enemyTank;  // Return the enemy tank array for backward compatibility
+    }
+
+    // NEW: Method to get enemy tanks as ArrayList
+    public ArrayList<Enemy_Tank> getEnemyTanksList() {
+        return enemyTanks;
     }
 
     // Method to add bullets to the game
@@ -150,16 +151,26 @@ public class Game_2 extends Pane {
             System.err.println("mainTank is null!");
         }
 
-        // Draw enemy tanks
-        for (Enemy_Tank enemy : enemyTank) {
-            if (enemy != null) {
+        // UPDATED: Draw enemy tanks using both methods for compatibility
+        // Draw from array (backward compatibility)
+        for (int i = 0; i < enemyTank.length; i++) {
+            if (enemyTank[i] != null) {
+                enemyTank[i].draw(gc, camX, camY, 1);
+            }
+        }
+
+        // Draw from ArrayList (new method)
+        for (Enemy_Tank enemy : enemyTanks) {
+            if (enemy != null && enemy.isAlive()) {
                 enemy.draw(gc, camX, camY, 1);
             }
         }
 
         // Draw all bullets
         for (Tank_Bullet bullet : bullets) {
-            bullet.draw(gc, camX, camY, 1);
+            if (bullet != null) {
+                bullet.draw(gc, camX, camY, 1);
+            }
         }
 
         if (level2 != null) {
@@ -190,10 +201,18 @@ public class Game_2 extends Pane {
             // Convert deltaTime from nanoseconds to seconds for enemy tanks
             double deltaSeconds = deltaTime / 1_000_000_000.0;
 
-            // Update all enemy tanks
+            // UPDATED: Update all enemy tanks from both sources
+            // Update from array
             for (Enemy_Tank enemy : enemyTank) {
-                if (enemy != null) {
-                    enemy.updateBehavior(level2, this, deltaSeconds); // Pass deltaSeconds instead of deltaTime
+                if (enemy != null && enemy.isAlive()) {
+                    enemy.updateBehavior(level2, this, deltaSeconds);
+                }
+            }
+
+            // Update from ArrayList
+            for (Enemy_Tank enemy : enemyTanks) {
+                if (enemy != null && enemy.isAlive()) {
+                    enemy.updateBehavior(level2, this, deltaSeconds);
                 }
             }
 
