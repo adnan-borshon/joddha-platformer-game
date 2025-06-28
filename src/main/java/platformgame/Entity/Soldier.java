@@ -123,10 +123,8 @@ public class Soldier extends Enemy {
         else if (distanceToPlayer >= 6 * gp.tileSize && distanceToPlayer <= 8 * gp.tileSize) {
             startFollowingPlayer(now);
         }
-        // Patrol (inherited behavior)
-        else {
-            patrol(now);
-        }
+
+
 
         // Handle animations based on current state and direction
         updateAnimations(now);

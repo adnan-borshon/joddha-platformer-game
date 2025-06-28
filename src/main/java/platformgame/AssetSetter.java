@@ -71,20 +71,20 @@ public class AssetSetter {
         gp.object[3].worldX = 4 * gp.tileSize;
         gp.object[3].worldY = 60 * gp.tileSize;
         gp.object[3] = new Obj_Key();
-        gp.object[3].worldX = 81 * gp.tileSize;
-        gp.object[3].worldY = 55 * gp.tileSize;
+        gp.object[3].worldX = 85 * gp.tileSize;
+        gp.object[3].worldY = 32 * gp.tileSize;
 
         //key opener
         gp.object[4] = new Obj_key_opener();
-        gp.object[4].worldX = 15 * gp.tileSize;
-        gp.object[4].worldY = 62 * gp.tileSize;
+        gp.object[4].worldX = 14 * gp.tileSize;
+        gp.object[4].worldY = 61 * gp.tileSize;
 
         gp.object[5] = new Obj_key_opener();
         gp.object[5].worldX = 67 * gp.tileSize;
         gp.object[5].worldY = 49 * gp.tileSize;
 
         gp.object[6] = new Obj_key_opener();
-        gp.object[6].worldX = 80 * gp.tileSize;
+        gp.object[6].worldX = 79 * gp.tileSize;
         gp.object[6].worldY = 33 * gp.tileSize;
 
         //granade
@@ -93,18 +93,17 @@ public class AssetSetter {
         gp.object[7].worldX = 44 * gp.tileSize;
         gp.object[7].worldY = 9 * gp.tileSize;
 
-        gp.object[8] = new Obj_granade();
-        gp.object[8].worldX = 92 * gp.tileSize;
-        gp.object[8].worldY = 9 * gp.tileSize;
+        gp.object[8] = new Obj_Boom(92,9);
+
 
         //granade launcher
 
         gp.object[9] = new Obj_granade_launcher();
-        gp.object[9].worldX = 68 * gp.tileSize;
-        gp.object[9].worldY = 7 * gp.tileSize;
+        gp.object[9].worldX = 61 * gp.tileSize;
+        gp.object[9].worldY = 24 * gp.tileSize;
 
         gp.object[10] = new Obj_granade_launcher();
-        gp.object[10].worldX = 90 * gp.tileSize;
+        gp.object[10].worldX = 89 * gp.tileSize;
         gp.object[10].worldY = 45 * gp.tileSize;
 
 // ammonation
@@ -151,31 +150,36 @@ public class AssetSetter {
         gp.object[20].worldX = 77 * gp.tileSize;
         gp.object[20].worldY = 32 * gp.tileSize;
 
+
+        //bridge
+        gp.object[21]=new Obj_Bridge();
+        gp.object[21].worldX = 95* gp.tileSize;
+        gp.object[21].worldY = 43 * gp.tileSize;
+
+        //Container gate
+        gp.object[22]=new Obj_ContainerGate();
+        gp.object[22].worldX = 64* gp.tileSize;
+        gp.object[22].worldY = 24 * gp.tileSize;
+
+
+        //fench gate
+        gp.object[23]=new Obj_FenchGate();
+        gp.object[23].worldX = 69* gp.tileSize;
+        gp.object[23].worldY = 45 * gp.tileSize;
+
+
+        //left gate
+        gp.object[24]=new Obj_LeftGate();
+        gp.object[24].worldX = 13* gp.tileSize;
+        gp.object[24].worldY = 63 * gp.tileSize;
+
+
+        //right gate
+        gp.object[25]=new Obj_RightGate();
+        gp.object[25].worldX = 81* gp.tileSize;
+        gp.object[25].worldY = 30 * gp.tileSize;
     }
-//public void setLauncherAndOpener(){
-//
-//        //key opener
-//        gp.Opener[0]=new Obj_key_opener();
-//        gp.Opener[0].worldX=15*gp.tileSize;
-//        gp.Opener[0].worldY=62*gp.tileSize;
-//    gp.Opener[1]=new Obj_key_opener();
-//    gp.Opener[1].worldX=67*gp.tileSize;
-//    gp.Opener[1].worldY=49*gp.tileSize;
-//
-//    gp.Opener[2]=new Obj_key_opener();
-//    gp.Opener[2].worldX=80*gp.tileSize;
-//    gp.Opener[2].worldY=33*gp.tileSize;
-//
-//    //granade launcher
-//
-//    gp.Launcher[0]= new Obj_granade_launcher();
-//    gp.Launcher[0].worldX=63*gp.tileSize;
-//    gp.Launcher[0].worldY=26*gp.tileSize;
-//
-//    gp.Launcher[1]= new Obj_granade_launcher();
-//    gp.Launcher[1].worldX=90*gp.tileSize;
-//    gp.Launcher[1].worldY=45*gp.tileSize;
-//}
+
 
 
     public void setNpc() {
@@ -195,7 +199,7 @@ public class AssetSetter {
     public void setScout() {
 
 //        gp.scout[0] = new Scout(43 * gp.tileSize, 12 * gp.tileSize, 40, 80, 2, gp);
-        gp.scout[1] = new Scout(59 * gp.tileSize, 45 * gp.tileSize, 40, 80, 2, gp);
+        gp.scout[1] = new Scout(40 * gp.tileSize, 11 * gp.tileSize, 40, 80, 2, gp);
 
     }
 
@@ -239,32 +243,5 @@ public class AssetSetter {
         }
     }
 
-    // NEW: Method to validate entity placement and fix overlaps
-    public void validateEntityPlacement() {
-        System.out.println("Validating entity placement...");
 
-        // Check soldiers
-        for (int i = 0; i < gp.soldiers.length; i++) {
-            if (gp.soldiers[i] != null) {
-                // Check if this soldier overlaps with others
-                for (int j = i + 1; j < gp.soldiers.length; j++) {
-                    if (gp.soldiers[j] != null) {
-                        double distance = Math.hypot(
-                                gp.soldiers[i].getX() - gp.soldiers[j].getX(),
-                                gp.soldiers[i].getY() - gp.soldiers[j].getY()
-                        );
-
-                        if (distance < gp.tileSize) {
-                            System.out.println("WARNING: Soldiers " + i + " and " + j + " are too close!");
-                            // Slightly move the second soldier
-                            gp.soldiers[j].setPosition(
-                                    gp.soldiers[j].getX() + gp.tileSize,
-                                    gp.soldiers[j].getY()
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
