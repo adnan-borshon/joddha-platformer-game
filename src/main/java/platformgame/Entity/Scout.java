@@ -337,9 +337,13 @@ public class Scout extends Entity {
 
         // Handle death animation - remove entity after animation completes
         if (isDead) {
-            int frameIndex = (int) ((now - deathStartTime) / deathFrameDuration);
-            if (frameIndex < totalDeathFrames) {
-                currentRow = deathAnimationRow;
+            if (deathStartTime == 0) {
+                deathStartTime = now;
+            }
+            currentRow=deadRow;
+            int frameIndex = (int) ((now - deathStartTime) / 200_000_000);
+            if (frameIndex < deadFrame) {
+
                 currentFrame = frameIndex;
             } else {
                 currentFrame = deadFrame - 1; // Stay on last frame briefly
@@ -348,6 +352,8 @@ public class Scout extends Entity {
                     deathAnimationComplete = true;
                 }
             }
+
+            gp.scout[0]=null;
             return;
         }
 
@@ -638,8 +644,11 @@ public class Scout extends Entity {
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         // Only draw if not dead - this makes the scout disappear after death
-        if (!isDead  || (isDead && !deathAnimationComplete)) {
-            drawEntity(gc, camX, camY, scale, !facingRight);
+        if (!isDead || (isDead && !deathAnimationComplete)) {
+            drawEntity(gc, camX, camY, scale);
+        }
+
+        if (!isDead ) {
 
             if (showingDialogue) drawDialogue(gc, camX, camY, scale);
             if (visibleHealthBar) drawHealthBar(gc, camX, camY, scale);

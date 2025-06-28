@@ -11,7 +11,7 @@ public class Obj_Boom extends SuperObject {
 
     public Obj_Boom(int worldX, int worldY) {
         this.name = "Boom";
-        this.image = new Image(getClass().getResourceAsStream("/image/Object/blueheart.png"));
+        this.image = new Image(getClass().getResourceAsStream("/image/Object/Granade.png"));
         this.worldX = worldX;
         this.worldY = worldY;
         this.collision = true;

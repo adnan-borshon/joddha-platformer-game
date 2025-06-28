@@ -7,22 +7,21 @@ import platformgame.ImageLoader;
 
 import java.util.Objects;
 
-public class Obj_Life extends SuperObject {
+public class Obj_granade_launcher extends SuperObject {
 
-    public Obj_Life() {
-        name = "life";
+    public Obj_granade_launcher() {
+        name = "granade_launcher";
         // Instead of directly using new Image(), use ImageLoader:
-        image = ImageLoader.load("/image/Object/Life.png");
-        collision = false;
+        image = ImageLoader.load("/image/Object/granade_launcher.png");
+        collision = true; // ✅ Enable collision
     }
-
 
     @Override
     public void draw(GraphicsContext gc, Game game) {
         if (image != null) {
             double screenX = (worldX - game.camX) * game.scale;
             double screenY = (worldY - game.camY) * game.scale;
-            double size = 40 * game.scale; // slight enlargement
+            double size = 80 * game.scale;
             gc.drawImage(image, screenX, screenY, size, size);
         }
     }

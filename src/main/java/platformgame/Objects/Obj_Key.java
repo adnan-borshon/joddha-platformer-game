@@ -1,19 +1,28 @@
 package platformgame.Objects;
 
-
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
+import platformgame.Game;
 import platformgame.ImageLoader;
 
+import java.util.Objects;
+
 public class Obj_Key extends SuperObject {
-    public Obj_Key(){
+
+    public Obj_Key() {
         name = "key";
+        // Instead of directly using new Image(), use ImageLoader:
+        image = ImageLoader.load("/image/Object/key.png");
 
-        try{
-            image = ImageLoader.load("/image/Object/key.png");
+    }
 
-
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    @Override
+    public void draw(GraphicsContext gc, Game game) {
+        if (image != null) {
+            double screenX = (worldX - game.camX) * game.scale;
+            double screenY = (worldY - game.camY) * game.scale;
+            double size = 40 * game.scale;
+            gc.drawImage(image, screenX, screenY, size, size);
         }
     }
 }

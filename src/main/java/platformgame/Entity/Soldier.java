@@ -438,11 +438,12 @@ private int totalFramesShoot=0;
 
     @Override
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
-
+        // Always draw the soldier, even when dead (for death animation)
+        // We'll handle the death animation visibility in the parent class draw method
         super.draw(gc, camX, camY, scale);
 
         // Only draw bullets if soldier is not dead
-        if (!isDead  || (isDead && !deathAnimationComplete)) {
+        if (!isDead) {
             for (Bullet bullet : bullets) {
                 bullet.draw(gc, camX, camY, scale, facingRight);
             }

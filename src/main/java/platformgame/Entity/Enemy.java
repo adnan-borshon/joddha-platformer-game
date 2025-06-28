@@ -329,16 +329,11 @@ public class Enemy extends Entity {
         }
     }
 
-    private void setNewPatrolTarget() {
-        patrolTargetX = patrolStartX + (Math.random() * patrolRange) - (patrolRange / 2);
-        patrolTargetY = patrolStartY + (Math.random() * patrolRange) - (patrolRange / 2);
-        patrolTargetX = Math.max(patrolStartX - patrolRange/2, Math.min(patrolTargetX, patrolStartX + patrolRange/2));
-        patrolTargetY = Math.max(patrolStartY - patrolRange/2, Math.min(patrolTargetY, patrolStartY + patrolRange/2));
-    }
 
-    private boolean hasReachedTarget() {
-        double distance = Math.sqrt(Math.pow(x - patrolTargetX, 2) + Math.pow(y - patrolTargetY, 2));
-        return distance < 20; // Increased threshold for better movement
+    protected boolean hasReachedTarget() {
+        double distance = Math.hypot(x - patrolTargetX, y - patrolTargetY);
+        // only consider it reached when really very close
+        return distance < 8;
     }
 
     protected void moveTowardsTargetWithCollision(double targetX, double targetY, double moveSpeed) {
@@ -358,33 +353,179 @@ public class Enemy extends Entity {
             double newX = x + dx * moveSpeed;
             double newY = y + dy * moveSpeed;
 
-            // Check collision for X movement
-            if (!checkCollisionAt(newX, y)) {
+            // IMPROVED: Try diagonal movement first, then fall back to axis-aligned movement
+            boolean canMoveX = !checkCollisionAt(newX, y);
+            boolean canMoveY = !checkCollisionAt(x, newY);
+            boolean canMoveBoth = !checkCollisionAt(newX, newY);
+
+            if (canMoveBoth) {
+                // Best case: move diagonally
                 x = newX;
-            } else {
-                // Try to slide along walls
-                if (!checkCollisionAt(x, newY)) {
+                y = newY;
+            } else if (canMoveX && canMoveY) {
+                // Choose the axis with larger movement component
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    x = newX;
+                } else {
                     y = newY;
                 }
-            }
-
-            // Check collision for Y movement
-            if (!checkCollisionAt(x, newY)) {
+            } else if (canMoveX) {
+                x = newX;
+            } else if (canMoveY) {
                 y = newY;
             } else {
-                // Try to slide along walls
-                if (!checkCollisionAt(newX, y)) {
-                    x = newX;
-                }
+                // STUCK: Try to find alternative path by slightly adjusting position
+                tryAlternativePath(targetX, targetY, moveSpeed);
+            }
+        }
+    }
+
+    // NEW: Alternative pathfinding when blocked
+    private void tryAlternativePath(double targetX, double targetY, double moveSpeed) {
+        // Try moving in perpendicular directions to get unstuck
+        double[] offsets = {-16, 16, -32, 32}; // Try different offset distances
+
+        for (double offsetX : offsets) {
+            double testX = x + offsetX;
+            if (!checkCollisionAt(testX, y)) {
+                x = testX;
+                return;
+            }
+        }
+
+        for (double offsetY : offsets) {
+            double testY = y + offsetY;
+            if (!checkCollisionAt(x, testY)) {
+                y = testY;
+                return;
             }
         }
     }
 
     private boolean checkCollisionAt(double newX, double newY) {
-        // Simply use the Entity class collision method
-        return isColliding(newX, newY);
-    }
+        // Check tile collision
+        if (checkTileCollision(newX, newY)) {
+            return true;
+        }
 
+        // Check object collision
+        if (checkObjectCollision(newX, newY)) {
+            return true;
+        }
+
+        // IMPROVED: Check NPC collision with exclusion of self and smaller hitbox
+        return checkNpcCollisionExcludingSelf(newX, newY);
+    }
+    private boolean checkNpcCollisionExcludingSelf(double newX, double newY) {
+        // Use smaller hitbox for collision detection (allows closer proximity)
+        double margin = 8.0; // Smaller margin for NPC-to-NPC collision
+
+        Rectangle2D myRect = new Rectangle2D(
+                newX + margin,
+                newY + margin,
+                width - 2 * margin,
+                height - 2 * margin
+        );
+
+        // Check against all NPCs except self
+//        for (Npc npcEntity : gp.npc) {
+//            if (npcEntity != null && npcEntity != this) {
+//                Rectangle2D npcRect = new Rectangle2D(
+//                        npcEntity.getX() + margin,
+//                        npcEntity.getY() + margin,
+//                        npcEntity.getWidth() - 2 * margin,
+//                        npcEntity.getHeight() - 2 * margin
+//                );
+//                if (myRect.intersects(npcRect)) {
+//                    return true;
+//                }
+//            }
+//        }
+
+        // Check against enemies (if this is not an enemy)
+        if (!(this instanceof Enemy)) {
+            for (Enemy enemy : gp.enemies) {
+                if (enemy != null && enemy != this && !enemy.isDead()) {
+                    Rectangle2D enemyRect = new Rectangle2D(
+                            enemy.getX() + margin,
+                            enemy.getY() + margin,
+                            enemy.getWidth() - 2 * margin,
+                            enemy.getHeight() - 2 * margin
+                    );
+                    if (myRect.intersects(enemyRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Check against soldiers (if this is not a soldier)
+        if (!(this instanceof Soldier)) {
+            for (Soldier soldier : gp.soldiers) {
+                if (soldier != null && soldier != this && !soldier.isDead()) {
+                    Rectangle2D soldierRect = new Rectangle2D(
+                            soldier.getX() + margin,
+                            soldier.getY() + margin,
+                            soldier.getWidth() - 2 * margin,
+                            soldier.getHeight() - 2 * margin
+                    );
+                    if (myRect.intersects(soldierRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+    protected void setNewPatrolTarget() {
+        final double halfRange = patrolRange / 2;
+        final double minDistance = 80;  // Increased minimum distance
+        final int maxAttempts = 10;     // Prevent infinite loops
+
+        double tx, ty;
+        int attempts = 0;
+
+        do {
+            tx = patrolStartX + (Math.random() * patrolRange) - halfRange;
+            ty = patrolStartY + (Math.random() * patrolRange) - halfRange;
+
+            // Clamp into the patrol area
+            tx = Math.max(patrolStartX - halfRange, Math.min(tx, patrolStartX + halfRange));
+            ty = Math.max(patrolStartY - halfRange, Math.min(ty, patrolStartY + halfRange));
+
+            attempts++;
+        } while (Math.hypot(tx - x, ty - y) < minDistance &&
+                !wouldCollideWithOthersAt(tx, ty) &&
+                attempts < maxAttempts);
+
+        patrolTargetX = tx;
+        patrolTargetY = ty;
+    }
+    private boolean wouldCollideWithOthersAt(double targetX, double targetY) {
+        double checkRadius = width; // Check in a radius around the target
+
+        // Check if any other entity is too close to this target position
+        for (Enemy enemy : gp.enemies) {
+            if (enemy != null && enemy != this && !enemy.isDead()) {
+                double distance = Math.hypot(enemy.getX() - targetX, enemy.getY() - targetY);
+                if (distance < checkRadius) {
+                    return true;
+                }
+            }
+        }
+
+        for (Soldier soldier : gp.soldiers) {
+            if (soldier != null && soldier != this && !soldier.isDead()) {
+                double distance = Math.hypot(soldier.getX() - targetX, soldier.getY() - targetY);
+                if (distance < checkRadius) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
         // Only draw if not dead or if dead but animation not complete
         if (!isDead || (isDead && !deathAnimationComplete)) {
@@ -397,7 +538,7 @@ public class Enemy extends Entity {
         }
 
         // Uncomment for debugging
-        // drawDebugRectangle(gc, camX, camY, scale);
+//         drawDebugRectangle(gc, camX, camY, scale);
     }
 
     public Rectangle2D getHitbox() {

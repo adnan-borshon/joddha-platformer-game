@@ -7,22 +7,21 @@ import platformgame.ImageLoader;
 
 import java.util.Objects;
 
-public class Obj_Life extends SuperObject {
+public class Obj_key_opener extends SuperObject {
 
-    public Obj_Life() {
-        name = "life";
+    public Obj_key_opener() {
+        name = "key_opener";
         // Instead of directly using new Image(), use ImageLoader:
-        image = ImageLoader.load("/image/Object/Life.png");
-        collision = false;
+        image = ImageLoader.load("/image/Object/key_opener.png");
+        collision = true; // ✅ Enable collision
     }
-
 
     @Override
     public void draw(GraphicsContext gc, Game game) {
         if (image != null) {
             double screenX = (worldX - game.camX) * game.scale;
             double screenY = (worldY - game.camY) * game.scale;
-            double size = 40 * game.scale; // slight enlargement
+            double size = 80 * game.scale;
             gc.drawImage(image, screenX, screenY, size, size);
         }
     }

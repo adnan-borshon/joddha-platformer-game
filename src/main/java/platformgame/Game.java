@@ -39,9 +39,10 @@ public class Game extends Pane {
     public AssetSetter aSetter = new AssetSetter(this);
     public Npc[] npc = new Npc[10];
     public Scout[] scout = new Scout[10];
-    public SuperObject[] object = new SuperObject[15];
+    public SuperObject[] object = new SuperObject[30];
     public Enemy[] enemies = new Enemy[40];
     public Soldier[] soldiers = new Soldier[20];
+
 
     public final double scale = 1.15;
     public final Player player;
@@ -189,9 +190,24 @@ public class Game extends Pane {
             }
         }
 
+//        //for granade launcher
+//        for (SuperObject obj : Launcher) {
+//            if (obj != null && obj.isBehindPlayer(this)) {
+//                obj.draw(gc, this);
+//            }
+//        }
+//
+//        //for key opener
+//        for (SuperObject obj : Opener) {
+//            if (obj != null && obj.isBehindPlayer(this)) {
+//                obj.draw(gc, this);
+//            }
+//        }
+
         for (Scout scoutEntity : scout) {
             if (scoutEntity != null && scoutEntity.isBehindPlayer(this)) {
                 scoutEntity.draw(gc, camX, camY, scale);
+
             }
         }
 
@@ -226,6 +242,18 @@ public class Game extends Pane {
                 obj.draw(gc, this);
             }
         }
+//        //for granade launcher
+//        for (SuperObject obj : Launcher) {
+//            if (obj != null && !obj.isBehindPlayer(this)) {
+//                obj.draw(gc, this);
+//            }
+//        }
+//        //for key opener
+//        for (SuperObject obj : Opener) {
+//            if (obj != null && !obj.isBehindPlayer(this)) {
+//                obj.draw(gc, this);
+//            }
+//        }
 
         eventHandler.draw(gc, camX, camY, scale);
         level1.drawForeground(gc, camX, camY, scale);
@@ -247,11 +275,12 @@ public class Game extends Pane {
 
     public void setUpObject() {
         aSetter.setObject();
-        aSetter.setNpc();
+//        aSetter.setNpc();
         aSetter.setScout();
         aSetter.setEnemy();
         aSetter.setSoldiers();
         aSetter.setExplosion();
+//        aSetter.setLauncherAndOpener();
         playMusic(0);
         GameState = playState;
 
@@ -327,6 +356,7 @@ public class Game extends Pane {
             for (Npc n : npc) {
                 if (n != null) {
                     n.update(deltaTime, now);
+
                 }
             }
 

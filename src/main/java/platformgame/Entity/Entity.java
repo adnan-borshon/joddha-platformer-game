@@ -216,15 +216,41 @@ public abstract class Entity {
 
     public boolean checkNpcCollision(double x, double y) {
         for (Npc npcEntity : gp.npc) {
-            if (npcEntity != null && npcEntity != this) {
+            if (npcEntity != null && npcEntity != this) { // KEY: Exclude self
                 Rectangle2D npcRect = new Rectangle2D(npcEntity.getX(), npcEntity.getY(), npcEntity.getWidth(), npcEntity.getHeight());
                 Rectangle2D entityRect = new Rectangle2D(x, y, width, height);
                 if (entityRect.intersects(npcRect)) {
-                    return true; // Collision detected
+                    return true;
                 }
             }
         }
-        return false;  // No collision
+
+        // Also check against enemies and soldiers arrays
+        if (gp.enemies != null) {
+            for (Enemy enemy : gp.enemies) {
+                if (enemy != null && enemy != this && !enemy.isDead()) {
+                    Rectangle2D enemyRect = new Rectangle2D(enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
+                    Rectangle2D entityRect = new Rectangle2D(x, y, width, height);
+                    if (entityRect.intersects(enemyRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if (gp.soldiers != null) {
+            for (Soldier soldier : gp.soldiers) {
+                if (soldier != null && soldier != this && !soldier.isDead()) {
+                    Rectangle2D soldierRect = new Rectangle2D(soldier.getX(), soldier.getY(), soldier.getWidth(), soldier.getHeight());
+                    Rectangle2D entityRect = new Rectangle2D(x, y, width, height);
+                    if (entityRect.intersects(soldierRect)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     public boolean checkObjectCollision(double x, double y) {
