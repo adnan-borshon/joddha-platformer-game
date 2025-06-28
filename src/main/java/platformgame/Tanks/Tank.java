@@ -1,5 +1,6 @@
 package platformgame.Tanks;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
@@ -148,7 +149,7 @@ public abstract class Tank extends Entity {
     }
 
     // Hook methods for subclasses to override
-    protected void onCollision() {
+    public void onCollision() {
         // Default implementation - can be overridden
         System.out.println("✗ Collision detected! Tank stopped at: (" + String.format("%.2f", x) + ", " + String.format("%.2f", y) + ")");
     }
@@ -309,7 +310,6 @@ public abstract class Tank extends Entity {
         }
     }
 
-
     // Method to load the bullet image (can be used for all tanks)
     private void loadBulletImage() {
         try {
@@ -323,11 +323,10 @@ public abstract class Tank extends Entity {
         }
     }
 
-    // Abstract method for creating a bullet (implemented in Main_Tank class)
+    // Abstract method for creating a bullet (implemented by subclasses)
     protected abstract void createBullet(double x, double y);
 
     // Common method to update all bullets
-// Common method to update all bullets
     public void updateBullets(long deltaTime) {
         if (bullets == null || bullets.isEmpty()) return;  // Check if bullets list is initialized and not empty
 
@@ -349,30 +348,50 @@ public abstract class Tank extends Entity {
 
     // Method to apply damage to the tank
     public void applyDamage(int damage) {
-        health -= damage;
-        if (health <= 0) {
-            alive = false;
-            onDestroyed();
-        }
+        takeDamage(damage);  // Use the existing takeDamage method for consistency
     }
 
     // Common method to draw all bullets
     public void drawBullets(GraphicsContext gc, double camX, double camY, double scale) {
-        for (Tank_Bullet bullet : bullets) {
-            bullet.draw(gc, camX, camY, scale);
+        if (bullets != null) {
+            for (Tank_Bullet bullet : bullets) {
+                bullet.draw(gc, camX, camY, scale);
+            }
         }
     }
 
-    // Method to create a bullet and add it to the list
-    protected void createBullet(double x, double y, double velocityX, double velocityY) {
-        Tank_Bullet bullet = new Tank_Bullet(x, y, velocityX, velocityY, null, gp2);
-        bullets.add(bullet);
+    // Abstract method for creating bullets with velocity (implemented by subclasses)
+    public abstract void createBullet(double x, double y, double velocityX, double velocityY);
+
+    // Health management
+    public void takeDamage(int damage) {
+        if (alive && damage > 0) {
+            health -= damage;
+            onDamageTaken(damage);
+            if (health <= 0) {
+                health = 0;
+                alive = false;
+                onDestroyed();
+            }
+        }
+    }
+
+    public void heal(int amount) {
+        if (alive && amount > 0) {
+            health = Math.min(maxHealth, health + amount);
+            onHealed(amount);
+        }
     }
 
     // Hook methods for damage/healing events
     protected void onDamageTaken(int damage) {
         // Default implementation - can be overridden
-        System.out.println("Tank took " + damage + " damage. Health: " + health);
+        System.out.println("Tank took " + damage + " damage. Health: " + health + "/" + maxHealth);
+    }
+
+    protected void onHealed(int amount) {
+        // Default implementation - can be overridden
+        System.out.println("Tank healed " + amount + " HP. Health: " + health + "/" + maxHealth);
     }
 
     protected void onDestroyed() {
@@ -380,32 +399,33 @@ public abstract class Tank extends Entity {
         System.out.println("Tank destroyed!");
     }
 
-
-    // Health management
-    public void takeDamage(int damage) {
-        if (alive) {
-            health -= damage;
-            onDamageTaken(damage);
-            if (health <= 0) {
-                alive = false;
-                onDestroyed();
-            }
-        }
-    }
-
-    // Hook methods for damage/healing events
+    // FIXED: Consistent getter methods for position
+    public double getTankX() { return x; }
     public double getTankY() { return y; }
+
+    // Standard getters/setters
+    public double getX() { return x; }
+    public double getY() { return y; }
+    public void setX(double x) { this.x = x; }
+    public void setY(double y) { this.y = y; }
+
+    // Other getters
     public double getTankWidth() { return width; }
     public double getTankHeight() { return height; }
     public double getTankRotation() { return tankRotation; }
     public double getTurretRotation() { return turretRotation; }
+    public Vector2D getVelocity() { return velocity; }
     public boolean isMoving() { return isMoving; }
     public boolean canShoot() { return canShoot; }
     public boolean isAlive() { return alive; }
     public boolean isCollisionDebugEnabled() { return showCollisionDebug; }
     public int getHealth() { return health; }
     public int getMaxHealth() { return maxHealth; }
+    public double getRotationSpeed() { return rotationSpeed; }
+    public double getGunCooldown() { return gunCooldown; }
+    public List<Tank_Bullet> getBullets() { return bullets; }
 
+    // Setters with validation
     public void setHealth(int health) {
         this.health = Math.max(0, Math.min(maxHealth, health));
         if (this.health <= 0) {
@@ -415,23 +435,53 @@ public abstract class Tank extends Entity {
     }
 
     public void setMaxHealth(int maxHealth) {
-        this.maxHealth = maxHealth;
-        if (health > maxHealth) {
-            health = maxHealth;
+        if (maxHealth > 0) {
+            this.maxHealth = maxHealth;
+            if (health > maxHealth) {
+                health = maxHealth;
+            }
         }
     }
 
     public void setRotationSpeed(double rotationSpeed) {
-        this.rotationSpeed = rotationSpeed;
+        if (rotationSpeed > 0) {
+            this.rotationSpeed = rotationSpeed;
+        }
     }
 
     public void setGunCooldown(double gunCooldown) {
-        this.gunCooldown = gunCooldown;
+        if (gunCooldown >= 0) {
+            this.gunCooldown = gunCooldown;
+        }
     }
 
+    public void setTankRotation(double rotation) {
+        this.tankRotation = rotation;
+    }
+
+    public void setTurretRotation(double rotation) {
+        this.turretRotation = rotation;
+    }
+
+    public void setMoving(boolean moving) {
+        this.isMoving = moving;
+    }
+
+    public void setAlive(boolean alive) {
+        this.alive = alive;
+        if (!alive) {
+            onDestroyed();
+        }
+    }
+
+    // Debug methods
     public void toggleCollisionDebug() {
         showCollisionDebug = !showCollisionDebug;
         System.out.println("Collision debug: " + (showCollisionDebug ? "ON" : "OFF"));
+    }
+
+    public void setCollisionDebug(boolean enabled) {
+        showCollisionDebug = enabled;
     }
 
     // Utility method for setting collision box dimensions
@@ -442,51 +492,75 @@ public abstract class Tank extends Entity {
         this.collisionOffsetY = offsetY;
     }
 
+    // Collision box getters
+    public double getCollisionWidth() { return collisionWidth; }
+    public double getCollisionHeight() { return collisionHeight; }
+    public double getCollisionOffsetX() { return collisionOffsetX; }
+    public double getCollisionOffsetY() { return collisionOffsetY; }
+
+    // Utility methods for movement
+    public void stop() {
+        velocity.set(0, 0);
+        isMoving = false;
+    }
+
+    public void setVelocity(double vx, double vy) {
+        velocity.set(vx, vy);
+        isMoving = (vx != 0 || vy != 0);
+    }
+
+    // Reset tank to full health and make it alive
+    public void reset() {
+        health = maxHealth;
+        alive = true;
+        canShoot = true;
+        gunTimer = 0;
+        stop();
+    }
+
+    // Check if tank is at a specific position (useful for positioning)
+    public boolean isAtPosition(double targetX, double targetY, double tolerance) {
+        double dx = x - targetX;
+        double dy = y - targetY;
+        return Math.sqrt(dx * dx + dy * dy) <= tolerance;
+    }
+
+    // Get distance to another tank
+    public double getDistanceTo(Tank other) {
+        if (other == null) return Double.MAX_VALUE;
+        double dx = x - other.getX();
+        double dy = y - other.getY();
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Get distance to a point
+    public double getDistanceTo(double targetX, double targetY) {
+        double dx = x - targetX;
+        double dy = y - targetY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Get angle to another tank
+    public double getAngleTo(Tank other) {
+        if (other == null) return 0;
+        return getAngleTo(other.getX(), other.getY());
+    }
+
+    // Get angle to a point
+    public double getAngleTo(double targetX, double targetY) {
+        double dx = targetX - x;
+        double dy = targetY - y;
+        return Math.atan2(dy, dx);
+    }
+    /** Returns this tank’s AABB collision box in world coordinates. */
+    public Rectangle2D getBounds() {
+        return new Rectangle2D(
+                x + collisionOffsetX,
+                y + collisionOffsetY,
+                collisionWidth,
+                collisionHeight
+        );
+    }
 
 }
 
-// Vector2D class (if not already defined elsewhere)
-class Vector2D {
-    public double x, y;
-
-    public Vector2D() {
-        this(0, 0);
-    }
-
-    public Vector2D(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public void set(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public double length() {
-        return Math.sqrt(x * x + y * y);
-    }
-
-    public void normalize() {
-        double len = length();
-        if (len > 0) {
-            x /= len;
-            y /= len;
-        }
-    }
-    // Getter methods for position (x and y)
-    public double getTankX() {
-        return x; // Return the x-coordinate of the tank
-    }
-
-    public double getTankY() {
-        return y; // Return the y-coordinate of the tank
-    }
-
-
-    public Vector2D rotated(double angle) {
-        double cos = Math.cos(angle);
-        double sin = Math.sin(angle);
-        return new Vector2D(x * cos - y * sin, x * sin + y * cos);
-    }
-}
