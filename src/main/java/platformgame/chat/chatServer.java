@@ -1,12 +1,10 @@
+// src/platformgame/chat/chatServer.java
 package platformgame.chat;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -16,416 +14,281 @@ import java.util.regex.Pattern;
 
 public class chatServer {
     private static final int PORT = 8080;
-    private static final String WEBSOCKET_MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    private static final String WEBSOCKET_MAGIC_STRING =
+            "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     private ServerSocketChannel serverChannel;
     private Selector selector;
-    private Map<SocketChannel, ClientConnection> clients;
-    private boolean running;
+    private Map<SocketChannel, ClientConnection> clients = new ConcurrentHashMap<>();
+    private Map<String,Integer> playerAmmo      = new ConcurrentHashMap<>();
+    private Map<String,List<AmmoRequest>> ammoRequests = new ConcurrentHashMap<>();
+    private Map<String,Long> lastRequestTime   = new ConcurrentHashMap<>();
 
-    // Ammo system storage
-    private Map<String, Integer> playerAmmo; // username -> ammo count
-    private Map<String, List<AmmoRequest>> ammoRequests; // requester -> list of requests
-    private Map<String, Long> lastRequestTime; // cooldown for requests
-
-    public chatServer() {
-        clients = new ConcurrentHashMap<>();
-        playerAmmo = new ConcurrentHashMap<>();
-        ammoRequests = new ConcurrentHashMap<>();
-        lastRequestTime = new ConcurrentHashMap<>();
-    }
-
-    // Inner class for ammo requests
     private static class AmmoRequest {
         String requester;
-        int amount;
-        long timestamp;
+        int    amount;
+        long   timestamp;
         String message;
-
-        AmmoRequest(String requester, int amount, String message) {
-            this.requester = requester;
-            this.amount = amount;
-            this.timestamp = System.currentTimeMillis();
-            this.message = message;
+        AmmoRequest(String r,int a,String m){
+            requester=r; amount=a; timestamp=System.currentTimeMillis(); message=m;
         }
     }
 
     public void start() throws IOException {
         serverChannel = ServerSocketChannel.open();
-        serverChannel.bind(new InetSocketAddress(PORT));
+        // Listen on all interfaces, not just localhost:
+        serverChannel.bind(new InetSocketAddress("0.0.0.0", PORT));
         serverChannel.configureBlocking(false);
 
         selector = Selector.open();
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-        running = true;
-        System.out.println("Chat server with ammo system started on port " + PORT);
+        System.out.println("Chat server started on 0.0.0.0:" + PORT);
 
-        while (running) {
+        while (true) {
             selector.select();
             Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
-
             while (keys.hasNext()) {
                 SelectionKey key = keys.next();
                 keys.remove();
-
-                if (key.isAcceptable()) {
-                    acceptConnection();
-                } else if (key.isReadable()) {
-                    readFromClient(key);
-                }
+                if (key.isAcceptable()) acceptConnection();
+                else if (key.isReadable()) readFromClient(key);
             }
         }
     }
 
     private void acceptConnection() throws IOException {
-        SocketChannel clientChannel = serverChannel.accept();
-        clientChannel.configureBlocking(false);
-        clientChannel.register(selector, SelectionKey.OP_READ);
-
-        ClientConnection client = new ClientConnection(clientChannel);
-        clients.put(clientChannel, client);
-
-        System.out.println("New client connected: " + clientChannel.getRemoteAddress());
+        SocketChannel client = serverChannel.accept();
+        client.configureBlocking(false);
+        client.register(selector, SelectionKey.OP_READ);
+        clients.put(client, new ClientConnection(client));
+        System.out.println("New client connected: " + client.getRemoteAddress());
     }
 
     private void readFromClient(SelectionKey key) {
-        SocketChannel clientChannel = (SocketChannel) key.channel();
-        ClientConnection client = clients.get(clientChannel);
-
+        SocketChannel client = (SocketChannel)key.channel();
+        ClientConnection cc = clients.get(client);
+        ByteBuffer buf = ByteBuffer.allocate(1024);
+        int read;
         try {
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
-            int bytesRead = clientChannel.read(buffer);
-
-            if (bytesRead == -1) {
-                disconnectClient(clientChannel);
-                return;
-            }
-
-            buffer.flip();
-            byte[] data = new byte[buffer.remaining()];
-            buffer.get(data);
-
-            if (!client.isHandshakeComplete()) {
-                handleWebSocketHandshake(client, data);
-            } else {
-                handleWebSocketFrame(client, data);
-            }
-
-        } catch (IOException e) {
-            disconnectClient(clientChannel);
+            read = client.read(buf);
+            if (read == -1) { disconnectClient(client); return; }
+            buf.flip();
+            byte[] data = new byte[buf.remaining()];
+            buf.get(data);
+            if (!cc.handshakeComplete) handleHandshake(cc, data);
+            else handleWebSocketFrame(cc, data);
+        } catch(IOException e) {
+            disconnectClient(client);
         }
     }
 
-    private void handleWebSocketHandshake(ClientConnection client, byte[] data) throws IOException {
-        String request = new String(data);
-        String webSocketKey = extractWebSocketKey(request);
-
-        if (webSocketKey != null) {
-            String response = createWebSocketResponse(webSocketKey);
-            client.getChannel().write(ByteBuffer.wrap(response.getBytes()));
-            client.setHandshakeComplete(true);
-            System.out.println("WebSocket handshake completed for client");
+    private void handleHandshake(ClientConnection cc, byte[] data) throws IOException {
+        String req = new String(data);
+        String key = extractKey(req);
+        if (key != null) {
+            String resp = createHandshakeResponse(key);
+            cc.channel.write(ByteBuffer.wrap(resp.getBytes()));
+            cc.handshakeComplete = true;
+            System.out.println("Handshake completed for " + cc.channel.getRemoteAddress());
         }
     }
 
-    private String extractWebSocketKey(String request) {
-        Pattern pattern = Pattern.compile("Sec-WebSocket-Key: (.+)");
-        Matcher matcher = pattern.matcher(request);
-        return matcher.find() ? matcher.group(1).trim() : null;
+    private String extractKey(String req) {
+        Matcher m = Pattern.compile("Sec-WebSocket-Key: (.+)").matcher(req);
+        return m.find() ? m.group(1).trim() : null;
     }
 
-    private String createWebSocketResponse(String webSocketKey) {
+    private String createHandshakeResponse(String key) {
         try {
-            String acceptKey = webSocketKey + WEBSOCKET_MAGIC_STRING;
+            String accept = key + WEBSOCKET_MAGIC_STRING;
             MessageDigest md = MessageDigest.getInstance("SHA-1");
-            byte[] hash = md.digest(acceptKey.getBytes());
-            String acceptValue = Base64.getEncoder().encodeToString(hash);
-
+            byte[] hash = md.digest(accept.getBytes());
+            String val = Base64.getEncoder().encodeToString(hash);
             return "HTTP/1.1 101 Switching Protocols\r\n" +
                     "Upgrade: websocket\r\n" +
                     "Connection: Upgrade\r\n" +
-                    "Sec-WebSocket-Accept: " + acceptValue + "\r\n\r\n";
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to create WebSocket response", e);
+                    "Sec-WebSocket-Accept: " + val + "\r\n\r\n";
+        } catch(NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
-    private void handleWebSocketFrame(ClientConnection client, byte[] data) {
+    private void handleWebSocketFrame(ClientConnection cc, byte[] data) throws IOException {
         if (data.length < 2) return;
-
-        // Simple frame parsing (assumes text frames and payload < 126 bytes)
-        boolean fin = (data[0] & 0x80) != 0;
-        int opcode = data[0] & 0x0F;
+        boolean fin    = (data[0] & 0x80) != 0;
+        int     opcode = data[0] & 0x0F;
         boolean masked = (data[1] & 0x80) != 0;
-        int payloadLength = data[1] & 0x7F;
-
-        if (opcode == 0x1 && fin && masked) { // Text frame
-            byte[] maskingKey = Arrays.copyOfRange(data, 2, 6);
-            byte[] payload = Arrays.copyOfRange(data, 6, 6 + payloadLength);
-
-            // Unmask payload
-            for (int i = 0; i < payload.length; i++) {
-                payload[i] ^= maskingKey[i % 4];
-            }
-
-            String message = new String(payload);
-            System.out.println("Received message: " + message);
-
-            // Handle different message types
-            if (message.startsWith("[AMMO_UPDATE]")) {
-                handleAmmoUpdate(client, message);
-            } else if (message.startsWith("[AMMO_REQUEST]")) {
-                handleAmmoRequest(client, message);
-            } else if (message.startsWith("[AMMO_SEND]")) {
-                handleAmmoSend(client, message);
-            } else if (message.startsWith("[PLAYER_LIST]")) {
-                handlePlayerListRequest(client);
-            } else {
-                // Regular chat message
-                String[] parts = message.split(":", 2);
-                if (parts.length == 2) {
-                    client.setUsername(parts[0]);
-                    broadcastMessage(parts[0], parts[1]);
-                }
-            }
+        int     len    = data[1] & 0x7F;
+        if (opcode==1 && fin && masked) {
+            int offset = 2;
+            if (len==126) { len = ((data[2]&0xFF)<<8)|(data[3]&0xFF); offset=4; }
+            byte[] mask   = Arrays.copyOfRange(data, offset, offset+4);
+            byte[] payload= Arrays.copyOfRange(data, offset+4, offset+4+len);
+            for (int i=0;i<payload.length;i++) payload[i]^=mask[i%4];
+            String msg = new String(payload);
+            routeMessage(cc, msg);
         }
     }
 
-    private void handleAmmoUpdate(ClientConnection client, String message) {
-        // Format: [AMMO_UPDATE]username:ammoCount
-        String[] parts = message.substring(13).split(":", 2);
-        if (parts.length == 2) {
-            String username = parts[0];
-            try {
-                int ammoCount = Integer.parseInt(parts[1]);
-                playerAmmo.put(username, ammoCount);
-                client.setUsername(username);
-                System.out.println("Updated ammo for " + username + ": " + ammoCount);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid ammo count in update: " + parts[1]);
-            }
-        }
-    }
-
-    private void handleAmmoRequest(ClientConnection client, String message) {
-        // Format: [AMMO_REQUEST]username:amount:message
-        String[] parts = message.substring(15).split(":", 3);
-        if (parts.length >= 2) {
-            String requester = parts[0];
-            try {
-                int amount = Integer.parseInt(parts[1]);
-                String requestMessage = parts.length > 2 ? parts[2] : "requesting ammo";
-
-                // Check cooldown (5 minutes between requests)
-                long currentTime = System.currentTimeMillis();
-                Long lastRequest = lastRequestTime.get(requester);
-                if (lastRequest != null && (currentTime - lastRequest) < 300000) { // 5 minutes
-                    sendToClient(client, "[SYSTEM] You must wait before making another ammo request.");
+    private void routeMessage(ClientConnection cc, String msg) throws IOException {
+        if      (msg.startsWith("[AMMO_UPDATE]"))  handleAmmoUpdate(cc, msg);
+        else if (msg.startsWith("[AMMO_REQUEST]")) handleAmmoRequest(cc, msg);
+        else if (msg.startsWith("[AMMO_SEND]"))    handleAmmoSend(cc, msg);
+        else if (msg.startsWith("[PLAYER_LIST]"))  handlePlayerListRequest(cc);
+        else { // chat
+            String[] p = msg.split(":",2);
+            if (p.length == 2) {
+                String newUsername = p[0].trim();
+                // Check if username already exists (other than this connection)
+                boolean taken = clients.values().stream()
+                        .anyMatch(c -> c != cc && newUsername.equalsIgnoreCase(c.username));
+                if (taken) {
+                    send(cc, "[SYSTEM] Username '" + newUsername + "' is already in use. Please restart with a different name.");
+                    disconnectClient(cc.channel);
                     return;
                 }
-
-                lastRequestTime.put(requester, currentTime);
-                client.setUsername(requester);
-
-                // Broadcast ammo request to all other players
-                String requestBroadcast = "[AMMO_REQUEST_BROADCAST]" + requester + ":" + amount + ":" + requestMessage;
-                broadcastToOthers(client, "[SYSTEM] " + requester + " is requesting " + amount + " ammo: " + requestMessage);
-                broadcastSystemMessage(requestBroadcast);
-
-                System.out.println("Ammo request from " + requester + " for " + amount + " ammo");
-            } catch (NumberFormatException e) {
-                sendToClient(client, "[SYSTEM] Invalid ammo amount in request.");
+                cc.username = newUsername;
+                broadcast(newUsername, p[1]);
             }
+
+
         }
     }
 
-    private void handleAmmoSend(ClientConnection client, String message) {
-        // Format: [AMMO_SEND]sender:recipient:amount
-        String[] parts = message.substring(12).split(":", 3);
-        if (parts.length == 3) {
-            String sender = parts[0];
-            String recipient = parts[1];
+    private void handleAmmoUpdate(ClientConnection cc, String msg) {
+        String[] p = msg.substring(13).split(":",2);
+        if (p.length==2) {
             try {
-                int amount = Integer.parseInt(parts[2]);
+                int a = Integer.parseInt(p[1]);
+                playerAmmo.put(p[0], a);
+                cc.username = p[0];
+            } catch(Exception ignored){}
+        }
+    }
 
-                // Check if sender has enough ammo
-                Integer senderAmmo = playerAmmo.get(sender);
-                if (senderAmmo == null || senderAmmo < amount) {
-                    sendToClient(client, "[SYSTEM] You don't have enough ammo to send.");
-                    return;
-                }
+    private void handleAmmoRequest(ClientConnection cc, String msg) throws IOException {
+        String[] p = msg.substring(15).split(":",3);
+        if (p.length>=2) {
+            String requester = p[0];
+            int amt = Integer.parseInt(p[1]);
+            String m = p.length>2? p[2] : "";
+            long now = System.currentTimeMillis();
+            Long last = lastRequestTime.get(requester);
+            if (last!=null && now-last<300_000) {
+                send(cc, "[SYSTEM] Wait before next request.");
+                return;
+            }
+            lastRequestTime.put(requester, now);
+            cc.username = requester;
+            String bc = "[AMMO_REQUEST_BROADCAST]"+requester+":"+amt+":"+m;
+            broadcastSystem("[SYSTEM] " + requester + " requests " + amt + " ammo");
+            broadcastSystem(bc);
+        }
+    }
 
-                // Check if recipient is online
-                ClientConnection recipientClient = findClientByUsername(recipient);
-                if (recipientClient == null) {
-                    sendToClient(client, "[SYSTEM] Player " + recipient + " is not online.");
-                    return;
-                }
+    private void handleAmmoSend(ClientConnection cc, String msg) throws IOException {
+        String[] p = msg.substring(12).split(":",3);
+        if (p.length==3) {
+            String s=p[0], r=p[1];
+            int amt=Integer.parseInt(p[2]);
+            Integer have = playerAmmo.getOrDefault(s,0);
+            if (have<amt) { send(cc, "[SYSTEM] Not enough ammo."); return; }
+            ClientConnection targ = findByUsername(r);
+            if (targ==null) { send(cc, "[SYSTEM] "+r+" not online."); return; }
+            playerAmmo.put(s, have-amt);
+            playerAmmo.put(r, playerAmmo.getOrDefault(r,0)+amt);
+            send(cc, "[AMMO_TRANSFER]sent:"+r+":"+amt);
+            send(targ, "[AMMO_TRANSFER]received:"+s+":"+amt);
+            broadcastSystem("System: "+s+" sent "+amt+" ammo to "+r);
+        }
+    }
 
-                // Process the transfer
-                playerAmmo.put(sender, senderAmmo - amount);
-                Integer recipientAmmo = playerAmmo.getOrDefault(recipient, 0);
-                playerAmmo.put(recipient, recipientAmmo + amount);
-
-                // Notify both players
-                sendToClient(client, "[AMMO_TRANSFER]sent:" + recipient + ":" + amount);
-                sendToClient(recipientClient, "[AMMO_TRANSFER]received:" + sender + ":" + amount);
-
-                // Broadcast the transfer
-                broadcastMessage("System", sender + " sent " + amount + " ammo to " + recipient);
-
-                System.out.println("Ammo transfer: " + sender + " -> " + recipient + " (" + amount + ")");
-
-            } catch (NumberFormatException e) {
-                sendToClient(client, "[SYSTEM] Invalid ammo amount.");
+    private void handlePlayerListRequest(ClientConnection cc) throws IOException {
+        StringBuilder sb = new StringBuilder("[PLAYER_LIST]");
+        for (ClientConnection c: clients.values()) {
+            if (c.handshakeComplete && c.username!=null) {
+                sb.append(c.username).append(":")
+                        .append(playerAmmo.getOrDefault(c.username,0))
+                        .append(",");
             }
         }
+        send(cc, sb.toString());
     }
 
-    private void handlePlayerListRequest(ClientConnection client) {
-        StringBuilder playerList = new StringBuilder("[PLAYER_LIST]");
-        for (ClientConnection c : clients.values()) {
-            if (c.isHandshakeComplete() && c.getUsername() != null) {
-                String username = c.getUsername();
-                int ammo = playerAmmo.getOrDefault(username, 0);
-                playerList.append(username).append(":").append(ammo).append(",");
-            }
-        }
-        sendToClient(client, playerList.toString());
+    private ClientConnection findByUsername(String u) {
+        return clients.values()
+                .stream()
+                .filter(c->u.equals(c.username))
+                .findFirst()
+                .orElse(null);
     }
 
-    private ClientConnection findClientByUsername(String username) {
-        for (ClientConnection client : clients.values()) {
-            if (username.equals(client.getUsername())) {
-                return client;
-            }
-        }
-        return null;
-    }
-
-    private void sendToClient(ClientConnection client, String message) {
-        byte[] frame = createWebSocketFrame(message);
-        try {
-            client.getChannel().write(ByteBuffer.wrap(frame));
-        } catch (IOException e) {
-            System.err.println("Failed to send message to client: " + e.getMessage());
-        }
-    }
-
-    private void broadcastToOthers(ClientConnection sender, String message) {
-        byte[] frame = createWebSocketFrame(message);
-        clients.values().forEach(client -> {
-            if (client.isHandshakeComplete() && client != sender) {
-                try {
-                    client.getChannel().write(ByteBuffer.wrap(frame));
-                } catch (IOException e) {
-                    System.err.println("Failed to send message to client: " + e.getMessage());
-                }
+    private void broadcast(String user, String msg) {
+        String full = user+": "+msg;
+        byte[] frame = makeServerFrame(full);
+        clients.values().forEach(c->{
+            if (c.handshakeComplete) {
+                try { c.channel.write(ByteBuffer.wrap(frame)); }
+                catch(IOException ignored){}
             }
         });
     }
 
-    private void broadcastSystemMessage(String message) {
-        byte[] frame = createWebSocketFrame(message);
-        clients.values().forEach(client -> {
-            if (client.isHandshakeComplete()) {
-                try {
-                    client.getChannel().write(ByteBuffer.wrap(frame));
-                } catch (IOException e) {
-                    System.err.println("Failed to send message to client: " + e.getMessage());
-                }
+    private void broadcastSystem(String msg) {
+        byte[] f = makeServerFrame(msg);
+        clients.values().forEach(c->{
+            if (c.handshakeComplete) {
+                try { c.channel.write(ByteBuffer.wrap(f)); }
+                catch(IOException ignored){}
             }
         });
     }
 
-    private void broadcastMessage(String username, String message) {
-        String fullMessage = username + ": " + message;
-        byte[] frame = createWebSocketFrame(fullMessage);
-
-        clients.values().forEach(client -> {
-            if (client.isHandshakeComplete()) {
-                try {
-                    client.getChannel().write(ByteBuffer.wrap(frame));
-                } catch (IOException e) {
-                    System.err.println("Failed to send message to client: " + e.getMessage());
-                }
-            }
-        });
+    private void send(ClientConnection cc, String msg) throws IOException {
+        cc.channel.write(ByteBuffer.wrap(makeServerFrame(msg)));
     }
 
-    private byte[] createWebSocketFrame(String message) {
-        byte[] payload = message.getBytes();
-        byte[] frame;
-
-        if (payload.length < 126) {
-            frame = new byte[2 + payload.length];
-            frame[0] = (byte) 0x81; // FIN + text frame
-            frame[1] = (byte) payload.length;
-            System.arraycopy(payload, 0, frame, 2, payload.length);
+    private byte[] makeServerFrame(String msg) {
+        byte[] p = msg.getBytes();
+        if (p.length<126) {
+            byte[] f = new byte[2+p.length];
+            f[0]=(byte)0x81; f[1]=(byte)p.length;
+            System.arraycopy(p,0,f,2,p.length);
+            return f;
         } else {
-            // Handle longer payloads if needed
-            frame = new byte[4 + payload.length];
-            frame[0] = (byte) 0x81;
-            frame[1] = 126;
-            frame[2] = (byte) (payload.length >> 8);
-            frame[3] = (byte) (payload.length & 0xFF);
-            System.arraycopy(payload, 0, frame, 4, payload.length);
+            byte[] f = new byte[4+p.length];
+            f[0]=(byte)0x81; f[1]=126;
+            f[2]=(byte)(p.length>>8); f[3]=(byte)(p.length&0xFF);
+            System.arraycopy(p,0,f,4,p.length);
+            return f;
         }
-
-        return frame;
     }
 
-    private void disconnectClient(SocketChannel clientChannel) {
+    private void disconnectClient(SocketChannel ch) {
         try {
-            ClientConnection client = clients.remove(clientChannel);
-            if (client != null && client.getUsername() != null) {
-                String username = client.getUsername();
-                playerAmmo.remove(username);
-                lastRequestTime.remove(username);
-                broadcastMessage("System", username + " has left the game");
+            ClientConnection cc = clients.remove(ch);
+            if (cc!=null && cc.username!=null) {
+                playerAmmo.remove(cc.username);
+                lastRequestTime.remove(cc.username);
+                broadcastSystem("System: "+cc.username+" has left");
             }
-            clientChannel.close();
-            System.out.println("Client disconnected");
-        } catch (IOException e) {
-            System.err.println("Error disconnecting client: " + e.getMessage());
-        }
+            ch.close();
+        } catch(IOException ignored){}
     }
 
-    public void stop() {
-        running = false;
-        try {
-            if (selector != null) selector.close();
-            if (serverChannel != null) serverChannel.close();
-        } catch (IOException e) {
-            System.err.println("Error stopping server: " + e.getMessage());
-        }
-    }
-
-    // Inner class to represent client connections
     private static class ClientConnection {
-        private final SocketChannel channel;
-        private boolean handshakeComplete;
-        private String username;
-
-        public ClientConnection(SocketChannel channel) {
-            this.channel = channel;
-            this.handshakeComplete = false;
-        }
-
-        public SocketChannel getChannel() { return channel; }
-        public boolean isHandshakeComplete() { return handshakeComplete; }
-        public void setHandshakeComplete(boolean complete) { this.handshakeComplete = complete; }
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
+        SocketChannel channel;
+        boolean handshakeComplete = false;
+        String username;
+        ClientConnection(SocketChannel ch){ channel=ch; }
     }
 
     public static void main(String[] args) {
-        chatServer server = new chatServer();
         try {
-            server.start();
-        } catch (IOException e) {
-            System.err.println("Server error: " + e.getMessage());
+            new chatServer().start();
+        } catch(IOException e) {
+            System.err.println("Server error: "+e.getMessage());
         }
     }
 }
