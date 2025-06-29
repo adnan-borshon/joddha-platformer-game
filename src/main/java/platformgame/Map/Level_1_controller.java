@@ -31,13 +31,13 @@ public class Level_1_controller {
         mapPane.getChildren().add(canvas);
 
         // Initial render to test if map loads
-        renderMap();
+//        renderMap();
     }
 
-    private void renderMap() {
-        // Render the map once to test
-        level.draw(gc, 0, 0, 1.0);
-    }
+//    private void renderMap() {
+//        // Render the map once to test
+//        level.draw(gc, 0, 0, 1.0);
+//    }
 
     public Level_1 getLevelLogic() {
         return level;

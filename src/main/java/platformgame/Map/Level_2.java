@@ -77,11 +77,11 @@ public class Level_2 {
                 String imagePath = imageElem.getAttribute("source");
                 String fileName = imagePath.substring(imagePath.lastIndexOf("/") + 1);
 
-                InputStream imageStream = getClass().getResourceAsStream("/Assets/" + fileName);
-                if (imageStream == null) {
-                    imageStream = getClass().getResourceAsStream("/Level_1/" + fileName);
-                    if (imageStream == null) continue;
-                }
+//                InputStream imageStream = getClass().getResourceAsStream("/Assets/" + fileName);
+//                if (imageStream == null) {
+//                    imageStream = getClass().getResourceAsStream("/Level_1/" + fileName);
+//                    if (imageStream == null) continue;
+//                }
 
                 Image image = ImageLoader.load("/Assets/" + fileName);
                 if (image == null) {

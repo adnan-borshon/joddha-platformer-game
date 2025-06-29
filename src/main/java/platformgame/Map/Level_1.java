@@ -2,6 +2,7 @@ package platformgame.Map;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import org.w3c.dom.*;
 import platformgame.ImageLoader;
 
@@ -9,9 +10,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class Level_1 {
 
@@ -40,9 +39,11 @@ public class Level_1 {
 
     private final List<Tileset> tilesets = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
-
+    private final Map<Integer, Image> tileImages = new HashMap<>();
     public Level_1() {
         loadMapData();
+
+        preSliceTiles();
     }
 
     private void loadMapData() {
@@ -77,11 +78,11 @@ public class Level_1 {
                 String imagePath = imageElem.getAttribute("source");
                 String fileName = imagePath.substring(imagePath.lastIndexOf("/") + 1);
 
-                InputStream imageStream = getClass().getResourceAsStream("/Assets/" + fileName);
-                if (imageStream == null) {
-                    imageStream = getClass().getResourceAsStream("/Level_1/" + fileName);
-                    if (imageStream == null) continue;
-                }
+//                InputStream imageStream = getClass().getResourceAsStream("/Assets/" + fileName);
+//                if (imageStream == null) {
+//                    imageStream = getClass().getResourceAsStream("/Level_1/" + fileName);
+//                    if (imageStream == null) continue;
+//                }
 
                 Image image = ImageLoader.load("/Assets/" + fileName);
                 if (image == null) {
@@ -147,7 +148,22 @@ public class Level_1 {
             e.printStackTrace();
         }
     }
-
+    private void preSliceTiles() {
+        for (Tileset ts : tilesets) {
+            int tilesPerRow = ts.columns;
+            int rows = (int) (ts.image.getHeight() / ts.tileHeight);
+            for (int localId = 0; localId < tilesPerRow * rows; localId++) {
+                int gid = ts.firstGid + localId;
+                int sx = (localId % tilesPerRow) * ts.tileWidth;
+                int sy = (localId / tilesPerRow) * ts.tileHeight;
+                Image tileImg = new WritableImage(
+                        ts.image.getPixelReader(),
+                        sx, sy, ts.tileWidth, ts.tileHeight
+                );
+                tileImages.put(gid, tileImg);
+            }
+        }
+    }
 
     private void removeLayerByName(String targetName) {
         for (Layer layer : layers) {
@@ -277,31 +293,12 @@ public class Level_1 {
     private void drawLayer(GraphicsContext gc, int[][] grid, double camX, double camY, double scale) {
         for (int y = 0; y < mapHeight; y++) {
             for (int x = 0; x < mapWidth; x++) {
-                int gid = grid[y][x];
-                if (gid == 0) continue;
-
-                Tileset selected = null;
-                for (int j = tilesets.size() - 1; j >= 0; j--) {
-                    if (gid >= tilesets.get(j).firstGid) {
-                        selected = tilesets.get(j);
-                        break;
-                    }
+                Image tile = tileImages.get(grid[y][x]);
+                if (tile != null) {
+                    double dx = Math.floor((x * tileWidth - camX) * scale);
+                    double dy = Math.floor((y * tileHeight - camY) * scale);
+                    gc.drawImage(tile, dx, dy, tileWidth * scale, tileHeight * scale);
                 }
-
-                if (selected == null) continue;
-
-                int localId = gid - selected.firstGid;
-                int sx = (localId % selected.columns) * selected.tileWidth;
-                int sy = (localId / selected.columns) * selected.tileHeight;
-
-                gc.drawImage(
-                        selected.image,
-                        sx, sy, selected.tileWidth, selected.tileHeight,
-                        Math.floor((x * selected.tileWidth - camX) * scale),
-                        Math.floor((y * selected.tileHeight - camY) * scale),
-                        Math.ceil(selected.tileWidth * scale),
-                        Math.ceil(selected.tileHeight * scale)
-                );
             }
         }
     }

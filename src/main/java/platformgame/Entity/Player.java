@@ -63,7 +63,7 @@ public class Player extends Entity {
     // ✅ Health & Ammo
     public int hp = 10;
     public int maxHp = 10;
-    public int ammo = 30; // Start with some ammo
+    public int ammo = gp.getPlayerAmmo(); // Start with some ammo
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {
         super(x, y, width, height, speed, gp);
@@ -445,6 +445,7 @@ public class Player extends Entity {
         shootStartTime = now;
         lastShotTime = now;
         ammo--;
+        gp.setPlayerAmmo(ammo);
 
        shootSound();
 
@@ -720,6 +721,7 @@ public class Player extends Entity {
                         break;
                     case "ammo":
                         ammo += 10;
+                        gp.setPlayerAmmo(ammo);
                         game.object[i] = null;
                         game.playSoundEffects(1);
                         game.ui.showMessage("Picked up 10 ammo");
