@@ -64,7 +64,7 @@ public class Tank_Bullet {
             for (Tank tank : gp2.getEnemyTanksList()) {
                 if (tank != null && tank.isAlive() && tank != shooter && isCollidingWithCentered(tank)) {
                     System.out.println("Bullet hit Enemy_Tank!");
-                    tank.takeDamage(10);
+                    tank.takeDamage(25);
                     shouldRemove = true;
                     return;
                 }
@@ -76,7 +76,7 @@ public class Tank_Bullet {
             for (Tank2 tank2 : gp2.Tanks) {
                 if (tank2 != null && tank2.isAlive() && tank2 != shooter && isCollidingWithCentered(tank2)) {
                     System.out.println("Bullet hit Tank2!");
-                    tank2.takeDamage(10);
+                    tank2.takeDamage(25);
                     shouldRemove = true;
                     return;
                 }
@@ -88,7 +88,7 @@ public class Tank_Bullet {
             for (Tank tank : gp2.enemyTank) {
                 if (tank != null && tank.isAlive() && tank != shooter && isCollidingWithCentered(tank)) {
                     System.out.println("Bullet hit Enemy_Tank (array)!");
-                    tank.takeDamage(10);
+                    tank.takeDamage(25);
                     shouldRemove = true;
                     return;
                 }
@@ -99,7 +99,7 @@ public class Tank_Bullet {
             for (Tank2 tank2 : gp2.Tanks2) {
                 if (tank2 != null && tank2.isAlive() && tank2 != shooter && isCollidingWithCentered(tank2)) {
                     System.out.println("Bullet hit Tank2 (array)!");
-                    tank2.takeDamage(10);
+                    tank2.takeDamage(25);
                     shouldRemove = true;
                     return;
                 }
@@ -110,7 +110,7 @@ public class Tank_Bullet {
         if (gp2 != null && gp2.mainTank != null && gp2.mainTank.isAlive() && gp2.mainTank != shooter) {
             if (isCollidingWithCentered(gp2.mainTank)) {
                 System.out.println("Bullet hit Main Tank!");
-                gp2.mainTank.takeDamage(10);
+                gp2.mainTank.takeDamage(3);
                 shouldRemove = true;
             }
         }

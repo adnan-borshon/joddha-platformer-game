@@ -61,8 +61,8 @@ public class Player extends Entity {
     private final long explosionFrameDuration = 120_000_000;
 
     // ✅ Health & Ammo
-    public int hp = 10;
-    public int maxHp = 10;
+    public int hp = 25;
+    public int maxHp = 25;
     public int ammo = gp.getPlayerAmmo(); // Start with some ammo
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {

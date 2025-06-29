@@ -9,9 +9,9 @@ import platformgame.Tank_Bullet;
 
 public class Tank2 extends Tank {
     // Combat properties
-    private double attackRange = 250.0;
-    private double detectionRange = 300.0;
-    protected double bulletSpeed = 300.0;
+    private double attackRange = 800.0;
+    private double detectionRange = 850.0;
+    protected double bulletSpeed = 150.0;
     double turretRotationSpeed = 2.0;
     double aimTolerance = 0.2;
 
@@ -31,7 +31,7 @@ public class Tank2 extends Tank {
     private final double alertFadeSpeed = 2.0;
 
     // Health bar - FIXED: Set to 50 health (5 hits to destroy with 10 damage per hit)
-    private int maxHealth = 50;  // CHANGED: Was 100, now 50 (5 hits to destroy)
+    private int maxHealth = 100;  // CHANGED: Was 100, now 50 (5 hits to destroy)
     boolean showHealthBar = true;
     private double healthBarWidth = 60.0;
     private double healthBarHeight = 8.0;
@@ -49,9 +49,9 @@ public class Tank2 extends Tank {
         velocity.y = 0;
 
         // FIXED: Set health to 50 (5 hits to destroy)
-        this.health = 50;
-        this.maxHealth = 50;
-        this.gunCooldown = 1.5;
+        this.health = 200;
+        this.maxHealth = 200;
+        this.gunCooldown = 5;
 
         // FIXED: Initialize canShoot to true and gunTimer to 0
         this.canShoot = true;

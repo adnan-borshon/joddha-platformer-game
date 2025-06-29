@@ -20,7 +20,7 @@ public abstract class Tank extends Entity {
 
     // Tank physics and behavior properties
     protected double rotationSpeed = 3.0;     // radians per second
-    protected double gunCooldown = 0.5;       // seconds between shots
+    protected double gunCooldown = 6;       // seconds between shots
     protected int maxHealth = 100;
     protected int health = 100;
 

@@ -139,6 +139,7 @@ public class Level_1 {
                         layerName.contains("khet") ||
                         layerName.contains("river") ||
                         layerName.contains("river paar") ||
+                        layerName.contains("people") ||
                         layerName.contains("trees collisions");
 
                 layers.add(layer);

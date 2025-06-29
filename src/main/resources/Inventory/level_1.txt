@@ -1,0 +1,4 @@
+Ammo=0,
+boots=0,
+granade=0,
+key=0

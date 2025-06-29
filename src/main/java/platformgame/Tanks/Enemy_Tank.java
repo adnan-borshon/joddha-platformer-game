@@ -11,9 +11,9 @@ import javafx.scene.paint.Color;
 
 public class Enemy_Tank extends Tank {
     // Combat properties
-    private double attackRange = 250.0;
-    private double detectionRange = 300.0;  // Larger range for detection vs attack
-    protected double bulletSpeed = 300.0;
+    private double attackRange = 400.0;
+    private double detectionRange = 500.0;  // Larger range for detection vs attack
+    protected double bulletSpeed = 150.0;
     double turretRotationSpeed = 2.0;
     double aimTolerance = 0.2;      // How precise aiming needs to be to shoot
 
@@ -416,7 +416,7 @@ public class Enemy_Tank extends Tank {
         this.turretRotationSpeed = 3.0;
         this.health = 50;
         this.maxHealth = 50;
-        this.gunCooldown = 1.0;
+        this.gunCooldown = 0.4;
     }
 
     public void configureAsHeavyTank() {

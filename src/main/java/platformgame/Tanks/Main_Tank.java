@@ -16,7 +16,8 @@ import java.util.List;
 public class Main_Tank extends Tank {
 
     double bulletSpeed = 400; // Increased bullet speed for better visibility
-
+    private double gunCooldown=1;
+    private int health = 200;
     // Cannon offset from tank center - adjusted for proper alignment
     private static final double CANNON_LENGTH = 45; // Distance from center to cannon tip
 
