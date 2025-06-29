@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.effect.GaussianBlur?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane fx:id="rootPane" prefHeight="650" prefWidth="1020" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="platformgame.Setting_controller">
+
+    <!-- blurred background -->
+    <children>
+        <ImageView fitHeight="650" fitWidth="1020" pickOnBounds="true" preserveRatio="false">
+            <image>
+                <Image url="@image/00_UI/Login/frontPage.jpg" />
+            </image>
+            <effect>
+                <GaussianBlur radius="20" />
+            </effect>
+        </ImageView>
+
+        <!-- close button (cross icon) -->
+        <ImageView fx:id="closeImage" fitHeight="53.0" fitWidth="70.0" focusTraversable="true" layoutX="790.5999999999999" layoutY="87.2" pickOnBounds="true" preserveRatio="true" AnchorPane.rightAnchor="174.65274658203134" AnchorPane.topAnchor="87.2">
+            <image>
+                <Image url="@image/00_UI/Buttons/Close Button.png" />
+            </image>
+        </ImageView>
+      <ImageView fitHeight="389.0" fitWidth="549.0" layoutX="236.0" layoutY="68.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@image/00_UI/Login/keyboard-controls.png" />
+         </image>
+      </ImageView>
+      <ImageView fx:id="musicImage" fitHeight="68.0" fitWidth="200.0" layoutX="410.0" layoutY="477.0" pickOnBounds="true" preserveRatio="false" />
+    </children>
+</AnchorPane>
