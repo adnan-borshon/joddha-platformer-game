@@ -224,8 +224,8 @@ public class AssetSetter {
     }
     public void setEnemy() {
         // IMPROVED: Better spacing between enemies to prevent clustering
-        gp.enemies[0] = new Enemy(17 * gp.tileSize, 25 * gp.tileSize, 50, 50, 1.2, gp);
-        gp.enemies[1] = new Enemy(11 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[0] = new Enemy(17 * gp.tileSize, 25 * gp.tileSize, 50, 50, 1.2, gp);
+//        gp.enemies[1] = new Enemy(11 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
 //        gp.enemies[2] = new Enemy(36 * gp.tileSize, 42 * gp.tileSize, 50, 40, 1.2, gp);
 //        gp.enemies[3] = new Enemy(25 * gp.tileSize, 57 * gp.tileSize, 50, 40, 1.2, gp);
 //        gp.enemies[4] = new Enemy(33 * gp.tileSize, 71 * gp.tileSize, 50, 40, 1.2, gp);
@@ -235,26 +235,26 @@ public class AssetSetter {
 
     public void setSoldiers() {
 //         IMPROVED: Better distributed positions and added validation
-        int[][] soldierPositions = {
-                {19, 63}, {22, 68}, {39, 59}, {59, 43}, {80, 54},
-                {68, 18}, {66, 34}, {84, 42}, {66, 58}, {93, 6},
-                {85, 12}, {93, 24}
-        };
-
-        // Create soldiers with validation
-        for (int i = 0; i < soldierPositions.length && i < gp.soldiers.length; i++) {
-            double x = soldierPositions[i][0] * gp.tileSize;
-            double y = soldierPositions[i][1] * gp.tileSize;
-
-            // Add small random offset to prevent exact overlap
-            x += (Math.random() - 0.5) * gp.tileSize * 0.5; // ±25% of tile size
-            y += (Math.random() - 0.5) * gp.tileSize * 0.5;
-
-            gp.soldiers[i] = new Soldier(x, y, 50, 40, 1.2, gp);
-
-            // DEBUG: Print soldier creation
-            System.out.println("Created soldier " + i + " at position: " + x + ", " + y);
-        }
+//        int[][] soldierPositions = {
+//                {19, 63}, {22, 68}, {39, 59}, {59, 43}, {80, 54},
+//                {68, 18}, {66, 34}, {84, 42}, {66, 58}, {93, 6},
+//                {85, 12}, {93, 24}
+//        };
+//
+//        // Create soldiers with validation
+//        for (int i = 0; i < soldierPositions.length && i < gp.soldiers.length; i++) {
+//            double x = soldierPositions[i][0] * gp.tileSize;
+//            double y = soldierPositions[i][1] * gp.tileSize;
+//
+//            // Add small random offset to prevent exact overlap
+//            x += (Math.random() - 0.5) * gp.tileSize * 0.5; // ±25% of tile size
+//            y += (Math.random() - 0.5) * gp.tileSize * 0.5;
+//
+//            gp.soldiers[i] = new Soldier(x, y, 50, 40, 1.2, gp);
+//
+//            // DEBUG: Print soldier creation
+//            System.out.println("Created soldier " + i + " at position: " + x + ", " + y);
+//        }
     }
 }
 

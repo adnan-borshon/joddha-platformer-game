@@ -2,10 +2,12 @@ package platformgame.Entity;
 
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import platformgame.Bullet;
 import platformgame.Event.EventHandler;
 import platformgame.Game;
+import platformgame.ImageLoader;
 import platformgame.Map.Level_1;
 import platformgame.Objects.Obj_Boom;
 import platformgame.Objects.SuperObject;
@@ -755,15 +757,30 @@ public class Player extends Entity {
                             game.ui.showMessage("You need Key 1 to open this.");
                             return true;
                         }
-                        // with Key1, open & vanish, and do NOT block
-                        if (!game.LeftWallRemoved) {
-                            game.level1.removeLeftWallLayer();
-                            game.LeftWallRemoved = true;
-                            game.object[i] = null;
-                            game.playSoundEffects(2);
-                            game.ui.showMessage("Left wall opened!");
+
+                        // with Key1, check if wall is already removed
+                        if (game.LeftWallRemoved) {
+                            return true; // Wall already opened, allow passage
                         }
-                        return false;
+
+                        // If wall not removed yet, show dialogue first
+                        if (game.GameState != game.dialogueState) {
+                            // Load and set the image dialogue
+                            try {
+                                Image dialogueImage = ImageLoader.load("/Popups/FreetheVillagers.png");
+                                game.ui.setImageDialogue(dialogueImage);
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            } catch (Exception e) {
+                                System.out.println("Could not load dialogue image: " + e.getMessage());
+                                // Fallback to text dialogue
+                                game.ui.setTextDialogue("Press ENTER to free the villagers and open the passage!");
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            }
+                        }
+
+                        return true;
 
                     case "key2_opener":
                         if (!game.hasKey2) {
@@ -784,14 +801,29 @@ public class Player extends Entity {
                             game.ui.showMessage("You need Key 3 to open this.");
                             return true;
                         }
-                        if (!game.RightWallRemoved) {
-                            game.level1.removeRightWallLayer();
-                            game.RightWallRemoved = true;
-                            game.object[i] = null;
-                            game.playSoundEffects(2);
-                            game.ui.showMessage("Right wall opened!");
+                        // with Key1, check if wall is already removed
+                        if (game.RightWallRemoved) {
+                            return true; // Wall already opened, allow passage
                         }
-                        return false;
+
+                        // If wall not removed yet, show dialogue first
+                        if (game.GameState != game.dialogueState) {
+                            // Load and set the image dialogue
+                            try {
+                                Image dialogueImage = ImageLoader.load("/Popups/FreetheVillagers.png");
+                                game.ui.setImageDialogue(dialogueImage);
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            } catch (Exception e) {
+                                System.out.println("Could not load dialogue image: " + e.getMessage());
+                                // Fallback to text dialogue
+                                game.ui.setTextDialogue("Press ENTER to free the villagers and open the passage!");
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            }
+                        }
+
+                        return true;
                     // ---- launcher pickup (also enables explosion) ----
 
                     case "bridge_granade": {
@@ -818,18 +850,28 @@ public class Player extends Entity {
                             return true;   // block movement here
                         }
 
-                        // 2) If you haven't already blown the bridge…
-                        if (!game.bridgeDestroyed) {
-                            long now = System.nanoTime();
-                           game.eventHandler.enableBridgeDestruction();
-
-                            game.bridgeDestroyed = true;
-                            game.object[i] = null;            // remove the trigger tile
-                            game.ui.showMessage("💥 The bridge has been destroyed!");
+                        if (game.bridgeDestroyed) {
+                            return true; // Wall already opened, allow passage
                         }
 
-                        // 3) now that it's gone, let them walk across
-                        return false;
+                        // If wall not removed yet, show dialogue first
+                        if (game.GameState != game.dialogueState) {
+                            // Load and set the image dialogue
+                            try {
+                                Image dialogueImage = ImageLoader.load("/Popups/BombTheBridge.png");
+                                game.ui.setImageDialogue(dialogueImage);
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            } catch (Exception e) {
+                                System.out.println("Could not load dialogue image: " + e.getMessage());
+                                // Fallback to text dialogue
+                                game.ui.setTextDialogue("Press ENTER to bomb the bridge!");
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            }
+                        }
+
+                        return true;
                     }
                     case "granade_launcher":
                         if(!game.hasLauncher){
@@ -837,24 +879,29 @@ public class Player extends Entity {
                             return true;
                         }
 
-                        if (!game.ContainerGateRemoved && game.granadeCounter > 0) {
-                            game.ContainerGateRemoved = true;
-                            game.playSoundEffects(1);
-                            game.hasLauncher = false;
-                            game.granadeCounter--; // Decrease grenade count
-                            game.object[i] = null;
-
-                            // ✅ NEW: Trigger container gate explosion BEFORE removing the gate
-                            long now = System.nanoTime();
-                            game.eventHandler.triggerContainerGateExplosion(game, now);
-
-                            // Small delay before removing the gate layer (optional, for better visual effect)
-                            // You might want to move this to a delayed action, but for simplicity:
-                            game.level1.removeContainerGateLayer();
-
-                            game.ui.showMessage("Gate destroyed with explosions!");
+                        if (game.ContainerGateRemoved) {
+                            return true; // Wall already opened, allow passage
                         }
-                        return false;       // allow movement
+
+                        // If wall not removed yet, show dialogue first
+                        if (game.GameState != game.dialogueState) {
+                            // Load and set the image dialogue
+                            try {
+                                Image dialogueImage = ImageLoader.load("/Popups/BombTheGate.png");
+                                game.ui.setImageDialogue(dialogueImage);
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            } catch (Exception e) {
+                                System.out.println("Could not load dialogue image: " + e.getMessage());
+                                // Fallback to text dialogue
+                                game.ui.setTextDialogue("Press ENTER to bomb the Gate!");
+                                game.GameState = game.dialogueState;
+                                game.ui.startDialogueAnimation();
+                            }
+                        }
+
+                        return true;
+
 
                     // if it’s collidable but none of the above, block movement
                     default:

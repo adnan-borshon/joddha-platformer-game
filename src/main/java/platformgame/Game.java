@@ -92,6 +92,7 @@ public class Game extends Pane {
     // ✅ FIXED: Enhanced ammo tracking with proper initialization
     private int playerAmmo = 0; // Start with some ammo for testing
     private long lastAmmoSyncTime = 0; // For periodic sync
+    public boolean missionCompleted=false;
 
     public Game() {
         // Create root container for layering
@@ -355,6 +356,22 @@ public class Game extends Pane {
         if (GameState == gameOverState && key == KeyCode.ENTER) {
             openMainMenu();
         }
+        if (missionCompleted && ui.isImageDialogue) {
+            // You can add any post-mission logic here
+            // For example: return to main menu, show credits, restart game, etc.
+
+            // Option 1: Return to main menu
+            // game.GameState = game.titleState;
+
+            // Option 2: Exit the game
+            // Platform.exit();
+
+            // Option 3: Reset for replay
+            // resetGame();
+
+            // For now, just exit dialogue and let player continue
+            GameState = playState;
+        }
 
         // ✅ Handle bridge destruction popup
         if (GameState == dialogueState && key == KeyCode.ENTER) {
@@ -362,6 +379,50 @@ public class Game extends Pane {
                 eventHandler.triggerBridgeExplosion(this, System.nanoTime());
                 return;
             }
+            if (hasKey1 && !LeftWallRemoved) {
+                // Execute the wall removal
+                level1.removeLeftWallLayer();
+                LeftWallRemoved = true;
+                playSoundEffects(2);
+                ui.showMessage("Left wall opened! The villagers are free!");
+            }
+            if (hasKey3 && !RightWallRemoved) {
+                // Execute the wall removal
+                level1.removeRightWallLayer();
+                RightWallRemoved = true;
+                playSoundEffects(2);
+                ui.showMessage("Right wall opened! The villagers are free!");
+            }
+            if (hasLauncher && !ContainerGateRemoved) {
+                // Execute the wall removal
+                granadeCounter--;
+
+                long now = System.nanoTime();
+              eventHandler.triggerContainerGateExplosion(this, now);
+                level1.removeContainerGateLayer();
+                ContainerGateRemoved = true;
+                playSoundEffects(2);
+                ui.showMessage("Container gate destroyed");
+            }
+
+            if (boomCollected && !bridgeDestroyed) {
+                // Execute the wall removal
+
+                long now = System.nanoTime();
+                eventHandler.triggerBridgeExplosion(this, now);
+                level1.removeBridgeLayer();
+                level1.removeBridgeBackLayer();
+                bridgeDestroyed=true;
+                playSoundEffects(2);
+                ui.showMessage("Bridge has been destroyed");
+            }
+
+
+            // Exit dialogue state
+            GameState = playState;
+            ui.dialogue = "";
+            ui.narrator = null;
+            ui.isImageDialogue = false;
 
             for (Npc n : npc) {
                 if (n != null && n.playerIsTouching) {

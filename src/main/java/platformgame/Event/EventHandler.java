@@ -134,7 +134,7 @@ public class EventHandler {
     }
 
     public void triggerBridgeExplosion(Game game, long now) {
-        if (showBridgePopup && !bridgeDestroyed) {
+        if ( !bridgeDestroyed) {
             bridgeDestroyed = true;
             bridgeExplosionActive = true;
             bridgeExplosionStartTime = now;
@@ -166,8 +166,7 @@ public class EventHandler {
             activeExplosions.add(new Explosion(explosionCenterX - 180, explosionCenterY - 60, now + 500_000_000L, 2.0));
 
             game.playSoundEffects(4);
-            game.level1.removeBridgeBackLayer();
-            game.level1.removeBridgeLayer();
+
 
             game.ui.showMessage("Bridge destroyed!");
 
@@ -214,14 +213,24 @@ public class EventHandler {
 
         game.playSoundEffects(4); // Play explosion sound
     }
+
     private void completeMission(long now, Game game) {
         if (!missionCompleted) {
             missionCompleted = true;
 
-            // ✅ Use dialogue box system
-            game.ui.dialogue = "🎉 MISSION COMPLETE! 🎉\n\nYou saved the villagers!\n\nThe bridge has been destroyed successfully.\nThe enemy can no longer reach the village!\n\nThank you for playing!";
-            game.GameState = game.dialogueState;
-
+            // ✅ Use image dialogue box system instead of text
+            try {
+                Image missionCompleteImage = ImageLoader.load("/Popups/Narration-04.png");
+                game.ui.setImageDialogue(missionCompleteImage);
+                game.GameState = game.dialogueState;
+                game.ui.startDialogueAnimation();
+            } catch (Exception e) {
+                System.out.println("Could not load mission complete image: " + e.getMessage());
+                // Fallback to text dialogue if image fails to load
+                game.ui.setTextDialogue("🎉 MISSION COMPLETE! 🎉\n\nYou saved the villagers!\n\nThe bridge has been destroyed successfully.\nThe enemy can no longer reach the village!\n\nThank you for playing!");
+                game.GameState = game.dialogueState;
+                game.ui.startDialogueAnimation();
+            }
         }
     }
 
