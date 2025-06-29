@@ -313,16 +313,24 @@ public class OptimizedChatUI {
         chatVisible.set(!visible);
         chatContainer.setVisible(!visible);
 
-        if (!visible && !isConnected) {
-            // Try to connect when opening chat
-            connectToServer();
-        }
         if (!visible) {
-            // Focus input field when opening chat
-            Platform.runLater(() -> inputField.requestFocus());
+            // Opening chat
+            if (!isConnected) {
+                connectToServer();
+            }
+            Platform.runLater(() -> {
+                inputField.requestFocus();
+                inputField.positionCaret(inputField.getText().length());
+            });
         } else {
-            // Clear the input field when closing chat
-            Platform.runLater(() -> inputField.clear());
+            // Closing chat
+            Platform.runLater(() -> {
+                inputField.clear();
+                // Return focus to the game
+                if (game != null) {
+                    game.requestFocus();
+                }
+            });
         }
     }
 
@@ -433,26 +441,58 @@ public class OptimizedChatUI {
 
     // ✅ FIXED: More restrictive key handling - only handle specific keys when chat is visible
     public boolean handleKeyEvent(KeyCode keyCode) {
+        // If chat is not visible, only handle the toggle key
         if (!chatVisible.get()) {
-            return false; // If the chat is not visible, don't handle any keys
+            return false; // Let the game handle all keys when chat is closed
         }
 
-        // Handle keys when chat is visible
+        // Chat is visible - handle specific keys
         switch (keyCode) {
             case ESCAPE:
                 toggleChat(); // Close chat
-                return true;
+                return true; // Consumed
+
             case ENTER:
                 if (inputField.isFocused()) {
                     sendMessage();
+                    return true; // Consumed
+                }
+                return false; // Not consumed - let game handle it
+
+            case TAB:
+                // Handle tab navigation within chat
+                if (inputField.isFocused()) {
+                    // You can add tab handling logic here if needed
                     return true;
                 }
                 return false;
 
             default:
-                // Only consume typing keys if the input field is focused
-                return inputField.isFocused();
+                // Only consume alphanumeric and special keys if input field is focused
+                if (inputField.isFocused()) {
+                    return isTypingKey(keyCode);
+                }
+                return false; // Not consumed
         }
+    }
+    // ✅ NEW: Helper method to determine if a key is for typing
+    private boolean isTypingKey(KeyCode keyCode) {
+        // Return true for keys that should be handled by the text input
+        return keyCode.isLetterKey() ||
+                keyCode.isDigitKey() ||
+                keyCode == KeyCode.SPACE ||
+                keyCode == KeyCode.BACK_SPACE ||
+                keyCode == KeyCode.DELETE ||
+                keyCode == KeyCode.LEFT ||
+                keyCode == KeyCode.RIGHT ||
+                keyCode == KeyCode.HOME ||
+                keyCode == KeyCode.END ||
+                keyCode == KeyCode.SHIFT ||
+                keyCode == KeyCode.CONTROL ||
+                keyCode.getName().length() == 1; // Single character keys
+    }
+    public boolean isChatInputFocused() {
+        return inputField != null && inputField.isFocused();
     }
 
 

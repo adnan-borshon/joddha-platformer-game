@@ -28,7 +28,7 @@ import java.util.Set;
 public class Game extends Pane {
     private final Canvas canvas;
     private final GraphicsContext gc;
-    private final Set<KeyCode> keysPressed = new HashSet<>();
+    private KeyHandler keyHandler;
     public final int gameOverState = 4;
 
     private long lastTime = System.nanoTime();
@@ -110,11 +110,11 @@ public class Game extends Pane {
         // ✅ 5. Setup UI layout immediately (no chat blocking)
         setupUILayoutFast();
 
-        // ✅ 6. Initialize chat system in LAZY mode (post-initialization)
-        initializeChatLazy();
-
-        // ✅ 7. Setup input handling
+        // ✅ 6. Setup input handling BEFORE chat initialization
         setupInputHandling();
+
+        // ✅ 7. Initialize chat system in LAZY mode (post-initialization)
+        initializeChatLazy();
 
         // ✅ 8. Set initial game state
         GameState = playState;
@@ -189,7 +189,7 @@ public class Game extends Pane {
     private void initializeChatLazy() {
         // Create chat UI placeholder immediately (no connection)
         chatUI = new OptimizedChatUI(this);
-
+        keyHandler.setChatUI(chatUI);
         // Add chat UI elements to game root
         addChatUIElements();
 
@@ -239,9 +239,10 @@ public class Game extends Pane {
 
     // ✅ OPTIMIZED: Fast input handling setup
     private void setupInputHandling() {
+        keyHandler = new KeyHandler(this);
         setFocusTraversable(true);
-        setOnKeyPressed(this::onKeyPressed);
-        setOnKeyReleased(this::onKeyReleased);
+        setOnKeyPressed(keyHandler::handleKeyPressed);
+        setOnKeyReleased(keyHandler::handleKeyReleased);
     }
 
     // ✅ OPTIMIZED: Simplified fallback level creation
@@ -373,116 +374,132 @@ public class Game extends Pane {
     }
 
     // ✅ OPTIMIZED: Key event handling with chat integration
-    private void onKeyPressed(KeyEvent e) {
-        KeyCode key = e.getCode();
-
-//        // ✅ Check chat first - if it handles the key, don't process it further
+//    private void onKeyPressed(KeyEvent e) {
+//        KeyCode key = e.getCode();
+//
+//        // ✅ PRIORITY 1: Check if chat should handle the key first
 //        if (chatUI != null && chatUI.handleKeyEvent(key)) {
-//            return; // Chat handled the key, stop here
+//            e.consume(); // Prevent further processing
+//            return;
 //        }
-
-        // ✅ Only add to keysPressed if chat didn't handle it
-        keysPressed.add(key);
-
-        // Game state handling
-        if (GameState == gameOverState && key == KeyCode.ENTER) {
-            openMainMenu();
-            return;
-        }
-
-        if (missionCompleted && ui.isImageDialogue) {
-            Sound.getInstance().stop(7);
-            GameState = playState;
-            Sound.getInstance().loop(0);
-            return;
-        }
-
-        // Handle dialogue state
-        if (GameState == dialogueState && key == KeyCode.ENTER) {
-            handleDialogueActions();
-            return;
-        }
-
-        // ✅ Toggle chat with 'T' key - ONLY when game is in play state and chat is not visible
-        if (key == KeyCode.T && GameState == playState && chatUI != null ) {
-            chatUI.toggleChat();
-            return; // Don't process T for anything else
-        }
-
-
-        // Testing keys for ammo (remove in production)
-        if (key == KeyCode.PLUS || key == KeyCode.EQUALS) {
-            onAmmoCollected(10);
-        }
-        if (key == KeyCode.MINUS) {
-            onAmmoUsed(5);
-        }
-    }
+//
+//        // ✅ PRIORITY 2: Handle chat toggle (T key) - only when game is in play state
+//        if (key == KeyCode.T && GameState == playState) {
+//            if (chatUI != null) {
+//                chatUI.toggleChat();
+//            }
+//            e.consume();
+//            return;
+//        }
+//
+//        // ✅ PRIORITY 3: Add to keysPressed for game logic (only if chat didn't handle it)
+//        keysPressed.add(key);
+//
+//        // ✅ PRIORITY 4: Handle game state specific keys
+//        if (GameState == gameOverState && key == KeyCode.ENTER) {
+//            openMainMenu();
+//            e.consume();
+//            return;
+//        }
+//
+//        if (missionCompleted && ui.isImageDialogue) {
+//            Sound.getInstance().stop(7);
+//            GameState = playState;
+//            Sound.getInstance().loop(0);
+//            e.consume();
+//            return;
+//        }
+//
+//        // Handle dialogue state
+//        if (GameState == dialogueState && key == KeyCode.ENTER) {
+//            handleDialogueActions();
+//            e.consume();
+//            return;
+//        }
+//
+//        // ✅ Testing keys for ammo (remove in production)
+//        if (key == KeyCode.PLUS || key == KeyCode.EQUALS) {
+//            onAmmoCollected(10);
+//            e.consume();
+//            return;
+//        }
+//        if (key == KeyCode.MINUS) {
+//            onAmmoUsed(5);
+//            e.consume();
+//            return;
+//        }
+//    }
+//
+//    private void onKeyReleased(KeyEvent e) {
+//        KeyCode key = e.getCode();
+//
+//        // ✅ PRIORITY 1: Check if chat is handling this key
+//        if (chatUI != null && chatUI.isVisible() && chatUI.isChatInputFocused()) {
+//            // If chat input is focused, don't remove from keysPressed
+//            e.consume();
+//            return;
+//        }
+//
+//        // ✅ PRIORITY 2: Only remove from keysPressed if it's a game key
+//        keysPressed.remove(key);
+//    }
 
     // ✅ OPTIMIZED: Dialogue action handling
-    private void handleDialogueActions() {
-        if (eventHandler.isShowingBridgePopup()) {
-            eventHandler.triggerBridgeExplosion(this, System.nanoTime());
-            return;
-        }
+//    private void handleDialogueActions() {
+//        if (eventHandler.isShowingBridgePopup()) {
+//            eventHandler.triggerBridgeExplosion(this, System.nanoTime());
+//            return;
+//        }
+//
+//        if (hasKey1 && !LeftWallRemoved) {
+//            level1.removeLeftWallLayer();
+//            LeftWallRemoved = true;
+//            playSoundEffects(2);
+//            ui.showMessage("Left wall opened! The villagers are free!");
+//        }
+//
+//        if (hasKey3 && !RightWallRemoved) {
+//            level1.removeRightWallLayer();
+//            RightWallRemoved = true;
+//            playSoundEffects(2);
+//            ui.showMessage("Right wall opened! The villagers are free!");
+//        }
+//
+//        if (hasLauncher && !ContainerGateRemoved) {
+//            granadeCounter--;
+//            long now = System.nanoTime();
+//            eventHandler.triggerContainerGateExplosion(this, now);
+//            level1.removeContainerGateLayer();
+//            ContainerGateRemoved = true;
+//            playSoundEffects(2);
+//            ui.showMessage("Container gate destroyed");
+//        }
+//
+//        if (boomCollected && !bridgeDestroyed) {
+//            long now = System.nanoTime();
+//            eventHandler.triggerBridgeExplosion(this, now);
+//            level1.removeBridgeLayer();
+//            level1.removeBridgeBackLayer();
+//            bridgeDestroyed = true;
+//            ui.showMessage("Bridge has been destroyed");
+//        }
+//
+//        // Exit dialogue state
+//        GameState = playState;
+//        ui.dialogue = "";
+//        ui.narrator = null;
+//        ui.isImageDialogue = false;
+//
+//        for (Npc n : npc) {
+//            if (n != null && n.playerIsTouching) {
+//                n.speak();
+//                break;
+//            }
+//        }
+//    }
 
-        if (hasKey1 && !LeftWallRemoved) {
-            level1.removeLeftWallLayer();
-            LeftWallRemoved = true;
-            playSoundEffects(2);
-            ui.showMessage("Left wall opened! The villagers are free!");
-        }
-
-        if (hasKey3 && !RightWallRemoved) {
-            level1.removeRightWallLayer();
-            RightWallRemoved = true;
-            playSoundEffects(2);
-            ui.showMessage("Right wall opened! The villagers are free!");
-        }
-
-        if (hasLauncher && !ContainerGateRemoved) {
-            granadeCounter--;
-            long now = System.nanoTime();
-            eventHandler.triggerContainerGateExplosion(this, now);
-            level1.removeContainerGateLayer();
-            ContainerGateRemoved = true;
-            playSoundEffects(2);
-            ui.showMessage("Container gate destroyed");
-        }
-
-        if (boomCollected && !bridgeDestroyed) {
-            long now = System.nanoTime();
-            eventHandler.triggerBridgeExplosion(this, now);
-            level1.removeBridgeLayer();
-            level1.removeBridgeBackLayer();
-            bridgeDestroyed = true;
-            ui.showMessage("Bridge has been destroyed");
-        }
-
-        // Exit dialogue state
-        GameState = playState;
-        ui.dialogue = "";
-        ui.narrator = null;
-        ui.isImageDialogue = false;
-
-        for (Npc n : npc) {
-            if (n != null && n.playerIsTouching) {
-                n.speak();
-                break;
-            }
-        }
-    }
 
 
-    // ✅ FIXED: Key release handling
-    private void onKeyReleased(KeyEvent e) {
-        KeyCode key = e.getCode();
-
-        // ✅ Only remove from keysPressed if chat didn't handle it
-        if (chatUI == null || !chatUI.handleKeyEvent(key)) {
-            keysPressed.remove(key);
-        }
-    }
 
 
     // ✅ EXISTING METHODS: Keep all your existing game logic
@@ -501,8 +518,7 @@ public class Game extends Pane {
 
     private void update(long now, long deltaTime) {
         if (GameState == playState) {
-            player.update(keysPressed, level1, this, now, deltaTime);
-
+            player.update(keyHandler.getKeysPressed(), level1, this, now, deltaTime);
             for (Npc n : npc) {
                 if (n != null) {
                     n.update(deltaTime, now);
@@ -527,7 +543,7 @@ public class Game extends Pane {
                 }
             }
 
-            if (keysPressed.contains(KeyCode.ESCAPE)) {
+            if (keyHandler.isKeyPressed(KeyCode.ESCAPE)) {
                 GameManager.getInstance().saveState(this);
                 openMainMenu();
                 GameState = pauseState;
@@ -700,7 +716,7 @@ public class Game extends Pane {
         }
     }
 
-    private void openMainMenu() {
+    public void openMainMenu() {
         try {
             // Disconnect from chat
             if (chatConnected && chatUI != null) {
