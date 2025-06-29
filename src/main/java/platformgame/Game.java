@@ -359,7 +359,7 @@ public class Game extends Pane {
         if (missionCompleted && ui.isImageDialogue) {
             // You can add any post-mission logic here
             // For example: return to main menu, show credits, restart game, etc.
-
+            Sound.getInstance().stop(7);
             // Option 1: Return to main menu
             // game.GameState = game.titleState;
 
@@ -371,6 +371,7 @@ public class Game extends Pane {
 
             // For now, just exit dialogue and let player continue
             GameState = playState;
+            Sound.getInstance().loop(0);
         }
 
         // ✅ Handle bridge destruction popup
@@ -413,7 +414,7 @@ public class Game extends Pane {
                 level1.removeBridgeLayer();
                 level1.removeBridgeBackLayer();
                 bridgeDestroyed=true;
-                playSoundEffects(2);
+
                 ui.showMessage("Bridge has been destroyed");
             }
 

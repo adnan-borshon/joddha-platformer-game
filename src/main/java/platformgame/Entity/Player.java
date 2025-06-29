@@ -861,7 +861,10 @@ public class Player extends Entity {
                                 Image dialogueImage = ImageLoader.load("/Popups/BombTheBridge.png");
                                 game.ui.setImageDialogue(dialogueImage);
                                 game.GameState = game.dialogueState;
+
+
                                 game.ui.startDialogueAnimation();
+
                             } catch (Exception e) {
                                 System.out.println("Could not load dialogue image: " + e.getMessage());
                                 // Fallback to text dialogue
@@ -890,6 +893,7 @@ public class Player extends Entity {
                                 Image dialogueImage = ImageLoader.load("/Popups/BombTheGate.png");
                                 game.ui.setImageDialogue(dialogueImage);
                                 game.GameState = game.dialogueState;
+
                                 game.ui.startDialogueAnimation();
                             } catch (Exception e) {
                                 System.out.println("Could not load dialogue image: " + e.getMessage());

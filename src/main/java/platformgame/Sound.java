@@ -20,6 +20,7 @@ public class Sound {
             loadSound(4, "/sound/bomb.mp3");
             loadSound(1, "/sounds/GunShot.WAV");
             loadSound(5, "/sounds/click.mp3");
+            loadSound(7, "/sounds/Level_1_Mission_Complete_Narration.m4a");
         } catch (Exception e) {
             e.printStackTrace();
         }
