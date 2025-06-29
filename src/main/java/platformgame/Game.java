@@ -30,7 +30,7 @@ public class Game extends Pane {
     private final GraphicsContext gc;
     private KeyHandler keyHandler;
     public final int gameOverState = 4;
-
+    public Inventory inventory;
     private long lastTime = System.nanoTime();
     public int GameState;
     public final int playState = 1;
@@ -97,7 +97,7 @@ public class Game extends Pane {
         gc = canvas.getGraphicsContext2D();
         gameRoot = new StackPane();
         gameRoot.setPrefSize(screenWidth, screenHeight);
-
+        inventory = new Inventory("/Inventory/level_1.txt");
         // ✅ 2. Load level with timeout protection
         loadLevelOptimized();
 
@@ -172,19 +172,36 @@ public class Game extends Pane {
         ui = new UI(this);
         System.out.println("✅ Game objects initialized");
     }
+    public void syncInventoryWithGameState() {
+        // Sync keys
+        if (hasKey1) inventory.addItem("key1", 1);
+        if (hasKey2) inventory.addItem("key2", 1);
+        if (hasKey3) inventory.addItem("key3", 1);
 
+        // Sync other items
+        if (hasLauncher) inventory.addItem("launcher", 1);
+        if (boomCollected) inventory.addItem("boom", 1);
+
+        // Sync ammo
+        inventory.addItem("ammo", playerAmmo);
+    }
     // ✅ OPTIMIZED: Fast UI layout without chat blocking
     private void setupUILayoutFast() {
         // Add canvas immediately
         gameRoot.getChildren().add(canvas);
         StackPane.setAlignment(canvas, Pos.CENTER);
 
+        // ✅ ADD INVENTORY UI TO GAME ROOT
+        gameRoot.getChildren().add(inventory.getInventoryUI());
+        StackPane.setAlignment(inventory.getInventoryUI(), Pos.TOP_LEFT);
+
+        // Position inventory in top-left corner
+        inventory.setPosition(20, 20);
+
         // Add gameRoot to this pane
         this.getChildren().add(gameRoot);
         this.setPrefSize(screenWidth, screenHeight);
-
     }
-
     // ✅ OPTIMIZED: Lazy chat initialization (happens after game is ready)
     private void initializeChatLazy() {
         // Create chat UI placeholder immediately (no connection)

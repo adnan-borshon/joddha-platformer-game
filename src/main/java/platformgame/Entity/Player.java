@@ -445,6 +445,7 @@ public class Player extends Entity {
         shootStartTime = now;
         lastShotTime = now;
         ammo--;
+        gp.inventory.useItem("ammo",1);
         gp.setPlayerAmmo(ammo);
 
        shootSound();
@@ -693,6 +694,7 @@ public class Player extends Entity {
                             game.object[i] = null;
                             game.playSoundEffects(1);
                             game.ui.showMessage("Picked up Key 1");
+                            game.inventory.addItem("key", 1);
                         }
                         break;
                     case "key2":
@@ -701,6 +703,7 @@ public class Player extends Entity {
                             game.object[i] = null;
                             game.playSoundEffects(1);
                             game.ui.showMessage("Picked up Key 2");
+                            game.inventory.addItem("key", 1);
                         }
                         break;
                     case "key3":
@@ -709,6 +712,7 @@ public class Player extends Entity {
                             game.object[i] = null;
                             game.playSoundEffects(1);
                             game.ui.showMessage("Picked up Key 3");
+                            game.inventory.addItem("key", 1);
                         }
                         break;
 
@@ -718,6 +722,7 @@ public class Player extends Entity {
                         game.object[i] = null;
                         game.playSoundEffects(2);
                         game.ui.showMessage("You got speed up +2");
+                        game.inventory.addItem("boots", 1);
                         break;
                     case "ammo":
                         ammo += 10;
@@ -725,6 +730,7 @@ public class Player extends Entity {
                         game.object[i] = null;
                         game.playSoundEffects(1);
                         game.ui.showMessage("Picked up 10 ammo");
+                        game.inventory.addItem("ammo", 10);
                         break;
                     case "life":
                         if (hp < maxHp) {
@@ -733,6 +739,7 @@ public class Player extends Entity {
                             game.object[i] = null;
                             game.playSoundEffects(1);
                             game.ui.showMessage("Life restored +" + heal + " HP");
+
                         } else {
                             game.ui.showMessage("Health already full");
                         }
@@ -750,6 +757,7 @@ public class Player extends Entity {
                         game.object[i] = null;
                         game.playSoundEffects(1);
                         game.ui.showMessage("Picked up a grenade");
+                        game.inventory.addItem("granade", 1);
                         break;       // allow movement through
 
                            // --- KEY OPENERS now with blocking logic ---
@@ -841,6 +849,7 @@ public class Player extends Entity {
                             game.object[i]       = null;  // remove from world
                             game.playSoundEffects(1);
                             game.ui.showMessage("Picked up the explosive charge for the bridge");
+                            game.inventory.addItem("boom", 1);
                         }
                         return false;  // allow movement through that tile
                     }

@@ -142,6 +142,11 @@ public class KeyHandler {
 
         // Handle immediate action keys
         switch (key) {
+            case I:{
+                game.inventory.toggleVisibility();
+                e.consume();
+               break;
+            }
             case PLUS:
             case EQUALS:
                 // Debug: Add ammo (remove in production)
@@ -171,6 +176,7 @@ public class KeyHandler {
         if (game.hasKey1 && !game.LeftWallRemoved) {
             game.level1.removeLeftWallLayer();
             game.LeftWallRemoved = true;
+            game.inventory.useItem("key",1);
             game.playSoundEffects(2);
             game.ui.showMessage("Left wall opened! The villagers are free!");
         }
@@ -178,12 +184,14 @@ public class KeyHandler {
         if (game.hasKey3 && !game.RightWallRemoved) {
             game.level1.removeRightWallLayer();
             game.RightWallRemoved = true;
+            game.inventory.useItem("key",1);
             game.playSoundEffects(2);
             game.ui.showMessage("Right wall opened! The villagers are free!");
         }
 
         if (game.hasLauncher && !game.ContainerGateRemoved) {
             game.granadeCounter--;
+            game.inventory.useItem("granade",1);
             long now = System.nanoTime();
             game.eventHandler.triggerContainerGateExplosion(game, now);
             game.level1.removeContainerGateLayer();
@@ -194,6 +202,7 @@ public class KeyHandler {
 
         if (game.boomCollected && !game.bridgeDestroyed) {
             long now = System.nanoTime();
+            game.inventory.useItem("granade",1);
             game.eventHandler.triggerBridgeExplosion(game, now);
             game.level1.removeBridgeLayer();
             game.level1.removeBridgeBackLayer();
