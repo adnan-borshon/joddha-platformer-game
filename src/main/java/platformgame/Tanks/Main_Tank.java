@@ -1,5 +1,6 @@
 package platformgame.Tanks;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.input.KeyCode;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -7,6 +8,7 @@ import platformgame.Bullet;
 import platformgame.Game;
 import platformgame.Game_2;
 import platformgame.Map.Level_2;
+import platformgame.Objects.SuperObject;
 import platformgame.Tank_Bullet;
 
 import java.util.Set;
@@ -14,6 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Main_Tank extends Tank {
+
+
+
+
 
     double bulletSpeed = 400; // Increased bullet speed for better visibility
     private double gunCooldown=1;
@@ -60,6 +66,7 @@ public class Main_Tank extends Tank {
 
         // Update animations
         updateAnimations(deltaTime);
+        checkCollisionWithObjects(deltaSeconds);
 
         // Toggle debug collision rectangle with F1 key
         if (keysPressed.contains(KeyCode.F1)) {
@@ -215,6 +222,41 @@ public class Main_Tank extends Tank {
             gp2.addBullet(bullet);
         }
     }
+    public boolean checkCollisionWithMainTank(double x, double y) {
+        if (gp2 != null) {
+            Main_Tank mainTank = gp2.mainTank; // Assuming you have a method to get the Main_Tank in Game_2
+            if (mainTank != null) {
+                Rectangle2D tankBounds = new Rectangle2D(mainTank.getTankX(), mainTank.getTankY(), mainTank.width, mainTank.height);
+                Rectangle2D entityBounds = new Rectangle2D(x, y, width, height);
+                return entityBounds.intersects(tankBounds);
+            }
+        }
+        return false;
+    }
+
+    public void checkCollisionWithObjects(double deltaTime) {
+        for (int i = 0; i < gp2.tankObject.length; i++) {
+            SuperObject obj = gp2.tankObject[i];
+            if (obj != null && checkCollisionWithMainTank(obj.worldX, obj.worldY)) {
+
+//                    if ("life".equals(obj.name)) {
+//                        System.out.println("Life object collected!");
+//                        health = maxHealth;
+//                        // Optionally, remove the life object from the tankObject array if needed
+//                        gp2.tankObject[i] = null;
+//
+//                }
+
+                if ("bomb".equals(obj.name)) {
+
+                    gp2.tankObject[i] = null;
+
+                }
+
+            }
+        }
+    }
+
 
     private void controlWithDirectionalMovement(Set<KeyCode> keysPressed, double deltaTime) {
         // Reset movement state
@@ -274,6 +316,9 @@ public class Main_Tank extends Tank {
         }
     }
 
+    public void explosionTrigger(){
+
+    }
     @Override
     protected void onDamageTaken(int damage) {
         super.onDamageTaken(damage);

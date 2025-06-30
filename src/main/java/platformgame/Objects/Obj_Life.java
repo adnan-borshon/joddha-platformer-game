@@ -13,7 +13,7 @@ public class Obj_Life extends SuperObject {
         name = "life";
         // Instead of directly using new Image(), use ImageLoader:
         image = ImageLoader.load("/image/Object/Life.png");
-        collision = false;
+        collision = true;
     }
 
 

@@ -67,7 +67,7 @@ public class Enemy extends Entity {
     // Combat and AI variables
     protected long attackStartTime = 0;
     protected long shootStartTime = 0;
-    protected double patrolRange = 7 * gp.tileSize;
+    protected double patrolRange = 8 * gp.tileSize;
     protected double patrolStartX, patrolStartY;
     protected double patrolTargetX, patrolTargetY;
     protected boolean isFollowingPlayer = false;
@@ -80,16 +80,17 @@ public class Enemy extends Entity {
 
     protected long lastAttackTime = 0;
     protected long damageCooldown = 2_000_000_000L;
-
+    protected String axis="";
     protected boolean isHit = false;
     protected long hitStartTime = 0;
     protected final long hitFrameDuration = 100_000_000L;
 
-    public Enemy(double x, double y, double width, double height, double speed, Game gp) {
-        super(x, y, width, height, speed * 1.3, gp); // Increased walk speed by 30%
+    public Enemy(double x, double y, double width, double height, double speed, Game gp, String axis) {
+        super(x, y, width, height, speed * 1.3, gp,null); // Increased walk speed by 30%
         imageSet(walkFrame, "/image/Enemy.png");
         patrolStartX = x;
         patrolStartY = y;
+        this.axis=axis;
         setNewPatrolTarget();
     }
 
@@ -459,20 +460,29 @@ public class Enemy extends Entity {
         double distance = Math.hypot(x - patrolTargetX, y - patrolTargetY);
         return distance < 8;
     }
-
     protected void setNewPatrolTarget() {
-        final double halfRange = patrolRange / 2;
-        final double minDistance = 80;
-        final int maxAttempts = 10;
+        final double halfRange = patrolRange;
+        final double minDistance = 64;  // Minimum distance to the target
+        final int maxAttempts = 10;  // Maximum attempts to find a valid target
 
-        double tx, ty;
+        double tx=patrolStartX, ty = patrolStartY;
         int attempts = 0;
 
-        do {
-            tx = patrolStartX + (Math.random() * patrolRange) - halfRange;
-            ty = patrolStartY + (Math.random() * patrolRange) - halfRange;
+        // Randomly choose to patrol along the X or Y axis
+        boolean patrolAlongX = Math.random() < 0.5;  // 50% chance to patrol along X axis
 
-            // Clamp into the patrol area
+        do {
+            if(axis=="x") {
+                if (patrolAlongX) {
+                    // Patrol along the X-axis, keep Y constant
+                    tx = patrolStartX + (Math.random() * patrolRange) - halfRange;
+                    ty = patrolStartY;  // Keep Y constant
+                }
+            }else if(axis=="y"){
+                tx = patrolStartX ;
+                ty = patrolStartY+ (Math.random() * patrolRange) - halfRange;
+            }
+            // Ensure the patrol target is within the patrol area
             tx = Math.max(patrolStartX - halfRange, Math.min(tx, patrolStartX + halfRange));
             ty = Math.max(patrolStartY - halfRange, Math.min(ty, patrolStartY + halfRange));
 

@@ -17,8 +17,9 @@ public class Sound {
             loadSound(0, "/sounds/BGM(loop).WAV");  // game BGM
             loadSound(6, "/sounds/Menu.wav");             // menu music
             loadSound(3, "/sounds/Punch.WAV");
-            loadSound(4, "/sound/bomb.mp3");
+            loadSound(4, "/sounds/bomb.mp3");
             loadSound(1, "/sounds/GunShot.WAV");
+            loadSound(2, "/sounds/coin.WAV");
             loadSound(5, "/sounds/click.mp3");
             loadSound(7, "/sounds/Level_1_Mission_Complete_Narration.m4a");
         } catch (Exception e) {

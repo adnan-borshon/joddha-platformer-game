@@ -76,8 +76,8 @@ public class Soldier extends Enemy {
     // Bullet management
     private ArrayList<Bullet> bullets;
 
-    public Soldier(double x, double y, double width, double height, double speed, Game gp) {
-        super(x, y, width, height, speed, gp);
+    public Soldier(double x, double y, double width, double height, double speed, Game gp, String axis) {
+        super(x, y, width, height, speed, gp,axis);
         bullets = new ArrayList<>();
         // Override the sprite loading to use the same Enemy.png but focus on shooting behavior
         imageSet(GunWalkFrame, "/image/Soldier.png");
@@ -177,8 +177,6 @@ public class Soldier extends Enemy {
         // Play through all dead frames once, then stay on the last frame
         if (frameIndex < deadFrame) {
             currentFrame = frameIndex;
-        } else {
-            currentFrame = deadFrame - 1; // Stay on the last frame
         }
     }
 

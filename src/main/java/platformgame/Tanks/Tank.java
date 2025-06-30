@@ -67,7 +67,7 @@ public abstract class Tank extends Entity {
     protected double collisionOffsetY = -28;
 
     public Tank(double x, double y, double width, double height, double speed, Game gp, Game_2 gp2) {
-        super(x, y, width, height, speed, gp);
+        super(x, y, width, height, speed, gp, gp2);
         this.gp2 = gp2;
         this.health = maxHealth;
         this.bullets = new ArrayList<>();  // Initialize bullets list

@@ -406,6 +406,7 @@ public class Enemy_Tank extends Tank {
         // Hide health bar when tank is destroyed
         showHealthBar = false;
         // Add explosion effects, score points, drop items, etc.
+
     }
 
     // Configuration methods for different enemy types

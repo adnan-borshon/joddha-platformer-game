@@ -11,6 +11,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import platformgame.Objects.SuperObject;
 import platformgame.Tanks.*;
 import platformgame.Event.EventHandler;
 import platformgame.Map.Level_2;
@@ -33,7 +34,7 @@ public class Game_2 extends Pane {
     public final int playState = 1;
     public final int pauseState = 2;
     public final int dialogueState = 3;
-
+    public final double scale = 0.9;
     private Image healthIconImg;
     private Image healthLineImg;
     private Image healthBarImg;
@@ -49,7 +50,7 @@ public class Game_2 extends Pane {
     // FIXED: Use ArrayList instead of array for better management
     public ArrayList<Enemy_Tank> enemyTanks = new ArrayList<>();
     public ArrayList<Tank2> Tanks = new ArrayList<>();
-
+    public SuperObject[] tankObject = new SuperObject[15];
     // Keep the array for backward compatibility but don't use it for collision
     Enemy_Tank[] enemyTank = new Enemy_Tank[10];
     Tank2[] Tanks2 = new Tank2[10];
@@ -99,6 +100,7 @@ public class Game_2 extends Pane {
     private void setUpObject() {
         assetSetter.setTank();
         assetSetter.setTank2();
+        assetSetter.setTankObject();
     }
 
     // Method to return all enemy tanks - UPDATED
@@ -147,24 +149,33 @@ public class Game_2 extends Pane {
         gc.setFill(Color.DARKGREEN);
         gc.fillRect(0, 0, screenWidth, screenHeight);
 
+        camX = mainTank.getX() + mainTank.getWidth() / 2 - screenWidth / 2;
+        camY = mainTank.getY() + mainTank.getHeight() / 2 - screenHeight / 2;
+        double mapPixelWidth = level2.mapWidth * tileSize;
+        double mapPixelHeight = level2.mapHeight * tileSize;
+
+        camX = Math.max(0, Math.min(camX, mapPixelWidth - screenWidth));
+        camY = Math.max(0, Math.min(camY, mapPixelHeight - screenHeight));
+
         // 2) Draw the tilemap layers
+
         if (level2 == null) {
             gc.setFill(Color.RED);
             gc.fillText("Level2 not loaded", 10, 20);
         } else {
-            level2.drawBackground(gc, camX, camY, 1.15);
-            level2.drawMiddleground(gc, camX, camY, 1.15);
+            level2.drawBackground(gc, camX, camY, scale);
+            level2.drawMiddleground(gc, camX, camY, scale);
         }
 
         // 3) Draw the main tank
         if (mainTank != null) {
-            mainTank.draw(gc, camX, camY, 1);
+            mainTank.draw(gc, camX, camY, scale);
         }
 
         // 4) Draw all enemy tanks
         for (int i = 0; i < enemyTank.length; i++) {
             if (enemyTank[i] != null) {
-                enemyTank[i].draw(gc, camX, camY, 1);
+                enemyTank[i].draw(gc, camX, camY, scale);
             }
         }
 
@@ -174,7 +185,7 @@ public class Game_2 extends Pane {
         //array list
         for (Enemy_Tank enemy : enemyTanks) {
             if (enemy != null && enemy.isAlive()) {
-                enemy.draw(gc, camX, camY, 1);
+                enemy.draw(gc, camX, camY, scale);
             }
         }
 
@@ -183,7 +194,7 @@ public class Game_2 extends Pane {
 
         for (int i = 0; i < Tanks2.length; i++) {
             if (Tanks2[i] != null) {
-                Tanks2[i].draw(gc, camX, camY, 1);
+                Tanks2[i].draw(gc, camX, camY, scale);
             }
         }
 
@@ -193,20 +204,25 @@ public class Game_2 extends Pane {
         //array list
         for (Tank2 tank2 : Tanks) {
             if (tank2 != null && tank2.isAlive()) {
-                tank2.draw(gc, camX, camY, 1);
+                tank2.draw(gc, camX, camY, scale);
             }
         }
 
         // 5) Draw all bullets
         for (Tank_Bullet bullet : bullets) {
             if (bullet != null) {
-                bullet.draw(gc, camX, camY, 1);
+                bullet.draw(gc, camX, camY, scale);
+            }
+        }
+        for (SuperObject obj : tankObject) {
+            if (obj != null) {
+                obj.draw(gc, this);
             }
         }
 
         // 6) Draw the foreground
         if (level2 != null) {
-            level2.drawForeground(gc, camX, camY, 1.15);
+            level2.drawForeground(gc, camX, camY, scale);
         }
 
         // ─── HEALTH BAR OVERLAY ────────────────────────────────────

@@ -166,7 +166,38 @@ public class AssetSetter {
 
 
     }
+public void setTankObject(){
 
+        //life
+        gp2.tankObject[0]= new Obj_Bomb();
+        gp2.tankObject[0].worldX= 19* gp2.tileSize;
+    gp2.tankObject[0].worldY= 48* gp2.tileSize;
+
+    gp2.tankObject[1]= new Obj_Bomb();
+    gp2.tankObject[1].worldX= 38* gp2.tileSize;
+    gp2.tankObject[1].worldY= 30* gp2.tileSize;
+
+    gp2.tankObject[2]= new Obj_Bomb();
+    gp2.tankObject[2].worldX= 105* gp2.tileSize;
+    gp2.tankObject[2].worldY= 27* gp2.tileSize;
+//
+//    gp2.tankObject[3]= new Obj_Life();
+//    gp2.tankObject[3].worldX= 81* gp2.tileSize;
+//    gp2.tankObject[3].worldY= 36* gp2.tileSize;
+//
+//    gp2.tankObject[4]= new Obj_Life();
+//    gp2.tankObject[4].worldX= 75* gp2.tileSize;
+//    gp2.tankObject[4].worldY= 22* gp2.tileSize;
+//
+//    gp2.tankObject[5]= new Obj_Life();
+//    gp2.tankObject[5].worldX= 71* gp2.tileSize;
+//    gp2.tankObject[5].worldY= 3* gp2.tileSize;
+//
+//    gp2.tankObject[6]= new Obj_Life();
+//    gp2.tankObject[6].worldX= 81* gp2.tileSize;
+//    gp2.tankObject[6].worldY= 36* gp2.tileSize;
+
+    }
 
     public void setNpc() {
         // First NPC with default dialogue (this will use the setDialogue() method)
@@ -182,9 +213,15 @@ public class AssetSetter {
     public void setScout() {
 
 //        gp.scout[0] = new Scout(43 * gp.tileSize, 12 * gp.tileSize, 40, 80, 2, gp);
-        gp.scout[1] = new Scout(40 * gp.tileSize, 11 * gp.tileSize, 40, 80, 2, gp);
+//        gp.scout[1] = new Scout(40 * gp.tileSize, 11 * gp.tileSize, 40, 80, 2, gp);
 
     }
+
+//    public void setTankExplosion() {
+//        gp2.eventHandler.addMine(19 * gp.tileSize, 48 * gp.tileSize, 32, 32, 3);
+//        gp2.eventHandler.addMine(38 * gp.tileSize, 30 * gp.tileSize, 32, 32, 2);
+//        gp2.eventHandler.addMine(105 * gp.tileSize, 27 * gp.tileSize, 32, 32, 2);
+//    }
 
     public void setExplosion() {
         gp.eventHandler.addMine(42 * gp.tileSize, 5 * gp.tileSize, 32, 32, 3);
@@ -227,37 +264,55 @@ public class AssetSetter {
     }
     public void setEnemy() {
         // IMPROVED: Better spacing between enemies to prevent clustering
-        gp.enemies[0] = new Enemy(17 * gp.tileSize, 25 * gp.tileSize, 50, 50, 1.2, gp);
-        gp.enemies[1] = new Enemy(11 * gp.tileSize, 36 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[2] = new Enemy(36 * gp.tileSize, 42 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[3] = new Enemy(25 * gp.tileSize, 57 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[4] = new Enemy(33 * gp.tileSize, 71 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[5] = new Enemy(59 * gp.tileSize, 45 * gp.tileSize, 50, 40, 1.2, gp);
-        gp.enemies[6] = new Enemy(58 * gp.tileSize, 28 * gp.tileSize, 50, 40, 1.2, gp);
+//        gp.enemies[0] = new Enemy(35 * gp.tileSize, 14 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[1] = new Enemy(28 * gp.tileSize, 25 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[2] = new Enemy(49 * gp.tileSize, 19 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[3] = new Enemy(32 * gp.tileSize, 61 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[4] = new Enemy(72 * gp.tileSize, 27 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[5] = new Enemy(69 * gp.tileSize, 16 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[6] = new Enemy(71 * gp.tileSize, 9 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[7] = new Enemy(86 * gp.tileSize, 46 * gp.tileSize, 50, 50, 3, gp,"x");
+//        gp.enemies[8] = new Enemy(80 * gp.tileSize, 55 * gp.tileSize, 50, 50, 3, gp,"x");
+//
+//
+//        gp.enemies[9] = new Enemy(47 * gp.tileSize, 11 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[10] = new Enemy(37 * gp.tileSize, 22 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[11] = new Enemy(91 * gp.tileSize, 7 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[12] = new Enemy(89 * gp.tileSize, 49 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[13] = new Enemy(64 * gp.tileSize, 51 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[14] = new Enemy(62 * gp.tileSize, 37 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[15] = new Enemy(35 * gp.tileSize, 37 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[16] = new Enemy(40 * gp.tileSize, 57 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[17] = new Enemy(25 * gp.tileSize, 7 * gp.tileSize, 50, 50, 3, gp,"y");
+//        gp.enemies[18] = new Enemy(73 * gp.tileSize, 54 * gp.tileSize, 50, 50, 3, gp,"y");
+
+
+
+
+
     }
 
     public void setSoldiers() {
 //         IMPROVED: Better distributed positions and added validation
-//        int[][] soldierPositions = {
-//                {19, 63}, {22, 68}, {39, 59}, {59, 43}, {80, 54},
-//                {68, 18}, {66, 34}, {84, 42}, {66, 58}, {93, 6},
-//                {85, 12}, {93, 24}
-//        };
-//
-//        // Create soldiers with validation
-//        for (int i = 0; i < soldierPositions.length && i < gp.soldiers.length; i++) {
-//            double x = soldierPositions[i][0] * gp.tileSize;
-//            double y = soldierPositions[i][1] * gp.tileSize;
-//
-//            // Add small random offset to prevent exact overlap
-//            x += (Math.random() - 0.5) * gp.tileSize * 0.5; // ±25% of tile size
-//            y += (Math.random() - 0.5) * gp.tileSize * 0.5;
-//
-//            gp.soldiers[i] = new Soldier(x, y, 50, 40, 1.2, gp);
-//
-//            // DEBUG: Print soldier creation
-//            System.out.println("Created soldier " + i + " at position: " + x + ", " + y);
-//        }
+        int[][] soldierPositions = {
+                {19, 63}, {22, 68}, {39, 59}, {59, 43}, {80, 54},
+                {68, 18}
+        };
+
+        // Create soldiers with validation
+        for (int i = 0; i < soldierPositions.length && i < gp.soldiers.length; i++) {
+            double x = soldierPositions[i][0] * gp.tileSize;
+            double y = soldierPositions[i][1] * gp.tileSize;
+
+            // Add small random offset to prevent exact overlap
+            x += (Math.random() - 0.5) * gp.tileSize * 0.5; // ±25% of tile size
+            y += (Math.random() - 0.5) * gp.tileSize * 0.5;
+
+            gp.soldiers[i] = new Soldier(x, y, 50, 40, 1.2, gp,"x");
+
+            // DEBUG: Print soldier creation
+            System.out.println("Created soldier " + i + " at position: " + x + ", " + y);
+        }
     }
 }
 

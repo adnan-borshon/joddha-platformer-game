@@ -2,12 +2,10 @@ package platformgame;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
@@ -22,8 +20,6 @@ import platformgame.Objects.SuperObject;
 import platformgame.chat.OptimizedChatUI;
 
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Game extends Pane {
     private final Canvas canvas;

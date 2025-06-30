@@ -50,7 +50,6 @@ public class UI {
         try {
             Obj_Key key = new Obj_Key();
             keyIcon = key.image;
-
             // Replace direct image loading with ImageLoader
             ammoIcon = ImageLoader.load("/image/Object/Ammo.png");
             dialogueBoxImage = ImageLoader.load("/image/00_UI/dialogue/UI_board_Large_stone.png");

@@ -184,6 +184,7 @@ public class Inventory {
     // Load inventory from file
     public void loadInventory() {
         if (!inventoryFile.exists()) {
+            System.out.println("File not found: " + inventoryFile.getPath());
             // Initialize with default values if file doesn't exist
             items.put("ammo", 0);
             items.put("key1", 0);
@@ -198,7 +199,7 @@ public class Inventory {
         try (BufferedReader reader = new BufferedReader(new FileReader(inventoryFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(":");
+                String[] parts = line.split("=");
                 if (parts.length == 2) {
                     String item = parts[0].trim();
                     int quantity = Integer.parseInt(parts[1].trim());
@@ -206,11 +207,11 @@ public class Inventory {
                 }
             }
             System.out.println("📦 Inventory loaded from file: " + inventoryFile.getName());
-        } catch (IOException | NumberFormatException e) {
+        } catch (IOException e) {
             System.err.println("❌ Error loading inventory: " + e.getMessage());
-            // Initialize with defaults if loading fails
-            initializeDefaults();
+            e.printStackTrace();  // Print the stack trace for better debugging
         }
+
     }
 
     // Initialize default inventory items
@@ -230,9 +231,9 @@ public class Inventory {
                 writer.write(entry.getKey() + ":" + entry.getValue());
                 writer.newLine();
             }
-            System.out.println("💾 Inventory saved to file: " + inventoryFile.getName());
+
         } catch (IOException e) {
-            System.err.println("❌ Error saving inventory: " + e.getMessage());
+
         }
     }
 

@@ -156,9 +156,10 @@ public class KeyHandler {
 
             case MINUS:
                 // Debug: Remove ammo (remove in production)
-                game.onAmmoUsed(5);
+                game.onAmmoUsed(10);
                 e.consume();
                 break;
+
 
             // Add other immediate action keys here
         }

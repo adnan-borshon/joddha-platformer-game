@@ -220,7 +220,7 @@ public class EventHandler {
 
             // ✅ Use image dialogue box system instead of text
             try {
-                Image missionCompleteImage = ImageLoader.load("/Popups/Narration-03.png");
+                Image missionCompleteImage = ImageLoader.load("/Popups/Narration-04.png");
                 game.ui.setImageDialogue(missionCompleteImage);
                 game.GameState = game.dialogueState;
                 game.ui.startDialogueAnimation();

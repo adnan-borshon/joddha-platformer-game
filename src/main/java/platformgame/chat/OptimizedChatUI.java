@@ -12,6 +12,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import platformgame.Game;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OptimizedChatUI {
@@ -36,8 +37,6 @@ public class OptimizedChatUI {
     private Button sendAmmoButton;
 
     // Configuration
-    private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 8080;
     private static final String DEFAULT_USERNAME = "Player" + System.currentTimeMillis() % 1000;
 
     public OptimizedChatUI(Game game) {
@@ -202,16 +201,14 @@ public class OptimizedChatUI {
         // Ammo system handlers
         requestAmmoButton.setOnAction(e -> requestAmmo());
         sendAmmoButton.setOnAction(e -> sendAmmo());
-
-        // Update player list periodically
-        requestPlayerList();
     }
 
     public void connectToServer() {
         if (isConnected) return;
 
         try {
-            chatClient = new ChatClient(SERVER_HOST, SERVER_PORT, DEFAULT_USERNAME);
+            // Create ChatClient with the correct constructor (username only)
+            chatClient = new ChatClient(DEFAULT_USERNAME);
 
             // Set up message callback
             chatClient.setMessageCallback(new ChatClient.ChatMessageCallback() {
@@ -233,8 +230,11 @@ public class OptimizedChatUI {
                         if (connected) {
                             messageArea.appendText("✅ Connected to server!\n");
                             updateAmmo(game.getPlayerAmmo());
+                            // Start requesting player list periodically
+                            startPlayerListUpdates();
                         } else {
                             messageArea.appendText("❌ Disconnected from server\n");
+                            stopPlayerListUpdates();
                         }
                     });
                 }
@@ -272,6 +272,8 @@ public class OptimizedChatUI {
                         } else {
                             game.onAmmoReceived(otherPlayer, amount);
                         }
+                        // Update the display
+                        updateAmmo(game.getPlayerAmmo());
                     });
                 }
 
@@ -301,7 +303,39 @@ public class OptimizedChatUI {
         }
     }
 
+    // Player list update management
+    private Thread playerListThread;
+    private volatile boolean shouldUpdatePlayerList = false;
+
+    private void startPlayerListUpdates() {
+        shouldUpdatePlayerList = true;
+        playerListThread = new Thread(() -> {
+            while (shouldUpdatePlayerList && isConnected) {
+                try {
+                    if (chatClient != null) {
+                        chatClient.requestPlayerList();
+                    }
+                    Thread.sleep(5000); // Update every 5 seconds
+                } catch (InterruptedException e) {
+                    break;
+                } catch (IOException e) {
+                    System.err.println("Failed to request player list: " + e.getMessage());
+                }
+            }
+        });
+        playerListThread.setDaemon(true);
+        playerListThread.start();
+    }
+
+    private void stopPlayerListUpdates() {
+        shouldUpdatePlayerList = false;
+        if (playerListThread != null) {
+            playerListThread.interrupt();
+        }
+    }
+
     public void disconnect() {
+        stopPlayerListUpdates();
         if (chatClient != null && isConnected) {
             chatClient.disconnect();
             isConnected = false;
@@ -410,20 +444,10 @@ public class OptimizedChatUI {
         }
     }
 
-    private void requestPlayerList() {
-        if (isConnected && chatClient != null) {
-            try {
-                chatClient.requestPlayerList();
-            } catch (Exception e) {
-                System.err.println("Failed to request player list: " + e.getMessage());
-            }
-        }
-    }
-
     private void updatePlayerList(String playerListData) {
         playerComboBox.getItems().clear();
 
-        if (playerListData.isEmpty()) return;
+        if (playerListData == null || playerListData.isEmpty()) return;
 
         String[] players = playerListData.split(",");
         for (String playerData : players) {
@@ -439,11 +463,15 @@ public class OptimizedChatUI {
         }
     }
 
-    // ✅ FIXED: More restrictive key handling - only handle specific keys when chat is visible
+    // Key handling - only handle specific keys when chat is visible
     public boolean handleKeyEvent(KeyCode keyCode) {
         // If chat is not visible, only handle the toggle key
-        if (!chatVisible.get()) {
-            return false; // Let the game handle all keys when chat is closed
+        if (!chatVisible.get() &&
+                keyCode != KeyCode.PLUS &&
+                keyCode != KeyCode.EQUALS &&
+                keyCode != KeyCode.MINUS &&
+                keyCode != KeyCode.UNDERSCORE) {
+            return false; // Let the game handle all other keys when chat is closed
         }
 
         // Chat is visible - handle specific keys
@@ -466,16 +494,26 @@ public class OptimizedChatUI {
                     return true;
                 }
                 return false;
+            case PLUS:
+            case EQUALS:
+                game.onAmmoCollected(10);
+                break;
 
+            case MINUS:
+                game.onAmmoUsed(10);
+                break;
+            case UNDERSCORE:
             default:
                 // Only consume alphanumeric and special keys if input field is focused
                 if (inputField.isFocused()) {
                     return isTypingKey(keyCode);
                 }
-                return false; // Not consumed
         }
+                return false; // Not consumed
+
     }
-    // ✅ NEW: Helper method to determine if a key is for typing
+
+    // Helper method to determine if a key is for typing
     private boolean isTypingKey(KeyCode keyCode) {
         // Return true for keys that should be handled by the text input
         return keyCode.isLetterKey() ||
@@ -491,10 +529,10 @@ public class OptimizedChatUI {
                 keyCode == KeyCode.CONTROL ||
                 keyCode.getName().length() == 1; // Single character keys
     }
+
     public boolean isChatInputFocused() {
         return inputField != null && inputField.isFocused();
     }
-
 
     // Getters for Game class integration
     public Button getToggleButton() {
@@ -511,5 +549,9 @@ public class OptimizedChatUI {
 
     public boolean isConnected() {
         return isConnected;
+    }
+
+    public String getUsername() {
+        return chatClient != null ? chatClient.getUsername() : DEFAULT_USERNAME;
     }
 }

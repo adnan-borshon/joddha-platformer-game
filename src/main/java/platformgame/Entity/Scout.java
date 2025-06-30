@@ -1,56 +1,49 @@
 package platformgame.Entity;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import platformgame.Game;
-import javafx.geometry.Rectangle2D;
 
 public class Scout extends Entity {
-//without gun
+    // Animation frame constants
+    protected final int frontWalkFrame = 4;
+    protected final int frontWalkRow = 3;
 
-    //walk and run
-    protected final int frontWalkFrame=4;
-    protected final int frontWalkRow=3;
+    protected final int backWalkFrame = 4;
+    protected final int backWalkRow = 4;
 
-    protected final int backWalkFrame=4;
-    protected final int backWalkRow=4;
+    protected final int walkFrame = 6;
+    protected final int walkRow = 5;
 
-    protected final int WalkFrame=6;
-    protected final int WalkRow=5;
+    protected final int frontIdleFrame = 1;
+    protected final int frontIdleRow = 0;
 
-    //idle
-    protected final int frontIdleFrame=1;
-    protected final int frontIdleRow=0;
+    protected final int idleFrame = 1;
+    protected final int idleRow = 1;
 
-    protected final int IdleFrame=1;
-    protected final int IdleRow=1;
+    protected final int backIdleFrame = 1;
+    protected final int backIdleRow = 2;
 
-    protected final int backIdleFrame=1;
-    protected final int backIdleRow=2;
+    protected final int frontFistFrame = 2;
+    protected final int frontFistRow = 6;
 
-    //fist (no gun frames)
-    protected final int FrontFistFrame=2; // Updated to use no gun frames
-    protected final int FrontFistRow=6;   // Updated row for no gun
+    protected final int fistFrame = 2;
+    protected final int fistRow = 7;
 
-    protected final int FistFrame=2;      // Updated to use no gun frames
-    protected final int FistRow=7;       // Updated row for no gun
+    protected final int backFistFrame = 2;
+    protected final int backFistRow = 8;
 
-    protected final int BackFistFrame=2;  // Updated to use no gun frames
-    protected final int BackFistRow=8;   // Updated row for no gun
+    protected final int hitFrame = 2;
+    protected final int hitRow = 19;
 
-    //hurt with no gun
-    protected final int HitFrame=2;
-    protected final int HitRow=19;
+    protected final int frontHitFrame = 2;
+    protected final int frontHitRow = 20;
 
-    protected final int FrontHitFrame=2;
-    protected final int FrontHitRow=20;
-
-    protected final int BackHitFrame=2;
-    protected final int BackHitRow=21;
-
-
+    protected final int backHitFrame = 2;
+    protected final int backHitRow = 21;
 
     private boolean playerInRange = false;
     private boolean attacking = false;
@@ -70,7 +63,7 @@ public class Scout extends Entity {
     private final long dialogueDuration = 2_000_000_000L;
     private double baseCampX = 53 * 32;
     private double baseCampY = 23 * 32;
-    private final double runSpeed = speed * 0.5;
+    private final double runSpeed = speed * 1.2;
 
     private int health = 3;
     private boolean isDead = false;
@@ -90,7 +83,8 @@ public class Scout extends Entity {
     private enum MovementDirection {
         FRONT,  // Moving down
         BACK,   // Moving up
-        SIDE,   // Moving left/right
+        RIGHT,
+        LEFT,
         IDLE
     }
 
@@ -116,9 +110,9 @@ public class Scout extends Entity {
     private final long attackFrameDuration = 150_000_000L; // Consistent attack frame timing
 
     public Scout(double x, double y, double width, double height, double speed, Game gp) {
-        super(x, y, width, height, speed, gp);
+        super(x, y, width, height, speed, gp, null);
         this.gp = gp;
-        imageSet(WalkFrame, "/image/Scout.png");
+        imageSet(walkFrame, "/image/Scout.png");
         patrolStartX = x;
         patrolStartY = y;
         baseCampX = 53 * gp.tileSize;
@@ -394,7 +388,10 @@ public class Scout extends Entity {
             case BACK:
                 currentRow = backIdleRow;
                 break;
-            case SIDE:
+            case LEFT:
+            case RIGHT:
+                currentRow = walkRow;
+                break;
             default:
                 currentRow = IdleRow;
                 break;
@@ -416,25 +413,36 @@ public class Scout extends Entity {
                 lastDirection = MovementDirection.FRONT;
                 currentRow = frontWalkRow;
             }
+        } else if (dx > 0) {
+            // Moving right
+            currentDirection = MovementDirection.RIGHT;
+            lastDirection = MovementDirection.RIGHT;
+            currentRow = walkRow;
+        } else if (dx < 0) {
+            // Moving left
+            currentDirection = MovementDirection.LEFT;
+            lastDirection = MovementDirection.LEFT;
+            currentRow = walkRow;
         } else {
-            // Moving left/right (side)
-            currentDirection = MovementDirection.SIDE;
-            lastDirection = MovementDirection.SIDE;
-            currentRow = WalkRow;
+            // Idle
+            currentDirection = MovementDirection.IDLE;
+            lastDirection = MovementDirection.IDLE;
+            currentRow = idleRow;
         }
     }
 
     private void setAttackAnimation() {
         switch (lastDirection) {
             case FRONT:
-                currentRow = FrontFistRow;
+                currentRow = frontFistRow;
                 break;
             case BACK:
-                currentRow = BackFistRow;
+                currentRow = backFistRow;
                 break;
-            case SIDE:
+            case LEFT:
+            case RIGHT:
             default:
-                currentRow = FistRow;
+                currentRow = fistRow;
                 break;
         }
         currentFrame = 0; // Reset frame to start attack animation properly
@@ -443,14 +451,15 @@ public class Scout extends Entity {
     private void setHitAnimation() {
         switch (lastDirection) {
             case FRONT:
-                currentRow = FrontHitRow;
+                currentRow = frontHitRow;
                 break;
             case BACK:
-                currentRow = BackHitRow;
+                currentRow = backHitRow;
                 break;
-            case SIDE:
+            case LEFT:
+            case RIGHT:
             default:
-                currentRow = HitRow;
+                currentRow = hitRow;
                 break;
         }
     }
@@ -478,11 +487,10 @@ public class Scout extends Entity {
             runningToBase = false;
             facingRight = gp.player.getX() > x;
         }
-
     }
 
     public Rectangle2D getHitbox() {
-        return new Rectangle2D(x - 10, y + 4, width+25, height);
+        return new Rectangle2D(x - 10, y + 4, width + 25, height);
     }
 
     public boolean canDamagePlayer() {
@@ -493,12 +501,13 @@ public class Scout extends Entity {
         // Damage frames depend on attack type - using updated frame counts
         switch (lastDirection) {
             case FRONT:
-                return frameIndex >= 0 && frameIndex < FrontFistFrame ;
+                return frameIndex >= 0 && frameIndex < frontFistFrame ;
             case BACK:
-                return frameIndex >= 0 && frameIndex < BackFistFrame ;
-            case SIDE:
+                return frameIndex >= 0 && frameIndex < backFistFrame ;
+            case LEFT:
+            case RIGHT:
             default:
-                return frameIndex >= 0 && frameIndex < FistFrame ;
+                return frameIndex >= 0 && frameIndex < fistFrame ;
         }
     }
 
@@ -530,8 +539,8 @@ public class Scout extends Entity {
         if (!attacking) return;
 
         int frameIndex = (int) ((now - attackStartTime) / attackFrameDuration);
-        int maxFrames = (lastDirection == MovementDirection.FRONT) ? FrontFistFrame :
-                (lastDirection == MovementDirection.BACK) ? BackFistFrame : FistFrame;
+        int maxFrames = (lastDirection == MovementDirection.FRONT) ? frontFistFrame :
+                (lastDirection == MovementDirection.BACK) ? backFistFrame : fistFrame;
 
         if (frameIndex < maxFrames) {
             currentFrame = frameIndex;
@@ -564,8 +573,8 @@ public class Scout extends Entity {
         // Handle hit reaction animation first
         if (reactingToHit) {
             int frameIndex = (int) ((now - hitReactionStartTime) / hitFrameDuration);
-            int maxHitFrames = (lastDirection == MovementDirection.FRONT) ? FrontHitFrame :
-                    (lastDirection == MovementDirection.BACK) ? BackHitFrame : HitFrame;
+            int maxHitFrames = (lastDirection == MovementDirection.FRONT) ? frontHitFrame :
+                    (lastDirection == MovementDirection.BACK) ? backHitFrame : hitFrame;
 
             if (frameIndex < maxHitFrames) {
                 currentFrame = frameIndex;
@@ -578,7 +587,7 @@ public class Scout extends Entity {
                     currentRow = deathAnimationRow;
                     deathStartTime = now;
                     currentFrame = 0;
-            gp.scout[1]=null;
+                    gp.scout[1] = null;
                     attacking = false;
                     runningToBase = false;
                     inCombat = false;
@@ -597,20 +606,19 @@ public class Scout extends Entity {
             if (deathStartTime == 0) {
                 deathStartTime = now;
             }
-            currentRow=deadRow;
+            currentRow = deathAnimationRow;
             int frameIndex = (int) ((now - deathStartTime) / 200_000_000);
-            if (frameIndex < deadFrame) {
-
+            if (frameIndex < totalDeathFrames) {
                 currentFrame = frameIndex;
             } else {
-                currentFrame = deadFrame - 1; // Stay on last frame briefly
+                currentFrame = totalDeathFrames - 1; // Stay on last frame briefly
                 // Mark animation as complete after a short delay on the last frame
-                if ((now - deathStartTime) > (deadFrame * 200_000_000L + 400_000_000L)) { // Extra 0.5 seconds on last frame
+                if ((now - deathStartTime) > (totalDeathFrames * 200_000_000L + 400_000_000L)) { // Extra 0.5 seconds on last frame
                     deathAnimationComplete = true;
                 }
             }
 
-            gp.scout[0]=null;
+            gp.scout[0] = null;
             return;
         }
 
@@ -687,7 +695,8 @@ public class Scout extends Entity {
             case BACK:
                 maxFrames = (currentRow == backIdleRow) ? backIdleFrame : backWalkFrame;
                 break;
-            case SIDE:
+            case LEFT:
+            case RIGHT:
                 maxFrames = (currentRow == IdleRow) ? IdleFrame : WalkFrame;
                 break;
             case IDLE:
@@ -699,6 +708,7 @@ public class Scout extends Entity {
                 maxFrames = 4;
                 break;
         }
+
         currentFrame = (int) ((now / frameDuration) % maxFrames);
     }
 

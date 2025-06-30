@@ -6,20 +6,20 @@ import javafx.scene.image.Image;
 import platformgame.Game;
 
 public class Npc extends Entity {
-    private final int totalFrames_idle = 11;  // frames in idle animation (used here)
+    private final int totalFrames_idle = 6;  // frames in idle animation (used here)
     private int dialogueIndex = 0;
     public boolean playerIsTouching = false;
 
     // Constructor with custom dialogue
     public Npc(double x, double y, double width, double height, double speed, Game gp, Image[] customDialogue) {
-        super(x, y, width, height, speed, gp);
+        super(x, y, width, height, speed, gp,null);
         imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
         setDialogue(customDialogue);
     }
 
     // Constructor with default dialogue (for backward compatibility)
     public Npc(double x, double y, double width, double height, double speed, Game gp) {
-        super(x, y, width, height, speed, gp);
+        super(x, y, width, height, speed, gp,null);
         imageSet(totalFrames_idle, "/image/npc.png");  // Set to idle sprite sheet
 //        setDialogue();
     }
@@ -52,7 +52,7 @@ public class Npc extends Entity {
 
         // Animate the idle sprite
         animationTimer += deltaTime;
-        currentRow = 1;  // Use row 1 for idle animation
+        currentRow = 0;  // Use row 1 for idle animation
         if (animationTimer > 180_000_000) {
             nextFrame(totalFrames_idle);  // Go to the next idle frame
             animationTimer = 0;

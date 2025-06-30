@@ -33,7 +33,7 @@ public class Player extends Entity {
     private long lastShotTime = 0;
     private final long shootCooldown = 300_000_000; // 300ms between shots
     private List<Bullet> bullets;
-    private final double bulletSpeed = 6.0;
+    private final double bulletSpeed = 6.5;
     private double lastDirectionX = 1.0; // Default facing right
     private double lastDirectionY = 0.0; // Default horizontal
     // ✅ Death animation (Row 10 → Index 9)
@@ -66,7 +66,7 @@ public class Player extends Entity {
     public int ammo = gp.getPlayerAmmo(); // Start with some ammo
 
     public Player(double x, double y, double width, double height, double speed, Game gp) {
-        super(x, y, width, height, speed, gp);
+        super(x, y, width, height, speed, gp,null);
         imageSet(GunWalkFrame, "/image/main_character.png");
         bullets = new ArrayList<>();
     }
@@ -101,7 +101,7 @@ public class Player extends Entity {
                     isDead = true;
                     deathStartTime = now;
                     gp.ui.showMessage("You Died!");
-                    gp.playSoundEffects(2);
+
                 }
             }
             return;
@@ -133,7 +133,7 @@ public class Player extends Entity {
                     isDead = true;
                     deathStartTime = now;
                     gp.ui.showMessage("You Died!");
-                    gp.playSoundEffects(2);
+
                 }
             }
             return;
@@ -637,8 +637,7 @@ public class Player extends Entity {
         }
 
         triggerExplosionReaction(now);
-        gp.ui.showMessage("You took damage -" + damage + " HP");
-        gp.playSoundEffects(2);
+
     }
 
     public void takeMeleeDamageFromEnemy(int rawDamage, long now) {
@@ -655,8 +654,7 @@ public class Player extends Entity {
         meleeHitStartTime = now;
         currentFrame = 0;
 
-        gp.ui.showMessage("Enemy attacked! -" + rawDamage + " HP");
-        gp.playSoundEffects(2);
+
     }
 
     public void draw(GraphicsContext gc, double camX, double camY, double scale) {
@@ -692,7 +690,7 @@ public class Player extends Entity {
                         if (!game.hasKey1) {
                             game.hasKey1 = true;
                             game.object[i] = null;
-                            game.playSoundEffects(1);
+                            game.playSoundEffects(2);
                             game.ui.showMessage("Picked up Key 1");
                             game.inventory.addItem("key", 1);
                         }
@@ -701,7 +699,7 @@ public class Player extends Entity {
                         if (!game.hasKey2) {
                             game.hasKey2 = true;
                             game.object[i] = null;
-                            game.playSoundEffects(1);
+                            game.playSoundEffects(2);
                             game.ui.showMessage("Picked up Key 2");
                             game.inventory.addItem("key", 1);
                         }
@@ -710,7 +708,7 @@ public class Player extends Entity {
                         if (!game.hasKey3) {
                             game.hasKey3 = true;
                             game.object[i] = null;
-                            game.playSoundEffects(1);
+                            game.playSoundEffects(2);
                             game.ui.showMessage("Picked up Key 3");
                             game.inventory.addItem("key", 1);
                         }
@@ -728,7 +726,7 @@ public class Player extends Entity {
                         ammo += 10;
                         gp.setPlayerAmmo(ammo);
                         game.object[i] = null;
-                        game.playSoundEffects(1);
+                        game.playSoundEffects(2);
                         game.ui.showMessage("Picked up 10 ammo");
                         game.inventory.addItem("ammo", 10);
                         break;
@@ -737,7 +735,7 @@ public class Player extends Entity {
                             int heal = (int)(maxHp * 0.2);
                             hp = Math.min(maxHp, hp + heal);
                             game.object[i] = null;
-                            game.playSoundEffects(1);
+                            game.playSoundEffects(2);
                             game.ui.showMessage("Life restored +" + heal + " HP");
 
                         } else {
@@ -755,7 +753,7 @@ public class Player extends Entity {
                         game.granadeCounter++;
                         game.hasLauncher=true;
                         game.object[i] = null;
-                        game.playSoundEffects(1);
+                        game.playSoundEffects(2);
                         game.ui.showMessage("Picked up a grenade");
                         game.inventory.addItem("granade", 1);
                         break;       // allow movement through
@@ -801,7 +799,7 @@ public class Player extends Entity {
                             game.level1.removeFenchGateLayer();
                             game.FenchGateRemoved = true;
                             game.object[i] = null;
-                            game.playSoundEffects(2);
+
                             game.ui.showMessage("Fench gate opened!");
                         }
                         return false;

@@ -5,6 +5,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import platformgame.Game;
+import platformgame.Game_2;
 import platformgame.ImageLoader;
 import platformgame.Objects.SuperObject;
 import platformgame.Sound;
@@ -109,6 +110,7 @@ public abstract class Entity {
     protected double width, height;
     public double speed;
     Game gp;
+    Game_2 gp2;
     protected Image sprite;
     protected WritableImage[] frames;
     protected final int frameWidth = 128;
@@ -130,14 +132,16 @@ public abstract class Entity {
     Image dialogues[] = new Image[20];
 
     // Constructor for initializing common entity attributes
-    public Entity(double x, double y, double width, double height, double speed, Game gp) {
+    public Entity(double x, double y, double width, double height, double speed, Game gp, Game_2 gp2) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.speed = speed;
         this.gp = gp;
+        this.gp2 = gp2; // Adding gp2 reference for Game_2 context
     }
+
 
     // Method for saving the position of the entity
     public void setPosition(double x, double y) {
@@ -267,6 +271,20 @@ public abstract class Entity {
                 }
             }
         }
+
+        // If using Game_2
+        if (gp2 != null) {
+            for (SuperObject obj : gp2.tankObject) {
+                if (obj != null) {
+                    Rectangle2D objRect = obj.getBoundingBox();
+                    Rectangle2D entityRect = new Rectangle2D(x, y, width, height);
+                    if (entityRect.intersects(objRect)) {
+                        return true; // Collision detected
+                    }
+                }
+            }
+        }
+
         return false;  // No collision
     }
 
