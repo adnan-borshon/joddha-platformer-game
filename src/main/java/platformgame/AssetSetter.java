@@ -226,6 +226,11 @@ public void setTankObject(){
     public void setExplosion() {
         gp.eventHandler.addMine(42 * gp.tileSize, 5 * gp.tileSize, 32, 32, 3);
         gp.eventHandler.addMine(24 * gp.tileSize, 16 * gp.tileSize, 32, 32, 2);
+        gp.eventHandler.addMine( 25* gp.tileSize, 52 * gp.tileSize, 32, 32, 2);
+        gp.eventHandler.addMine(13 * gp.tileSize, 51 * gp.tileSize, 32, 32, 2);
+        gp.eventHandler.addMine(37 * gp.tileSize, 39 * gp.tileSize, 32, 32, 2);
+        gp.eventHandler.addMine(75 * gp.tileSize, 47 * gp.tileSize, 32, 32, 2);
+        gp.eventHandler.addMine(82 * gp.tileSize, 21 * gp.tileSize, 32, 32, 2);
     }
 
     public void setTank2(){
@@ -264,15 +269,15 @@ public void setTankObject(){
     }
     public void setEnemy() {
         // IMPROVED: Better spacing between enemies to prevent clustering
-//        gp.enemies[0] = new Enemy(35 * gp.tileSize, 14 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[1] = new Enemy(28 * gp.tileSize, 25 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[2] = new Enemy(49 * gp.tileSize, 19 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[3] = new Enemy(32 * gp.tileSize, 61 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[4] = new Enemy(72 * gp.tileSize, 27 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[5] = new Enemy(69 * gp.tileSize, 16 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[6] = new Enemy(71 * gp.tileSize, 9 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[7] = new Enemy(86 * gp.tileSize, 46 * gp.tileSize, 50, 50, 3, gp,"x");
-//        gp.enemies[8] = new Enemy(80 * gp.tileSize, 55 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[0] = new Enemy(35 * gp.tileSize, 14 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[1] = new Enemy(28 * gp.tileSize, 25 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[2] = new Enemy(49 * gp.tileSize, 19 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[3] = new Enemy(32 * gp.tileSize, 61 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[4] = new Enemy(72 * gp.tileSize, 27 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[5] = new Enemy(69 * gp.tileSize, 16 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[6] = new Enemy(71 * gp.tileSize, 9 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[7] = new Enemy(86 * gp.tileSize, 46 * gp.tileSize, 50, 50, 3, gp,"x");
+        gp.enemies[8] = new Enemy(80 * gp.tileSize, 55 * gp.tileSize, 50, 50, 3, gp,"x");
 //
 //
 //        gp.enemies[9] = new Enemy(47 * gp.tileSize, 11 * gp.tileSize, 50, 50, 3, gp,"y");
@@ -295,7 +300,7 @@ public void setTankObject(){
     public void setSoldiers() {
 //         IMPROVED: Better distributed positions and added validation
         int[][] soldierPositions = {
-                {19, 63}, {22, 68}, {39, 59}, {59, 43}, {80, 54},
+                {19, 63}, {22, 68}, {39, 59}, {80, 54},
                 {68, 18}
         };
 

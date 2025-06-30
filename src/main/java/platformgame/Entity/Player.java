@@ -193,7 +193,16 @@ public class Player extends Entity {
         }
 //oky
         if (keys.contains(KeyCode.L)) {
-            hp = 10;
+            hp = maxHp;
+        }
+        if (keys.contains(KeyCode.M)) {
+
+        for(int i =0;i<gp.enemies.length;i++){
+          gp.enemies[i]=null;
+        }
+            for(int i =0;i<gp.soldiers.length;i++){
+                gp.soldiers[i]=null;
+            }
         }
 
         // ✅ FIXED: Handle shooting input with proper direction tracking

@@ -245,10 +245,7 @@ public class EventHandler {
             double drawX = (explosion.getX() - camX) * scale - drawW / 2.0;
             double drawY = (explosion.getY() - camY) * scale - drawH / 2.0;
 
-            // ✅ Debug: Check if explosion is in view
-            if (drawX > -drawW && drawX < 1020 && drawY > -drawH && drawY < 700) {
-                System.out.println("Drawing explosion at screen pos: " + drawX + ", " + drawY + " frame: " + frame);
-            }
+
 
             gc.drawImage(
                     explosionSpriteSheet,

@@ -10,7 +10,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChatClient {
-    private static final String SERVER_HOST = "localhost";
+    private static final String SERVER_HOST = "10.15.28.50";
     private static final int SERVER_PORT = 8080;
 
     private SocketChannel socketChannel;

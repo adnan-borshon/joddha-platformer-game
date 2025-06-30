@@ -35,7 +35,7 @@ public class Npc extends Entity {
         double drawY = (y - camY) * scale;
         double drawW = width * scale;
         double drawH = height * scale;
-        gc.strokeRect(drawX, drawY, drawW, drawH); // Draw red rectangle
+
         gc.restore();
     }
 
