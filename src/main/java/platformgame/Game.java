@@ -29,7 +29,7 @@ public class Game extends Pane {
     public Inventory inventory;
     private long lastTime = System.nanoTime();
     public int GameState;
-    public final int playState = 1;
+    public final int playStates = 1;
     public final int pauseState = 2;
     public final int dialogueState = 3;
 
@@ -113,7 +113,7 @@ public class Game extends Pane {
         initializeChatLazy();
 
         // ✅ 8. Set initial game state
-        GameState = playState;
+        GameState = playStates;
 
         long endTime = System.currentTimeMillis();
 
@@ -530,7 +530,7 @@ public class Game extends Pane {
     }
 
     private void update(long now, long deltaTime) {
-        if (GameState == playState) {
+        if (GameState == playStates) {
             player.update(keyHandler.getKeysPressed(), level1, this, now, deltaTime);
             for (Npc n : npc) {
                 if (n != null) {
@@ -672,7 +672,7 @@ public class Game extends Pane {
 
     public void setUpObject() {
         setUpGameObjectsFast();
-        GameState = playState;
+        GameState = playStates;
 
         // Initialize ammo display with delay (non-blocking)
         if (chatConnected && chatUI != null) {
